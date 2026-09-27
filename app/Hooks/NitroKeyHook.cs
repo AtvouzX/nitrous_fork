@@ -16,8 +16,7 @@ public partial class NitroKeyHook : IDisposable
 
     public event EventHandler? NitroKeyPressed;
 
-    // 117 (AN16S-61), 175 (Older Nitro 5s), 236 (Some Nitro 7s)
-    private static readonly FrozenSet<uint> NitroScanCodes = new[] { 117u, 175u, 236u }.ToFrozenSet();
+    private static readonly FrozenSet<uint> NitroScanCodes = new[] { 117u, 148u, 175u, 236u, 245u }.ToFrozenSet();
 
     public NitroKeyHook()
     {

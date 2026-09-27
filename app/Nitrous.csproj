@@ -1,23 +1,23 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <OutputType>WinExe</OutputType>
-    <TargetFramework>net10.0-windows</TargetFramework>
-    <RootNamespace>Nitrous</RootNamespace>
-    <Nullable>enable</Nullable>
-    <UseWPF>true</UseWPF>
-    <UseWindowsForms>true</UseWindowsForms>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
-    <ApplicationManifest>app.manifest</ApplicationManifest>
-    <ApplicationIcon>../assets/icon.ico</ApplicationIcon>
-  </PropertyGroup>
+	<PropertyGroup>
+		<OutputType>WinExe</OutputType>
+		<TargetFramework>net10.0-windows</TargetFramework>
+		<RootNamespace>Nitrous</RootNamespace>
+		<Nullable>enable</Nullable>
+		<UseWPF>true</UseWPF>
+		<UseWindowsForms>true</UseWindowsForms>
+		<ImplicitUsings>enable</ImplicitUsings>
+		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+		<ApplicationManifest>app.manifest</ApplicationManifest>
+		<ApplicationIcon>../assets/icon.ico</ApplicationIcon>
+	</PropertyGroup>
 
-  <ItemGroup>
-    <PackageReference Include="System.Management" Version="10.0.10" />
-    <PackageReference Include="NvAPIWrapper.Net" Version="0.8.1.101" />
-  </ItemGroup>
+	<ItemGroup>
+		<PackageReference Include="System.Management" Version="10.0.10" />
+		<PackageReference Include="NvAPIWrapper.Net" Version="0.8.1.101" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <Resource Include="..\assets\logo.png" Link="assets\logo.png" />
-  </ItemGroup>
+	<ItemGroup>
+		<Resource Include="..\assets\logo.png" Link="assets\logo.png" />
+	</ItemGroup>
 </Project>
