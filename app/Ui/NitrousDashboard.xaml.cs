@@ -190,9 +190,18 @@ public partial class NitrousDashboard : Window
         SettingsManager.Save("IsPinned", this.Topmost);
     }
 
+    private FanCurveWindow? _activeCurveWindow;
+
     private void OpenCurveEditor_Click(object sender, RoutedEventArgs e)
     {
-        var curveWindow = new FanCurveWindow((DashboardViewModel)DataContext)
+        // If the window is already open, just bring it to the front
+        if (_activeCurveWindow != null && _activeCurveWindow.IsLoaded)
+        {
+            _activeCurveWindow.Activate();
+            return;
+        }
+
+        _activeCurveWindow = new FanCurveWindow((DashboardViewModel)DataContext)
         {
             Owner = this,
             WindowStartupLocation = WindowStartupLocation.Manual
@@ -201,24 +210,20 @@ public partial class NitrousDashboard : Window
         double currentLeft = double.IsNaN(this.Left) ? (SystemParameters.WorkArea.Width / 2) - (this.Width / 2) : this.Left;
         double currentTop = double.IsNaN(this.Top) ? (SystemParameters.WorkArea.Height / 2) - (this.Height / 2) : this.Top;
 
-        double targetLeft = currentLeft - curveWindow.Width - 10;
+        double targetLeft = currentLeft - _activeCurveWindow.Width - 10;
 
         if (targetLeft < 0)
         {
             targetLeft = currentLeft + this.Width + 10;
         }
 
-        curveWindow.Left = targetLeft;
-        curveWindow.Top = currentTop;
+        _activeCurveWindow.Left = targetLeft;
+        _activeCurveWindow.Top = currentTop;
 
-        try
-        {
-            _isDialogOpen = true;
-            curveWindow.ShowDialog();
-        }
-        finally
-        {
-            _isDialogOpen = false;
-        }
+        // Attach an event to clear the flag when the window closes
+        _activeCurveWindow.Closed += (s, args) => _isDialogOpen = false;
+
+        _isDialogOpen = true;
+        _activeCurveWindow.Show();
     }
 }
