@@ -78,12 +78,29 @@ public class DashboardViewModel : ObservableObject
     private bool _isTurboSupported = true;
     public bool IsTurboSupported { get => _isTurboSupported; set => SetProperty(ref _isTurboSupported, value); }
 
+    private bool _isCurveModeEnabled;
+    public bool IsCurveModeEnabled
+    {
+        get => _isCurveModeEnabled;
+        set
+        {
+            if (SetProperty(ref _isCurveModeEnabled, value))
+            {
+                SettingsManager.Save("IsCurveModeEnabled", value ? 1 : 0);
+                OnPropertyChanged(nameof(IsManualSliderEnabled));
+            }
+        }
+    }
+
+    public bool IsManualSliderEnabled => IsCustomFanEnabled && !IsCurveModeEnabled;
+
     public DashboardViewModel()
     {
         // Initialize Fan State
         _cpuFanSpeed = SettingsManager.Get("CustomFanSpeedCpu", 50);
         _gpuFanSpeed = SettingsManager.Get("CustomFanSpeedGpu", 50);
         _isUnifiedFans = SettingsManager.Get("UnifiedFans", 1) == 1;
+        _isCurveModeEnabled = SettingsManager.Get("IsCurveModeEnabled", 0) == 1;
 
         _deepGpuTelemetry = SettingsManager.Get("DeepGpuTelemetry", 1) == 1;
         if (!_deepGpuTelemetry)
@@ -267,6 +284,7 @@ public class DashboardViewModel : ObservableObject
             if (SetProperty(ref _isCustomFanEnabled, value))
             {
                 OnPropertyChanged(nameof(CustomFanOpacity));
+                OnPropertyChanged(nameof(IsManualSliderEnabled));
             }
         }
     }

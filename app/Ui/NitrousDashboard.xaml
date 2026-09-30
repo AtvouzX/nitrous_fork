@@ -149,6 +149,12 @@
 								</Track.IncreaseRepeatButton>
 							</Track>
 						</Grid>
+
+						<ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.3"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
 					</ControlTemplate>
 				</Setter.Value>
 			</Setter>
@@ -170,6 +176,9 @@
 							<Trigger Property="IsChecked" Value="True">
 								<Setter TargetName="CheckIcon" Property="Visibility" Value="Visible"/>
 							</Trigger>
+							<Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.3"/>
+                            </Trigger>
 						</ControlTemplate.Triggers>
 					</ControlTemplate>
 				</Setter.Value>
@@ -195,6 +204,54 @@
 			</Setter>
 		</Style>
 		<BooleanToVisibilityConverter x:Key="BoolToVis" />
+
+		<Style x:Key="GhostBtn" TargetType="Button">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="Foreground" Value="#888890"/>
+            <Setter Property="BorderBrush" Value="#2A2A30"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="BtnBorder" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="8">
+                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsEnabled" Value="False">
+                                <Setter Property="Opacity" Value="0.3"/>
+                            </Trigger>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="BtnBorder" Property="Background" Value="#222226"/>
+                                <Setter Property="Foreground" Value="#E0E0E0"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <Style x:Key="AccentBtn" TargetType="Button">
+            <Setter Property="Foreground" Value="#121214"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border Background="{TemplateBinding Background}" CornerRadius="8">
+                            <Grid>
+                                <Border x:Name="HoverOverlay" Background="White" Opacity="0" CornerRadius="8"/>
+                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" Margin="{TemplateBinding Padding}"/>
+                            </Grid>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.15"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 	</Window.Resources>
 	<!-- Outer Frame with Rounded Corners -->
 	<Border Background="#121214" CornerRadius="16" BorderBrush="#2A2A30" BorderThickness="1">
@@ -360,27 +417,64 @@
 						<Border Background="#1C1C1F" CornerRadius="8" BorderBrush="#2A2A30" BorderThickness="1" Padding="12,12,12,16">
 							<StackPanel>
 								<Grid Margin="0,0,0,12">
-									<TextBlock Text="CUSTOM FAN SPEED" Foreground="#888890" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
-									<CheckBox x:Name="TogUnifiedFans" Content="UNIFIED" Style="{StaticResource SquareCheckBoxStyle}" HorizontalAlignment="Right" VerticalAlignment="Center" IsChecked="{Binding IsUnifiedFans, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsCustomFanEnabled}"/>
-								</Grid>
+                                    <TextBlock Text="CUSTOM FAN SPEED" Foreground="#888890" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+                                        <!-- Button to open Fan Curve Editor Window -->
+                                        <Button Content="CURVE EDITOR"
+                                                Click="OpenCurveEditor_Click"
+                                                Style="{StaticResource GhostBtn}"
+                                                FontSize="9"
+                                                Padding="6,2"
+                                                Margin="0,0,8,0"
+                                                IsEnabled="{Binding IsCustomFanEnabled}"/>
+
+                                        <CheckBox x:Name="TogUnifiedFans"
+                                                Content="UNIFIED"
+                                                Style="{StaticResource SquareCheckBoxStyle}"
+                                                IsChecked="{Binding IsUnifiedFans, UpdateSourceTrigger=PropertyChanged}"
+                                                IsEnabled="{Binding IsManualSliderEnabled}"/>
+                                    </StackPanel>
+                                </Grid>
 								<!-- CPU Slider -->
 								<Grid Margin="0,0,0,4">
 									<TextBlock Text="CPU Fan Speed" Foreground="White" FontSize="11" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
 									<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-										<TextBox x:Name="CpuFanInput" Text="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" Foreground="#B388FF" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0" MaxLength="3" Width="26" TextAlignment="Right" VerticalContentAlignment="Center" CaretBrush="#B388FF" IsEnabled="{Binding IsCustomFanEnabled}"/>
-										<TextBlock Text="%" Foreground="#B388FF" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+										<TextBox x:Name="CpuFanInput" Text="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" Foreground="#B388FF" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0" MaxLength="3" Width="26" TextAlignment="Right" VerticalContentAlignment="Center" CaretBrush="#B388FF" IsEnabled="{Binding IsManualSliderEnabled}"/>
+										<TextBlock Text="%" Foreground="#B388FF" FontSize="11" FontWeight="Bold" VerticalAlignment="Center">
+      										<TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="#B388FF"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsManualSliderEnabled}" Value="False">
+                                                            <Setter Property="Opacity" Value="0.3"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+										</TextBlock>
 									</StackPanel>
 								</Grid>
-								<Slider x:Name="CpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100" Value="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsCustomFanEnabled}" IsSnapToTickEnabled="True" TickFrequency="1" Margin="0,0,0,12"/>
+								<Slider x:Name="CpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100" Value="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1" Margin="0,0,0,12"/>
 								<!-- GPU Slider -->
 								<Grid Margin="0,0,0,4">
 									<TextBlock Text="GPU Fan Speed" Foreground="White" FontSize="11" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
 									<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-										<TextBox x:Name="GpuFanInput" Text="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" Foreground="#B388FF" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0" MaxLength="3" Width="26" TextAlignment="Right" VerticalContentAlignment="Center" CaretBrush="#B388FF" IsEnabled="{Binding IsCustomFanEnabled}"/>
-										<TextBlock Text="%" Foreground="#B388FF" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
+										<TextBox x:Name="GpuFanInput" Text="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" Foreground="#B388FF" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0" MaxLength="3" Width="26" TextAlignment="Right" VerticalContentAlignment="Center" CaretBrush="#B388FF" IsEnabled="{Binding IsManualSliderEnabled}"/>
+										<TextBlock Text="%" Foreground="#B388FF" FontSize="11" FontWeight="Bold" VerticalAlignment="Center">
+    										<TextBlock.Style>
+                                                <Style TargetType="TextBlock">
+                                                    <Setter Property="Foreground" Value="#B388FF"/>
+                                                    <Style.Triggers>
+                                                        <DataTrigger Binding="{Binding IsManualSliderEnabled}" Value="False">
+                                                            <Setter Property="Opacity" Value="0.3"/>
+                                                        </DataTrigger>
+                                                    </Style.Triggers>
+                                                </Style>
+                                            </TextBlock.Style>
+										</TextBlock>
 									</StackPanel>
 								</Grid>
-								<Slider x:Name="GpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100" Value="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsCustomFanEnabled}" IsSnapToTickEnabled="True" TickFrequency="1"/>
+								<Slider x:Name="GpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100" Value="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1"/>
 							</StackPanel>
 						</Border>
 					</StackPanel>

@@ -10,6 +10,8 @@ namespace Nitrous.Ui;
 
 public partial class NitrousDashboard : Window
 {
+    private bool _isDialogOpen = false;
+
     public NitrousDashboard()
     {
         InitializeComponent();
@@ -174,7 +176,7 @@ public partial class NitrousDashboard : Window
 
     private void Window_Deactivated(object sender, EventArgs e)
     {
-        if (this.Topmost) return;
+        if (this.Topmost || _isDialogOpen) return;
 
         this.WindowState = WindowState.Minimized;
     }
@@ -186,5 +188,37 @@ public partial class NitrousDashboard : Window
         SettingsManager.Save("WindowTop", (int)this.Top);
         SettingsManager.Save("WindowLeft", (int)this.Left);
         SettingsManager.Save("IsPinned", this.Topmost);
+    }
+
+    private void OpenCurveEditor_Click(object sender, RoutedEventArgs e)
+    {
+        var curveWindow = new FanCurveWindow((DashboardViewModel)DataContext)
+        {
+            Owner = this,
+            WindowStartupLocation = WindowStartupLocation.Manual
+        };
+
+        double currentLeft = double.IsNaN(this.Left) ? (SystemParameters.WorkArea.Width / 2) - (this.Width / 2) : this.Left;
+        double currentTop = double.IsNaN(this.Top) ? (SystemParameters.WorkArea.Height / 2) - (this.Height / 2) : this.Top;
+
+        double targetLeft = currentLeft - curveWindow.Width - 10;
+
+        if (targetLeft < 0)
+        {
+            targetLeft = currentLeft + this.Width + 10;
+        }
+
+        curveWindow.Left = targetLeft;
+        curveWindow.Top = currentTop;
+
+        try
+        {
+            _isDialogOpen = true;
+            curveWindow.ShowDialog();
+        }
+        finally
+        {
+            _isDialogOpen = false;
+        }
     }
 }

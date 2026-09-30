@@ -71,16 +71,10 @@ public static class AcerWmiManager
         if (profile == FanProfile.Auto)
         {
             await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", 0x41000Ful.ToString());
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", (1ul | (0ul << 8)).ToString());
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", (2ul | (0ul << 8)).ToString());
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", (4ul | (0ul << 8)).ToString());
         }
         else if (profile == FanProfile.Max)
         {
             await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", 0x82000Ful.ToString());
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", (1ul | (100ul << 8)).ToString());
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", (2ul | (100ul << 8)).ToString());
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", (4ul | (100ul << 8)).ToString());
         }
         else // Custom (Unified)
         {
@@ -117,8 +111,10 @@ public static class AcerWmiManager
                     // 2. CPU Fan Speed (Address: 0x0201)
                     cpuRpm = ReadAcerSensor(instance, 0x0201u, 0xFFFF);
 
-                    // 3. GPU Temperature (Address: 0x0A01 - Fixed to match ForcaNitro)
+                    // 3. GPU Temperature (Address: 0x0A01)
                     gpuTemp = ReadAcerSensor(instance, 0x0A01u, 0xFF);
+                    if (gpuTemp == 0) gpuTemp = ReadAcerSensor(instance, 0x0901u, 0xFF);
+                    if (gpuTemp == 0) gpuTemp = ReadAcerSensor(instance, 0x0B01u, 0xFF);
 
                     // 4. GPU Fan Speed (Address: 0x0601)
                     gpuRpm = ReadAcerSensor(instance, 0x0601u, 0xFFFF);

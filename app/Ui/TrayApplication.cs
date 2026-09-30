@@ -7,6 +7,7 @@ using Microsoft.Win32;
 using Nitrous.Enums;
 using Nitrous.Hooks;
 using Nitrous.Managers;
+using Nitrous.Helpers;
 
 namespace Nitrous.Ui;
 
@@ -17,6 +18,10 @@ public class TrayApplication : ApplicationContext
     private readonly NvidiaGpuManager _gpuManager = new();
     private bool? _wasOnAcPower = null;
     private int _powerEventId = 0;
+
+    private CancellationTokenSource _engineCts = new CancellationTokenSource();
+    private int _lastAppliedCpuSpeed = -1;
+    private int _lastAppliedGpuSpeed = -1;
 
     public TrayApplication()
     {
@@ -43,6 +48,8 @@ public class TrayApplication : ApplicationContext
             var bootProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
             await _gpuManager.ApplyOnBootAsync(bootProfile);
         });
+
+        StartBackgroundEngine();
     }
 
     private void BuildContextMenu()
@@ -132,8 +139,66 @@ public class TrayApplication : ApplicationContext
         _ = _gpuManager.ApplyPowerProfileOcAsync(currentProfile);
     }
 
+    private void StartBackgroundEngine()
+    {
+        Task.Run(async () =>
+        {
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+            while (!_engineCts.Token.IsCancellationRequested)
+            {
+                try
+                {
+                    // 1. Check if the user wants Custom Fan Mode and if the Curve is enabled
+                    string currentFanMode = SettingsManager.Get("LastFanMode", "Auto");
+                    bool isCurveEnabled = SettingsManager.Get("IsCurveModeEnabled", 0) == 1;
+
+                    if (currentFanMode == "Medium" && isCurveEnabled)
+                    {
+                        // 2. Fetch Telemetry
+                        var telemetry = AcerWmiManager.GetSystemTelemetry();
+
+                        int effectiveGpuTemp = telemetry.GpuTemp;
+                        bool deepTelemetry = SettingsManager.Get("DeepGpuTelemetry", 1) == 1;
+
+                        // Fallback to NVIDIA SMI if EC reports 0
+                        if (effectiveGpuTemp == 0 && deepTelemetry)
+                        {
+                            var smi = await NvidiaGpuManager.GetSmiTelemetryAsync(_engineCts.Token);
+                            if (smi != null && smi.CoreTemp > 0)
+                            {
+                                effectiveGpuTemp = smi.CoreTemp;
+                            }
+                        }
+
+                        // 3. Load curves from Registry
+                        var cpuCurve = FanCurveHelper.LoadCurveFromRegistry("CpuCurve", FanCurveHelper.DefaultCpuCurve);
+                        var gpuCurve = FanCurveHelper.LoadCurveFromRegistry("GpuCurve", FanCurveHelper.DefaultGpuCurve);
+
+                        // 4. Interpolate
+                        int targetCpuSpeed = FanCurveHelper.InterpolateSpeed(cpuCurve, telemetry.CpuTemp);
+                        int targetGpuSpeed = effectiveGpuTemp == 0
+                            ? targetCpuSpeed
+                            : FanCurveHelper.InterpolateSpeed(gpuCurve, effectiveGpuTemp);
+
+                        // 5. Fire WMI only if changed
+                        if (targetCpuSpeed != _lastAppliedCpuSpeed || targetGpuSpeed != _lastAppliedGpuSpeed)
+                        {
+                            _lastAppliedCpuSpeed = targetCpuSpeed;
+                            _lastAppliedGpuSpeed = targetGpuSpeed;
+                            await AcerWmiManager.SetCustomFansAsync(targetCpuSpeed, targetGpuSpeed);
+                        }
+                    }
+                }
+                catch { /* Absorb exceptions to keep background engine alive */ }
+
+                await timer.WaitForNextTickAsync(_engineCts.Token);
+            }
+        });
+    }
+
     private void Exit(object? sender, EventArgs e)
     {
+        _engineCts.Cancel();
         _nitroHook.Dispose();
         SystemEvents.PowerModeChanged -= OnPowerStateChanged;
         trayIcon.Visible = false;
