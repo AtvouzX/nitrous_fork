@@ -170,9 +170,12 @@ public class TrayApplication : ApplicationContext
                             }
                         }
 
-                        // 3. Load curves from Registry
-                        var cpuCurve = FanCurveHelper.LoadCurveFromRegistry("CpuCurve", FanCurveHelper.DefaultCpuCurve);
-                        var gpuCurve = FanCurveHelper.LoadCurveFromRegistry("GpuCurve", FanCurveHelper.DefaultGpuCurve);
+                        // 3. Load curves from Registry using the specific profile and fallback defaults
+                        var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+                        string pName = activeMode.ToString();
+
+                        var cpuCurve = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{pName}", FanCurveHelper.GetDefaultCpuCurve(activeMode));
+                        var gpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}", FanCurveHelper.GetDefaultGpuCurve(activeMode));
 
                         // 4. Interpolate
                         int targetCpuSpeed = FanCurveHelper.InterpolateSpeed(cpuCurve, telemetry.CpuTemp);

@@ -78,6 +78,13 @@ public class DashboardViewModel : ObservableObject
     private bool _isTurboSupported = true;
     public bool IsTurboSupported { get => _isTurboSupported; set => SetProperty(ref _isTurboSupported, value); }
 
+    private PowerProfile _activePowerProfile;
+    public PowerProfile ActivePowerProfile
+    {
+        get => _activePowerProfile;
+        set => SetProperty(ref _activePowerProfile, value);
+    }
+
     private bool _isCurveModeEnabled;
     public bool IsCurveModeEnabled
     {
@@ -144,11 +151,15 @@ public class DashboardViewModel : ObservableObject
             });
         });
 
+        ActivePowerProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+
         // Setup Commands
         SetPowerCommand = new RelayCommand(async param =>
         {
             if (Enum.TryParse(param?.ToString(), out PowerProfile mode))
             {
+                ActivePowerProfile = mode;
+
                 _ = AcerWmiManager.SetPowerModeAsync(mode);
                 SettingsManager.Save("LastPowerMode", (int)mode);
                 bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Online;

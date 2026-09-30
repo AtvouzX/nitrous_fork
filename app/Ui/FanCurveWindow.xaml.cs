@@ -8,6 +8,8 @@ using System.Windows.Media;
 using System.Windows.Shapes;
 using Nitrous.Helpers;
 using Nitrous.Managers;
+using Nitrous.Enums;
+using System.ComponentModel;
 
 using Point = System.Windows.Point;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
@@ -16,228 +18,258 @@ using ColorConverter = System.Windows.Media.ColorConverter;
 using Cursors = System.Windows.Input.Cursors;
 using Panel = System.Windows.Controls.Panel;
 
-namespace Nitrous.Ui
+namespace Nitrous.Ui;
+
+public partial class FanCurveWindow : Window
 {
-    public partial class FanCurveWindow : Window
+    private readonly DashboardViewModel _viewModel;
+    private List<Point> _cpuPoints = new();
+    private List<Point> _gpuPoints = new();
+    private List<Point> ActivePoints => TabCpu.IsChecked == true ? _cpuPoints : _gpuPoints;
+
+    private readonly List<UIElement> _pointHandles = new();
+    private int _draggingIndex = -1;
+
+    private const double MinTemp = 30.0;
+    private const double MaxTemp = 100.0;
+    private const double MinSpeed = 0.0;
+    private const double MaxSpeed = 100.0;
+
+    public FanCurveWindow(DashboardViewModel viewModel)
     {
-        private readonly DashboardViewModel _viewModel;
-        private List<Point> _cpuPoints;
-        private List<Point> _gpuPoints;
-        private List<Point> ActivePoints => TabCpu.IsChecked == true ? _cpuPoints : _gpuPoints;
+        InitializeComponent();
+        _viewModel = viewModel;
+        DataContext = _viewModel;
 
-        private readonly List<UIElement> _pointHandles = new();
-        private int _draggingIndex = -1;
+        // Listen for Power Profile changes from the Dashboard
+        _viewModel.PropertyChanged += ViewModel_PropertyChanged;
 
-        private const double MinTemp = 30.0;
-        private const double MaxTemp = 100.0;
-        private const double MinSpeed = 0.0;
-        private const double MaxSpeed = 100.0;
+        // Load initial curves based on the currently active profile
+        LoadCurvesForProfile(_viewModel.ActivePowerProfile);
 
-        public FanCurveWindow(DashboardViewModel viewModel)
+        this.Loaded += (s, e) => RedrawGraph();
+    }
+
+    private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
+    {
+        // If the user clicks a power profile on the Dashboard, swap the curves in real-time
+        if (e.PropertyName == nameof(DashboardViewModel.ActivePowerProfile))
         {
-            InitializeComponent();
-            _viewModel = viewModel;
-            DataContext = _viewModel;
+            LoadCurvesForProfile(_viewModel.ActivePowerProfile);
+        }
+    }
 
-            _cpuPoints = FanCurveHelper.LoadCurveFromRegistry("CpuCurve", FanCurveHelper.DefaultCpuCurve);
-            _gpuPoints = FanCurveHelper.LoadCurveFromRegistry("GpuCurve", FanCurveHelper.DefaultGpuCurve);
+    private void LoadCurvesForProfile(PowerProfile profile)
+    {
+        string suffix = profile.ToString();
 
-            this.Loaded += (s, e) => RedrawGraph();
+        // Load saved registry curve, OR fallback to our new distinct defaults if not customized yet
+        _cpuPoints = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{suffix}", FanCurveHelper.GetDefaultCpuCurve(profile));
+        _gpuPoints = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{suffix}", FanCurveHelper.GetDefaultGpuCurve(profile));
+
+        if (this.IsLoaded) RedrawGraph();
+    }
+
+    private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (e.ChangedButton == MouseButton.Left) DragMove();
+    }
+
+    private void CloseBtn_Click(object sender, RoutedEventArgs e) => Close();
+
+    private void Tab_Checked(object sender, RoutedEventArgs e)
+    {
+        if (GraphCanvas != null) RedrawGraph();
+    }
+
+    private void ResetBtn_Click(object sender, RoutedEventArgs e)
+    {
+        if (TabCpu.IsChecked == true)
+            _cpuPoints = new List<Point>(FanCurveHelper.GetDefaultCpuCurve(_viewModel.ActivePowerProfile));
+        else
+            _gpuPoints = new List<Point>(FanCurveHelper.GetDefaultGpuCurve(_viewModel.ActivePowerProfile));
+
+        RedrawGraph();
+    }
+
+    private void SaveBtn_Click(object sender, RoutedEventArgs e)
+    {
+        // Save to the specific profile that is currently active
+        string suffix = _viewModel.ActivePowerProfile.ToString();
+        FanCurveHelper.SaveCurveToRegistry($"CpuCurve_{suffix}", _cpuPoints);
+        FanCurveHelper.SaveCurveToRegistry($"GpuCurve_{suffix}", _gpuPoints);
+
+        SettingsManager.Save("LastFanMode", "Medium");
+        Close();
+    }
+
+    protected override void OnClosed(EventArgs e)
+    {
+        base.OnClosed(e);
+        _viewModel.PropertyChanged -= ViewModel_PropertyChanged;
+    }
+
+    private void RedrawGraph()
+    {
+        // Prevent execution if window is rendering early or lists aren't loaded yet
+        if (GraphCanvas.ActualWidth == 0 || GraphCanvas.ActualHeight == 0) return;
+        if (_cpuPoints == null || _gpuPoints == null) return;
+
+        // Sort lists in place to prevent horizontal dragging glitches
+        if (TabCpu.IsChecked == true)
+            _cpuPoints = _cpuPoints.OrderBy(p => p.X).ToList();
+        else
+            _gpuPoints = _gpuPoints.OrderBy(p => p.X).ToList();
+
+        foreach (var handle in _pointHandles) GraphCanvas.Children.Remove(handle);
+        _pointHandles.Clear();
+
+        var points = ActivePoints;
+        var pointCollection = new PointCollection();
+
+        // 1. Extend flat line to the left edge if the first point > 30C
+        double firstPx = TempToX(points.First().X);
+        double firstPy = SpeedToY(points.First().Y);
+        if (firstPx > 0)
+        {
+            pointCollection.Add(new Point(0, firstPy));
         }
 
-        private void TitleBar_MouseDown(object sender, MouseButtonEventArgs e)
+        // 2. Draw actual curve points & styled SVG handles
+        for (int i = 0; i < points.Count; i++)
         {
-            if (e.ChangedButton == MouseButton.Left) DragMove();
-        }
+            double px = TempToX(points[i].X);
+            double py = SpeedToY(points[i].Y);
+            var canvasPt = new Point(px, py);
 
-        private void CloseBtn_Click(object sender, RoutedEventArgs e) => Close();
+            pointCollection.Add(canvasPt);
 
-        private void Tab_Checked(object sender, RoutedEventArgs e)
-        {
-            if (GraphCanvas != null) RedrawGraph();
-        }
-
-        private void ResetBtn_Click(object sender, RoutedEventArgs e)
-        {
-            if (TabCpu.IsChecked == true)
-                _cpuPoints = new List<Point>(FanCurveHelper.DefaultCpuCurve);
-            else
-                _gpuPoints = new List<Point>(FanCurveHelper.DefaultGpuCurve);
-
-            RedrawGraph();
-        }
-
-        private void SaveBtn_Click(object sender, RoutedEventArgs e)
-        {
-            FanCurveHelper.SaveCurveToRegistry("CpuCurve", _cpuPoints);
-            FanCurveHelper.SaveCurveToRegistry("GpuCurve", _gpuPoints);
-
-            SettingsManager.Save("LastFanMode", "Medium");
-            Close();
-        }
-
-        private void RedrawGraph()
-        {
-            // Prevent execution if window is rendering early or lists aren't loaded yet
-            if (GraphCanvas.ActualWidth == 0 || GraphCanvas.ActualHeight == 0) return;
-            if (_cpuPoints == null || _gpuPoints == null) return;
-
-            // Sort lists in place to prevent horizontal dragging glitches
-            if (TabCpu.IsChecked == true)
-                _cpuPoints = _cpuPoints.OrderBy(p => p.X).ToList();
-            else
-                _gpuPoints = _gpuPoints.OrderBy(p => p.X).ToList();
-
-            foreach (var handle in _pointHandles) GraphCanvas.Children.Remove(handle);
-            _pointHandles.Clear();
-
-            var points = ActivePoints;
-            var pointCollection = new PointCollection();
-
-            // 1. Extend flat line to the left edge if the first point > 30C
-            double firstPx = TempToX(points.First().X);
-            double firstPy = SpeedToY(points.First().Y);
-            if (firstPx > 0)
+            // Create the outer stroke ring
+            var outerRing = new Ellipse
             {
-                pointCollection.Add(new Point(0, firstPy));
-            }
+                Width = 18,
+                Height = 18,
+                Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0c1018")),
+                Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a855f7")),
+                StrokeThickness = 2.5,
+                Cursor = Cursors.Hand,
+                Tag = i
+            };
 
-            // 2. Draw actual curve points & styled SVG handles
-            for (int i = 0; i < points.Count; i++)
+            // Create the inner solid dot
+            var innerDot = new Ellipse
             {
-                double px = TempToX(points[i].X);
-                double py = SpeedToY(points[i].Y);
-                var canvasPt = new Point(px, py);
+                Width = 6,
+                Height = 6,
+                Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a855f7")),
+                IsHitTestVisible = false // Let the outer ring handle clicks
+            };
 
-                pointCollection.Add(canvasPt);
+            Canvas.SetLeft(outerRing, px - 9);
+            Canvas.SetTop(outerRing, py - 9);
 
-                // Create the outer stroke ring
-                var outerRing = new Ellipse
-                {
-                    Width = 18,
-                    Height = 18,
-                    Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0c1018")),
-                    Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a855f7")),
-                    StrokeThickness = 2.5,
-                    Cursor = Cursors.Hand,
-                    Tag = i
-                };
+            Canvas.SetLeft(innerDot, px - 3);
+            Canvas.SetTop(innerDot, py - 3);
 
-                // Create the inner solid dot
-                var innerDot = new Ellipse
-                {
-                    Width = 6,
-                    Height = 6,
-                    Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a855f7")),
-                    IsHitTestVisible = false // Let the outer ring handle clicks
-                };
+            outerRing.MouseLeftButtonDown += Handle_MouseDown;
 
-                Canvas.SetLeft(outerRing, px - 9);
-                Canvas.SetTop(outerRing, py - 9);
+            _pointHandles.Add(outerRing);
+            _pointHandles.Add(innerDot);
 
-                Canvas.SetLeft(innerDot, px - 3);
-                Canvas.SetTop(innerDot, py - 3);
-
-                outerRing.MouseLeftButtonDown += Handle_MouseDown;
-
-                _pointHandles.Add(outerRing);
-                _pointHandles.Add(innerDot);
-
-                GraphCanvas.Children.Add(outerRing);
-                GraphCanvas.Children.Add(innerDot);
-            }
-
-            // 3. Extend flat line to the right edge if last point < 100C
-            double lastPx = TempToX(points.Last().X);
-            double lastPy = SpeedToY(points.Last().Y);
-            if (lastPx < GraphCanvas.ActualWidth)
-            {
-                pointCollection.Add(new Point(GraphCanvas.ActualWidth, lastPy));
-            }
-
-            CurveLine.Points = pointCollection;
-
-            // Ensure tooltip stays on top of drawn lines and nodes
-            Panel.SetZIndex(NodeTooltip, 999);
+            GraphCanvas.Children.Add(outerRing);
+            GraphCanvas.Children.Add(innerDot);
         }
 
-        private void Handle_MouseDown(object sender, MouseButtonEventArgs e)
+        // 3. Extend flat line to the right edge if last point < 100C
+        double lastPx = TempToX(points.Last().X);
+        double lastPy = SpeedToY(points.Last().Y);
+        if (lastPx < GraphCanvas.ActualWidth)
         {
-            if (sender is Ellipse handle && handle.Tag is int index)
-            {
-                _draggingIndex = index;
-                NodeTooltip.Visibility = Visibility.Visible;
-                Mouse.Capture(GraphCanvas);
-                UpdateTooltipPosition();
-            }
+            pointCollection.Add(new Point(GraphCanvas.ActualWidth, lastPy));
         }
 
-        private void GraphCanvas_MouseMove(object sender, MouseEventArgs e)
+        CurveLine.Points = pointCollection;
+
+        // Ensure tooltip stays on top of drawn lines and nodes
+        Panel.SetZIndex(NodeTooltip, 999);
+    }
+
+    private void Handle_MouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is Ellipse handle && handle.Tag is int index)
         {
-            if (_draggingIndex == -1) return;
-
-            var pos = e.GetPosition(GraphCanvas);
-            double newTemp = XToTemp(pos.X);
-            double newSpeed = YToSpeed(pos.Y);
-
-            newSpeed = Math.Max(MinSpeed, Math.Min(MaxSpeed, newSpeed));
-
-            // 1. Apply Snap to Grid logic (Rounds to nearest 5)
-            if (TogSnapToGrid.IsChecked == true)
-            {
-                newTemp = Math.Round(newTemp / 5.0) * 5.0;
-                newSpeed = Math.Round(newSpeed / 5.0) * 5.0;
-            }
-
-            // 2. Constrain X (Temperature) dynamically based on neighbors
-            // Ensure nodes can never overlap. If snapping is on, enforce a 5-degree gap, otherwise 2-degree.
-            double minGap = TogSnapToGrid.IsChecked == true ? 5.0 : 2.0;
-
-            double prevTemp = _draggingIndex > 0 ? ActivePoints[_draggingIndex - 1].X + minGap : MinTemp;
-            double nextTemp = _draggingIndex < ActivePoints.Count - 1 ? ActivePoints[_draggingIndex + 1].X - minGap : MaxTemp;
-
-            newTemp = Math.Max(prevTemp, Math.Min(nextTemp, newTemp));
-
-            ActivePoints[_draggingIndex] = new Point(newTemp, newSpeed);
-
-            RedrawGraph();
+            _draggingIndex = index;
+            NodeTooltip.Visibility = Visibility.Visible;
+            Mouse.Capture(GraphCanvas);
             UpdateTooltipPosition();
         }
-
-        private void GraphCanvas_MouseUp(object sender, MouseButtonEventArgs e)
-        {
-            _draggingIndex = -1;
-            NodeTooltip.Visibility = Visibility.Hidden;
-            Mouse.Capture(null);
-        }
-
-        private void GraphCanvas_MouseLeave(object sender, MouseEventArgs e)
-        {
-            _draggingIndex = -1;
-            NodeTooltip.Visibility = Visibility.Hidden;
-            Mouse.Capture(null);
-        }
-
-        private void UpdateTooltipPosition()
-        {
-            if (_draggingIndex == -1) return;
-
-            var pt = ActivePoints[_draggingIndex];
-            double px = TempToX(pt.X);
-            double py = SpeedToY(pt.Y);
-
-            TooltipText.Text = $"{(int)pt.X}°C · {(int)pt.Y}%";
-
-            // Center the tooltip horizontally above the node
-            Canvas.SetLeft(NodeTooltip, px - (NodeTooltip.ActualWidth / 2));
-            Canvas.SetTop(NodeTooltip, py - 45); // Offset vertically
-        }
-
-        // --- Coordinate Math Helpers ---
-        private double TempToX(double temp) => ((temp - MinTemp) / (MaxTemp - MinTemp)) * GraphCanvas.ActualWidth;
-        private double XToTemp(double x) => (x / GraphCanvas.ActualWidth) * (MaxTemp - MinTemp) + MinTemp;
-
-        private double SpeedToY(double speed) => GraphCanvas.ActualHeight - (((speed - MinSpeed) / (MaxSpeed - MinSpeed)) * GraphCanvas.ActualHeight);
-        private double YToSpeed(double y) => ((GraphCanvas.ActualHeight - y) / GraphCanvas.ActualHeight) * (MaxSpeed - MinSpeed) + MinSpeed;
     }
+
+    private void GraphCanvas_MouseMove(object sender, MouseEventArgs e)
+    {
+        if (_draggingIndex == -1) return;
+
+        var pos = e.GetPosition(GraphCanvas);
+        double newTemp = XToTemp(pos.X);
+        double newSpeed = YToSpeed(pos.Y);
+
+        newSpeed = Math.Max(MinSpeed, Math.Min(MaxSpeed, newSpeed));
+
+        // 1. Apply Snap to Grid logic (Rounds to nearest 5)
+        if (TogSnapToGrid.IsChecked == true)
+        {
+            newTemp = Math.Round(newTemp / 5.0) * 5.0;
+            newSpeed = Math.Round(newSpeed / 5.0) * 5.0;
+        }
+
+        // 2. Constrain X (Temperature) dynamically based on neighbors
+        // Ensure nodes can never overlap. If snapping is on, enforce a 5-degree gap, otherwise 2-degree.
+        double minGap = TogSnapToGrid.IsChecked == true ? 5.0 : 2.0;
+
+        double prevTemp = _draggingIndex > 0 ? ActivePoints[_draggingIndex - 1].X + minGap : MinTemp;
+        double nextTemp = _draggingIndex < ActivePoints.Count - 1 ? ActivePoints[_draggingIndex + 1].X - minGap : MaxTemp;
+
+        newTemp = Math.Max(prevTemp, Math.Min(nextTemp, newTemp));
+
+        ActivePoints[_draggingIndex] = new Point(newTemp, newSpeed);
+
+        RedrawGraph();
+        UpdateTooltipPosition();
+    }
+
+    private void GraphCanvas_MouseUp(object sender, MouseButtonEventArgs e)
+    {
+        _draggingIndex = -1;
+        NodeTooltip.Visibility = Visibility.Hidden;
+        Mouse.Capture(null);
+    }
+
+    private void GraphCanvas_MouseLeave(object sender, MouseEventArgs e)
+    {
+        _draggingIndex = -1;
+        NodeTooltip.Visibility = Visibility.Hidden;
+        Mouse.Capture(null);
+    }
+
+    private void UpdateTooltipPosition()
+    {
+        if (_draggingIndex == -1) return;
+
+        var pt = ActivePoints[_draggingIndex];
+        double px = TempToX(pt.X);
+        double py = SpeedToY(pt.Y);
+
+        TooltipText.Text = $"{(int)pt.X}°C · {(int)pt.Y}%";
+
+        // Center the tooltip horizontally above the node
+        Canvas.SetLeft(NodeTooltip, px - (NodeTooltip.ActualWidth / 2));
+        Canvas.SetTop(NodeTooltip, py - 45); // Offset vertically
+    }
+
+    // --- Coordinate Math Helpers ---
+    private double TempToX(double temp) => ((temp - MinTemp) / (MaxTemp - MinTemp)) * GraphCanvas.ActualWidth;
+    private double XToTemp(double x) => (x / GraphCanvas.ActualWidth) * (MaxTemp - MinTemp) + MinTemp;
+
+    private double SpeedToY(double speed) => GraphCanvas.ActualHeight - (((speed - MinSpeed) / (MaxSpeed - MinSpeed)) * GraphCanvas.ActualHeight);
+    private double YToSpeed(double y) => ((GraphCanvas.ActualHeight - y) / GraphCanvas.ActualHeight) * (MaxSpeed - MinSpeed) + MinSpeed;
 }

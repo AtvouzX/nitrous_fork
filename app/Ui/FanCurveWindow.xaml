@@ -1,7 +1,7 @@
 <Window x:Class="Nitrous.Ui.FanCurveWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Custom Fan Curve" Height="680" Width="880"
+        Title="Custom Fan Curve" Height="660" Width="880"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         TextOptions.TextFormattingMode="Display"
         RenderOptions.ClearTypeHint="Enabled">

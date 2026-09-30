@@ -3,21 +3,35 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Windows;
 using Nitrous.Managers;
+using Nitrous.Enums;
+
 using Point = System.Windows.Point;
 
 namespace Nitrous.Helpers;
 
 public static class FanCurveHelper
 {
-    public static readonly List<Point> DefaultCpuCurve = new()
+    public static List<Point> GetDefaultCpuCurve(PowerProfile profile)
     {
-        new Point(40, 20), new Point(55, 35), new Point(70, 55), new Point(82, 80), new Point(90, 100)
-    };
+        return profile switch
+        {
+            PowerProfile.Quiet => new List<Point> { new(30, 20), new(50, 30), new(70, 45), new(85, 60), new(100, 70) },
+            PowerProfile.Performance => new List<Point> { new(30, 40), new(45, 50), new(60, 70), new(80, 90), new(100, 100) },
+            PowerProfile.Turbo => new List<Point> { new(30, 50), new(45, 65), new(60, 80), new(75, 100), new(100, 100) },
+            _ => new List<Point> { new(30, 20), new(45, 35), new(60, 50), new(75, 70), new(100, 100) } // Balanced
+        };
+    }
 
-    public static readonly List<Point> DefaultGpuCurve = new()
+    public static List<Point> GetDefaultGpuCurve(PowerProfile profile)
     {
-        new Point(40, 20), new Point(55, 35), new Point(70, 55), new Point(80, 80), new Point(88, 100)
-    };
+        return profile switch
+        {
+            PowerProfile.Quiet => new List<Point> { new(30, 20), new(50, 35), new(70, 50), new(85, 65), new(100, 75) },
+            PowerProfile.Performance => new List<Point> { new(30, 40), new(45, 55), new(60, 75), new(80, 95), new(100, 100) },
+            PowerProfile.Turbo => new List<Point> { new(30, 50), new(45, 70), new(60, 85), new(75, 100), new(100, 100) },
+            _ => new List<Point> { new(30, 20), new(45, 40), new(60, 55), new(75, 75), new(100, 100) } // Balanced
+        };
+    }
 
     public static int InterpolateSpeed(List<Point> curve, int currentTemp)
     {
