@@ -95,11 +95,19 @@ public class DashboardViewModel : ObservableObject, IDisposable
             {
                 SettingsManager.Save("IsCurveModeEnabled", value ? 1 : 0);
                 OnPropertyChanged(nameof(IsManualSliderEnabled));
+                OnPropertyChanged(nameof(FanModeSubtext));
+                OnPropertyChanged(nameof(FanModeSubtextColor));
+                OnPropertyChanged(nameof(SliderDisabledTooltip));
             }
         }
     }
 
     public bool IsManualSliderEnabled => IsCustomFanEnabled && !IsCurveModeEnabled;
+    public string FanModeSubtext => IsCurveModeEnabled ? "CURVE ACTIVE" : "MANUAL (FIXED)";
+    public string FanModeSubtextColor => IsCurveModeEnabled ? "#34C759" : "#B388FF";
+    public string SliderDisabledTooltip => IsCurveModeEnabled
+        ? "Manual sliders are disabled while Fan Curve is active. Adjust your curve in CURVE EDITOR."
+        : "Adjust fixed fan percentage";
 
     public DashboardViewModel()
     {

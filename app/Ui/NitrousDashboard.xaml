@@ -417,24 +417,29 @@
 						<Border Background="#1C1C1F" CornerRadius="8" BorderBrush="#2A2A30" BorderThickness="1" Padding="12,12,12,16">
 							<StackPanel>
 								<Grid Margin="0,0,0,12">
-                                    <TextBlock Text="CUSTOM FAN SPEED" Foreground="#888890" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
-                                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                                        <!-- Button to open Fan Curve Editor Window -->
-                                        <Button Content="CURVE EDITOR"
-                                                Click="OpenCurveEditor_Click"
-                                                Style="{StaticResource GhostBtn}"
-                                                FontSize="9"
-                                                Padding="6,2"
-                                                Margin="0,0,8,0"
-                                                IsEnabled="{Binding IsCustomFanEnabled}"/>
+									<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+										<TextBlock Text="CUSTOM FAN SPEED" Foreground="#888890" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
+										<Border CornerRadius="4" Background="#222226" Padding="6,2" VerticalAlignment="Center">
+											<TextBlock Text="{Binding FanModeSubtext}" Foreground="{Binding FanModeSubtextColor}" FontSize="8" FontWeight="Bold"/>
+										</Border>
+									</StackPanel>
+									<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+										<!-- Button to open Fan Curve Editor Window -->
+										<Button Content="CURVE EDITOR"
+												Click="OpenCurveEditor_Click"
+												Style="{StaticResource GhostBtn}"
+												FontSize="9"
+												Padding="6,2"
+												Margin="0,0,8,0"
+												IsEnabled="{Binding IsCustomFanEnabled}"/>
 
-                                        <CheckBox x:Name="TogUnifiedFans"
-                                                Content="UNIFIED"
-                                                Style="{StaticResource SquareCheckBoxStyle}"
-                                                IsChecked="{Binding IsUnifiedFans, UpdateSourceTrigger=PropertyChanged}"
-                                                IsEnabled="{Binding IsManualSliderEnabled}"/>
-                                    </StackPanel>
-                                </Grid>
+										<CheckBox x:Name="TogUnifiedFans"
+												Content="UNIFIED"
+												Style="{StaticResource SquareCheckBoxStyle}"
+												IsChecked="{Binding IsUnifiedFans, UpdateSourceTrigger=PropertyChanged}"
+												IsEnabled="{Binding IsManualSliderEnabled}"/>
+									</StackPanel>
+								</Grid>
 								<!-- CPU Slider -->
 								<Grid Margin="0,0,0,4">
 									<TextBlock Text="CPU Fan Speed" Foreground="White" FontSize="11" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
@@ -454,7 +459,7 @@
 										</TextBlock>
 									</StackPanel>
 								</Grid>
-								<Slider x:Name="CpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100" Value="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1" Margin="0,0,0,12"/>
+								<Slider x:Name="CpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100" Value="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1" ToolTip="{Binding SliderDisabledTooltip}" Margin="0,0,0,12"/>
 								<!-- GPU Slider -->
 								<Grid Margin="0,0,0,4">
 									<TextBlock Text="GPU Fan Speed" Foreground="White" FontSize="11" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
@@ -474,7 +479,7 @@
 										</TextBlock>
 									</StackPanel>
 								</Grid>
-								<Slider x:Name="GpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100" Value="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1"/>
+								<Slider x:Name="GpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100" Value="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1" ToolTip="{Binding SliderDisabledTooltip}"/>
 							</StackPanel>
 						</Border>
 					</StackPanel>

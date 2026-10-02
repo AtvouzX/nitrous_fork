@@ -14,8 +14,6 @@ static class Program
     [STAThread]
     static void Main(string[] args)
     {
-        RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
-
         // TRANSIENT UI MODE: Run the dashboard in its own temporary process
         if (args.Length > 0 && args[0] == "--ui")
         {

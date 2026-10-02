@@ -54,11 +54,80 @@ public class TrayApplication : ApplicationContext
 
     private void BuildContextMenu()
     {
-        var menu = new ContextMenuStrip { ShowImageMargin = false, ShowCheckMargin = false };
-        menu.Items.Add("Open Nitrous", null, (s, e) => ShowDashboard());
+        var menu = new ContextMenuStrip { ShowImageMargin = false, ShowCheckMargin = true };
+
+        var openItem = new ToolStripMenuItem("Open Nitrous", null, (s, e) => ShowDashboard())
+        {
+            Font = new Font(Control.DefaultFont, FontStyle.Bold)
+        };
+        menu.Items.Add(openItem);
+        menu.Items.Add(new ToolStripSeparator());
+
+        // Power Profiles Submenu
+        var powerMenu = new ToolStripMenuItem("Power Profile");
+        var activePower = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+
+        void AddPowerItem(string name, PowerProfile profile)
+        {
+            var item = new ToolStripMenuItem(name, null, async (s, e) =>
+            {
+                await AcerWmiManager.SetPowerModeAsync(profile);
+                SettingsManager.Save("LastPowerMode", (int)profile);
+                bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
+                SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)profile);
+                await _gpuManager.ApplyPowerProfileOcAsync(profile);
+                BuildContextMenu();
+            }) { Checked = activePower == profile };
+            powerMenu.DropDownItems.Add(item);
+        }
+
+        AddPowerItem("Quiet", PowerProfile.Quiet);
+        AddPowerItem("Balanced", PowerProfile.Balanced);
+        AddPowerItem("Performance", PowerProfile.Performance);
+        if (AcerWmiManager.IsTurboModeSupported())
+        {
+            AddPowerItem("Turbo", PowerProfile.Turbo);
+        }
+
+        menu.Items.Add(powerMenu);
+
+        // Fan Profiles Submenu
+        var fanMenu = new ToolStripMenuItem("Fan Profile");
+        string fanModeStr = SettingsManager.Get("LastFanMode", "Auto");
+        var activeFan = Enum.TryParse(fanModeStr, out FanProfile f) ? f : FanProfile.Auto;
+
+        void AddFanItem(string name, FanProfile profile, bool isChecked)
+        {
+            var item = new ToolStripMenuItem(name, null, async (s, e) =>
+            {
+                if (profile == FanProfile.Medium)
+                {
+                    await AcerWmiManager.SetCustomFansAsync(
+                        SettingsManager.Get("CustomFanSpeedCpu", 50),
+                        SettingsManager.Get("CustomFanSpeedGpu", 50));
+                }
+                else
+                {
+                    await AcerWmiManager.SetFansAsync(profile);
+                }
+                SettingsManager.Save("LastFanMode", profile.ToString());
+                bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
+                SettingsManager.Save(isOnline ? "LastAcFanMode" : "LastDcFanMode", profile.ToString());
+                BuildContextMenu();
+            }) { Checked = isChecked };
+            fanMenu.DropDownItems.Add(item);
+        }
+
+        AddFanItem("Auto", FanProfile.Auto, activeFan == FanProfile.Auto);
+        AddFanItem("Max", FanProfile.Max, activeFan == FanProfile.Max);
+        AddFanItem("Custom", FanProfile.Medium, activeFan == FanProfile.Medium);
+        menu.Items.Add(fanMenu);
+
+        menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Check for Updates...", null, async (s, e) => await UpdateManager.CheckForUpdatesAsync(false, () => Exit(null, EventArgs.Empty)));
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Exit", null, Exit);
+
         trayIcon.ContextMenuStrip = menu;
     }
 
@@ -152,6 +221,9 @@ public class TrayApplication : ApplicationContext
     private PowerProfile? _cachedProfile;
     private System.Collections.Generic.List<System.Windows.Point>? _cachedCpuCurve;
     private System.Collections.Generic.List<System.Windows.Point>? _cachedGpuCurve;
+    private int _cpuDownstepHoldTicks;
+    private int _gpuDownstepHoldTicks;
+    private const int HysteresisHoldCycles = 2; // 2 cycles * 2s = 4s delay before stepping down
 
     private void StartBackgroundEngine()
     {
@@ -162,19 +234,21 @@ public class TrayApplication : ApplicationContext
             {
                 try
                 {
-                    // 1. Check if the user wants Custom Fan Mode and if the Curve is enabled
+                    // 1. Fetch live telemetry for hover tooltip & fan curve
+                    var telemetry = AcerWmiManager.GetSystemTelemetry();
+                    int effectiveGpuTemp = telemetry.GpuTemp;
+
+                    // Update tray hover tooltip safely (<= 63 characters limit in WinForms NotifyIcon)
+                    string gpuTip = effectiveGpuTemp > 0 ? $"{effectiveGpuTemp}°C" : "Sleep";
+                    string tipText = $"Nitrous | CPU: {telemetry.CpuTemp}°C  GPU: {gpuTip}";
+                    trayIcon.Text = tipText.Length > 63 ? tipText[..63] : tipText;
+
+                    // 2. Check if the user wants Custom Fan Mode and if the Curve is enabled
                     string currentFanMode = SettingsManager.Get("LastFanMode", "Auto");
                     bool isCurveEnabled = SettingsManager.Get("IsCurveModeEnabled", 0) == 1;
 
                     if (currentFanMode == "Medium" && isCurveEnabled)
                     {
-                        // 2. Fetch Telemetry
-                        var telemetry = AcerWmiManager.GetSystemTelemetry();
-
-                        // If EC reports 0, the discrete GPU is in D3Cold sleep state.
-                        // Do NOT poll nvidia-smi in the tray background loop, as that forces the dGPU to wake up and destroys battery life.
-                        int effectiveGpuTemp = telemetry.GpuTemp;
-
                         // 3. Load curves from cache or Registry if profile changed
                         var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
                         if (_cachedCpuCurve == null || _cachedGpuCurve == null || _cachedProfile != activeMode)
@@ -185,18 +259,53 @@ public class TrayApplication : ApplicationContext
                             _cachedGpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}", FanCurveHelper.GetDefaultGpuCurve(activeMode));
                         }
 
-                        // 4. Interpolate without allocating lists
+                        // 4. Interpolate raw target speeds
                         int targetCpuSpeed = FanCurveHelper.InterpolateSpeed(_cachedCpuCurve, telemetry.CpuTemp);
                         int targetGpuSpeed = effectiveGpuTemp == 0
                             ? targetCpuSpeed
                             : FanCurveHelper.InterpolateSpeed(_cachedGpuCurve, effectiveGpuTemp);
 
-                        // 5. Fire WMI only if changed
-                        if (targetCpuSpeed != _lastAppliedCpuSpeed || targetGpuSpeed != _lastAppliedGpuSpeed)
+                        // 5. Apply Hysteresis (Anti-Revving):
+                        // Ramp-up: Immediate (protects hardware)
+                        // Ramp-down: Hold for HysteresisHoldCycles (4s) before stepping down
+                        int appliedCpuSpeed = _lastAppliedCpuSpeed;
+                        if (_lastAppliedCpuSpeed == -1 || targetCpuSpeed >= _lastAppliedCpuSpeed)
                         {
-                            _lastAppliedCpuSpeed = targetCpuSpeed;
-                            _lastAppliedGpuSpeed = targetGpuSpeed;
-                            await AcerWmiManager.SetCustomFansAsync(targetCpuSpeed, targetGpuSpeed);
+                            appliedCpuSpeed = targetCpuSpeed;
+                            _cpuDownstepHoldTicks = 0;
+                        }
+                        else
+                        {
+                            _cpuDownstepHoldTicks++;
+                            if (_cpuDownstepHoldTicks >= HysteresisHoldCycles)
+                            {
+                                appliedCpuSpeed = targetCpuSpeed;
+                                _cpuDownstepHoldTicks = 0;
+                            }
+                        }
+
+                        int appliedGpuSpeed = _lastAppliedGpuSpeed;
+                        if (_lastAppliedGpuSpeed == -1 || targetGpuSpeed >= _lastAppliedGpuSpeed)
+                        {
+                            appliedGpuSpeed = targetGpuSpeed;
+                            _gpuDownstepHoldTicks = 0;
+                        }
+                        else
+                        {
+                            _gpuDownstepHoldTicks++;
+                            if (_gpuDownstepHoldTicks >= HysteresisHoldCycles)
+                            {
+                                appliedGpuSpeed = targetGpuSpeed;
+                                _gpuDownstepHoldTicks = 0;
+                            }
+                        }
+
+                        // 6. Fire WMI only if changed
+                        if (appliedCpuSpeed != _lastAppliedCpuSpeed || appliedGpuSpeed != _lastAppliedGpuSpeed)
+                        {
+                            _lastAppliedCpuSpeed = appliedCpuSpeed;
+                            _lastAppliedGpuSpeed = appliedGpuSpeed;
+                            await AcerWmiManager.SetCustomFansAsync(appliedCpuSpeed, appliedGpuSpeed);
                         }
                     }
                 }
