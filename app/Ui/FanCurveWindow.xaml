@@ -250,17 +250,35 @@
                         <TextBlock Text="Tip: Drag any waypoint circle to adjust temperature thresholds." Foreground="#64748b" FontSize="11.5" VerticalAlignment="Center"/>
 
                         <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="Reset to Defaults" Click="ResetBtn_Click" Foreground="#a855f7" Background="Transparent" BorderThickness="0" FontSize="12" FontWeight="Bold" Cursor="Hand" Margin="0,0,25,0"/>
+                            <Button Content="Reset to Defaults" Click="ResetBtn_Click" Foreground="#a855f7" Cursor="Hand" Margin="0,0,15,0">
+                                <Button.Template>
+                                    <ControlTemplate TargetType="Button">
+                                        <Border x:Name="Bg" Background="Transparent" CornerRadius="6" Padding="10,6">
+                                            <TextBlock Text="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" FontSize="12" FontWeight="Bold" VerticalAlignment="Center"/>
+                                        </Border>
+                                        <ControlTemplate.Triggers>
+                                            <Trigger Property="IsMouseOver" Value="True">
+                                                <Setter TargetName="Bg" Property="Background" Value="#1A1F2E"/>
+                                                <Setter Property="Foreground" Value="#c084fc"/>
+                                            </Trigger>
+                                        </ControlTemplate.Triggers>
+                                    </ControlTemplate>
+                                </Button.Template>
+                            </Button>
 
                             <Button Content="SAVE &amp; APPLY" Click="SaveBtn_Click" Foreground="#ffffff" FontSize="12" FontWeight="Heavy" Height="36" Width="140" Cursor="Hand">
                                 <Button.Template>
                                     <ControlTemplate TargetType="Button">
-                                        <Border x:Name="BgBorder" Background="#a855f7" CornerRadius="6">
-                                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                        <Border Background="#a855f7" CornerRadius="6">
+                                            <Grid>
+                                                <!-- Subtle 15% white overlay for a premium hover effect -->
+                                                <Border x:Name="HoverOverlay" Background="White" Opacity="0" CornerRadius="6"/>
+                                                <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"/>
+                                            </Grid>
                                         </Border>
                                         <ControlTemplate.Triggers>
                                             <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="BgBorder" Property="Background" Value="#c084fc"/>
+                                                <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.15"/>
                                             </Trigger>
                                         </ControlTemplate.Triggers>
                                     </ControlTemplate>
