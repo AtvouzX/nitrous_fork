@@ -1,0 +1,58 @@
+name: Build & Release
+
+on:
+  push:
+    branches: [ master ]
+    tags:
+      - 'v*'
+  pull_request:
+    branches: [ master ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: Build & Package
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup .NET SDK
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '10.0.x'
+
+      - name: Restore Dependencies
+        run: dotnet restore app/Nitrous.csproj
+
+      - name: Build Solution
+        run: dotnet build app/Nitrous.csproj -c Release --no-restore
+
+      - name: Publish Single-File Executable
+        run: >
+          dotnet publish app/Nitrous.csproj
+          -c Release
+          -r win-x64
+          --no-self-contained
+          -p:PublishSingleFile=true
+          -p:IncludeNativeLibrariesForSelfExtract=true
+          -o publish
+
+      - name: Upload Build Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nitrous-win-x64
+          path: publish/Nitrous.exe
+
+      - name: Create GitHub Release
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: publish/Nitrous.exe
+          generate_release_notes: true
+          draft: false
+          prerelease: false
