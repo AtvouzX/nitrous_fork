@@ -33,32 +33,32 @@ public static class FanCurveHelper
         };
     }
 
-    public static int InterpolateSpeed(List<Point> curve, int currentTemp)
+    public static int InterpolateSpeed(IReadOnlyList<Point>? curve, int currentTemp)
     {
         if (curve == null || curve.Count == 0) return 50;
 
-        var sorted = curve.OrderBy(p => p.X).ToList();
-        if (currentTemp <= sorted[0].X) return (int)sorted[0].Y;
-        if (currentTemp >= sorted[^1].X) return (int)sorted[^1].Y;
+        if (currentTemp <= curve[0].X) return (int)curve[0].Y;
+        if (currentTemp >= curve[^1].X) return (int)curve[^1].Y;
 
-        for (int i = 0; i < sorted.Count - 1; i++)
+        for (int i = 0; i < curve.Count - 1; i++)
         {
-            if (currentTemp >= sorted[i].X && currentTemp <= sorted[i + 1].X)
+            if (currentTemp >= curve[i].X && currentTemp <= curve[i + 1].X)
             {
-                double span = sorted[i + 1].X - sorted[i].X;
-                if (span == 0) return (int)sorted[i].Y;
+                double span = curve[i + 1].X - curve[i].X;
+                if (span == 0) return (int)curve[i].Y;
 
-                double t = (currentTemp - sorted[i].X) / span;
-                return (int)Math.Round(sorted[i].Y + t * (sorted[i + 1].Y - sorted[i].Y));
+                double t = (currentTemp - curve[i].X) / span;
+                return (int)Math.Round(curve[i].Y + t * (curve[i + 1].Y - curve[i].Y));
             }
         }
-        return (int)sorted[^1].Y;
+        return (int)curve[^1].Y;
     }
 
     public static void SaveCurveToRegistry(string keyName, List<Point> points)
     {
-        // Convert points to a semicolon-separated string: "X,Y;X,Y;X,Y"
-        string data = string.Join(";", points.Select(p => $"{(int)p.X},{(int)p.Y}"));
+        // Ensure points are sorted by temperature (X) before saving
+        var sorted = points.OrderBy(p => p.X);
+        string data = string.Join(";", sorted.Select(p => $"{(int)p.X},{(int)p.Y}"));
         SettingsManager.Save(keyName, data);
     }
 
@@ -78,7 +78,12 @@ public static class FanCurveHelper
                     pts.Add(new Point(x, y));
                 }
             }
-            return pts.Count >= 2 ? pts : new List<Point>(defaultCurve);
+            if (pts.Count >= 2)
+            {
+                pts.Sort((a, b) => a.X.CompareTo(b.X));
+                return pts;
+            }
+            return new List<Point>(defaultCurve);
         }
         catch
         {

@@ -70,24 +70,34 @@ public class TrayApplication : ApplicationContext
 
     private void ShowDashboard()
     {
-        string processName = Process.GetCurrentProcess().ProcessName;
-        int currentId = Process.GetCurrentProcess().Id;
+        using var currentProcess = Process.GetCurrentProcess();
+        string processName = currentProcess.ProcessName;
+        int currentId = currentProcess.Id;
 
         var processes = Process.GetProcessesByName(processName);
-
-        foreach (var p in processes)
+        try
         {
-            if (p.Id != currentId)
+            foreach (var p in processes)
             {
-                // Found the existing UI process. Restore and bring to front.
-                IntPtr hWnd = p.MainWindowHandle;
-                if (hWnd != IntPtr.Zero)
+                if (p.Id != currentId)
                 {
-                    const int SW_RESTORE = 9;
-                    ShowWindow(hWnd, SW_RESTORE);
-                    SetForegroundWindow(hWnd);
+                    // Found the existing UI process. Restore and bring to front.
+                    IntPtr hWnd = p.MainWindowHandle;
+                    if (hWnd != IntPtr.Zero)
+                    {
+                        const int SW_RESTORE = 9;
+                        ShowWindow(hWnd, SW_RESTORE);
+                        SetForegroundWindow(hWnd);
+                    }
+                    return; // Prevent spawning a new instance
                 }
-                return; // Prevent spawning a new instance
+            }
+        }
+        finally
+        {
+            foreach (var p in processes)
+            {
+                p.Dispose();
             }
         }
 
@@ -139,6 +149,10 @@ public class TrayApplication : ApplicationContext
         _ = _gpuManager.ApplyPowerProfileOcAsync(currentProfile);
     }
 
+    private PowerProfile? _cachedProfile;
+    private System.Collections.Generic.List<System.Windows.Point>? _cachedCpuCurve;
+    private System.Collections.Generic.List<System.Windows.Point>? _cachedGpuCurve;
+
     private void StartBackgroundEngine()
     {
         Task.Run(async () =>
@@ -157,31 +171,25 @@ public class TrayApplication : ApplicationContext
                         // 2. Fetch Telemetry
                         var telemetry = AcerWmiManager.GetSystemTelemetry();
 
+                        // If EC reports 0, the discrete GPU is in D3Cold sleep state.
+                        // Do NOT poll nvidia-smi in the tray background loop, as that forces the dGPU to wake up and destroys battery life.
                         int effectiveGpuTemp = telemetry.GpuTemp;
-                        bool deepTelemetry = SettingsManager.Get("DeepGpuTelemetry", 1) == 1;
 
-                        // Fallback to NVIDIA SMI if EC reports 0
-                        if (effectiveGpuTemp == 0 && deepTelemetry)
+                        // 3. Load curves from cache or Registry if profile changed
+                        var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+                        if (_cachedCpuCurve == null || _cachedGpuCurve == null || _cachedProfile != activeMode)
                         {
-                            var smi = await NvidiaGpuManager.GetSmiTelemetryAsync(_engineCts.Token);
-                            if (smi != null && smi.CoreTemp > 0)
-                            {
-                                effectiveGpuTemp = smi.CoreTemp;
-                            }
+                            _cachedProfile = activeMode;
+                            string pName = activeMode.ToString();
+                            _cachedCpuCurve = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{pName}", FanCurveHelper.GetDefaultCpuCurve(activeMode));
+                            _cachedGpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}", FanCurveHelper.GetDefaultGpuCurve(activeMode));
                         }
 
-                        // 3. Load curves from Registry using the specific profile and fallback defaults
-                        var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-                        string pName = activeMode.ToString();
-
-                        var cpuCurve = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{pName}", FanCurveHelper.GetDefaultCpuCurve(activeMode));
-                        var gpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}", FanCurveHelper.GetDefaultGpuCurve(activeMode));
-
-                        // 4. Interpolate
-                        int targetCpuSpeed = FanCurveHelper.InterpolateSpeed(cpuCurve, telemetry.CpuTemp);
+                        // 4. Interpolate without allocating lists
+                        int targetCpuSpeed = FanCurveHelper.InterpolateSpeed(_cachedCpuCurve, telemetry.CpuTemp);
                         int targetGpuSpeed = effectiveGpuTemp == 0
                             ? targetCpuSpeed
-                            : FanCurveHelper.InterpolateSpeed(gpuCurve, effectiveGpuTemp);
+                            : FanCurveHelper.InterpolateSpeed(_cachedGpuCurve, effectiveGpuTemp);
 
                         // 5. Fire WMI only if changed
                         if (targetCpuSpeed != _lastAppliedCpuSpeed || targetGpuSpeed != _lastAppliedGpuSpeed)
@@ -205,16 +213,28 @@ public class TrayApplication : ApplicationContext
         _nitroHook.Dispose();
         SystemEvents.PowerModeChanged -= OnPowerStateChanged;
         trayIcon.Visible = false;
+        trayIcon.ContextMenuStrip?.Dispose();
         trayIcon.Dispose();
         _gpuManager.Dispose();
+        _engineCts.Dispose();
 
         try
         {
-            string pName = Process.GetCurrentProcess().ProcessName;
-            int currentId = Process.GetCurrentProcess().Id;
-            foreach (var p in Process.GetProcessesByName(pName))
+            using var currentProcess = Process.GetCurrentProcess();
+            string pName = currentProcess.ProcessName;
+            int currentId = currentProcess.Id;
+            int currentSessionId = currentProcess.SessionId;
+
+            var processes = Process.GetProcessesByName(pName);
+            foreach (var p in processes)
             {
-                if (p.Id != currentId) p.Kill();
+                using (p)
+                {
+                    if (p.Id != currentId && p.SessionId == currentSessionId)
+                    {
+                        try { p.Kill(); } catch { }
+                    }
+                }
             }
         }
         catch { }

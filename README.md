@@ -33,7 +33,7 @@ Nitrous bypasses heavy, bloated OEM telemetry services by communicating directly
 
 Nitrous is a portable application (1MB) with no setup wizard needed.
 
-1. Download **`Nitrous.exe`** from [Releases](https://github.com/jeremyaliparo/nitrous/releases).
+1. Download **`Nitrous.exe`** from [Releases](https://github.com/AtvouzX/nitrous_fork/releases).
 2. Save it anywhere on your PC (e.g., `C:\Tools`).
 3. Launch the executable.
 

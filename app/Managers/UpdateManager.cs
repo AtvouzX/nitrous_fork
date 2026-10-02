@@ -11,7 +11,7 @@ namespace Nitrous.Managers;
 public static class UpdateManager
 {
     public const string CurrentVersion = "0.7.2";
-    private const string GithubRepo = "jeremyaliparo/nitrous";
+    private const string GithubRepo = "AtvouzX/nitrous_fork";
 
     private static readonly HttpClient SharedClient = new HttpClient();
 
@@ -25,9 +25,13 @@ public static class UpdateManager
         try
         {
             string res = await SharedClient.GetStringAsync($"https://api.github.com/repos/{GithubRepo}/releases/latest");
-            string latestTag = JsonDocument.Parse(res).RootElement.GetProperty("tag_name").GetString() ?? "";
+            using var doc = JsonDocument.Parse(res);
+            string latestTag = doc.RootElement.GetProperty("tag_name").GetString() ?? "";
 
-            if (Version.TryParse(latestTag, out Version? vLatest) && Version.TryParse(CurrentVersion, out Version? vCurrent))
+            string cleanLatest = latestTag.Trim().TrimStart('v', 'V');
+            string cleanCurrent = CurrentVersion.Trim().TrimStart('v', 'V');
+
+            if (Version.TryParse(cleanLatest, out Version? vLatest) && Version.TryParse(cleanCurrent, out Version? vCurrent))
             {
                 if (vLatest > vCurrent)
                 {
@@ -52,13 +56,29 @@ public static class UpdateManager
     {
         try
         {
+            // Validate tag to prevent path manipulation
+            if (string.IsNullOrWhiteSpace(tag) || tag.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || tag.Contains(".."))
+            {
+                MessageBox.Show("Invalid release tag received.", "Update Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                return;
+            }
+
             string dlUrl = $"https://github.com/{GithubRepo}/releases/download/{tag}/Nitrous.exe";
-            string tempExe = Path.Combine(Path.GetTempPath(), "Nitrous_new.exe");
+            string tempExe = Path.Combine(Path.GetTempPath(), $"Nitrous_update_{Guid.NewGuid():N}.exe");
             string currentExe = Application.ExecutablePath;
 
-            await File.WriteAllBytesAsync(tempExe, await SharedClient.GetByteArrayAsync(dlUrl));
+            byte[] data = await SharedClient.GetByteArrayAsync(dlUrl);
+            if (data.Length < 1024)
+            {
+                throw new InvalidDataException("Downloaded update payload is corrupt or incomplete.");
+            }
 
-            string cmd = $"/c timeout /t 2 /nobreak & move /y \"{tempExe}\" \"{currentExe}\" & start \"\" \"{currentExe}\"";
+            await File.WriteAllBytesAsync(tempExe, data);
+
+            // Escape paths for cmd.exe invocation
+            string sanitizedTemp = tempExe.Replace("\"", "");
+            string sanitizedCurrent = currentExe.Replace("\"", "");
+            string cmd = $"/c timeout /t 2 /nobreak & move /y \"{sanitizedTemp}\" \"{sanitizedCurrent}\" & start \"\" \"{sanitizedCurrent}\"";
 
             using var p = Process.Start(new ProcessStartInfo("cmd.exe", cmd) { CreateNoWindow = true, UseShellExecute = false });
 

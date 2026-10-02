@@ -188,6 +188,7 @@ public partial class NitrousDashboard : Window
         SettingsManager.Save("WindowTop", (int)this.Top);
         SettingsManager.Save("WindowLeft", (int)this.Left);
         SettingsManager.Save("IsPinned", this.Topmost);
+        (DataContext as IDisposable)?.Dispose();
     }
 
     private FanCurveWindow? _activeCurveWindow;

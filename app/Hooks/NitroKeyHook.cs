@@ -28,7 +28,9 @@ public partial class NitroKeyHook : IDisposable
     {
         using var curProcess = Process.GetCurrentProcess();
         using var curModule = curProcess.MainModule;
-        return SetWindowsHookEx(WH_KEYBOARD_LL, proc, GetModuleHandle(curModule!.ModuleName), 0);
+        string? moduleName = curModule?.ModuleName;
+        IntPtr hMod = string.IsNullOrEmpty(moduleName) ? IntPtr.Zero : GetModuleHandle(moduleName);
+        return SetWindowsHookEx(WH_KEYBOARD_LL, proc, hMod, 0);
     }
 
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
@@ -40,7 +42,8 @@ public partial class NitroKeyHook : IDisposable
 
             if (NitroScanCodes.Contains(kbd.scanCode))
             {
-                NitroKeyPressed?.Invoke(this, EventArgs.Empty);
+                // Asynchronously dispatch the event so the OS keyboard hook callback returns immediately
+                ThreadPool.QueueUserWorkItem(_ => NitroKeyPressed?.Invoke(this, EventArgs.Empty));
             }
         }
 

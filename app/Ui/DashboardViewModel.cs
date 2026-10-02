@@ -9,7 +9,7 @@ using Nitrous.Mvvm;
 
 namespace Nitrous.Ui;
 
-public class DashboardViewModel : ObservableObject
+public class DashboardViewModel : ObservableObject, IDisposable
 {
     private readonly ActionDebouncer _fanDebouncer = new ActionDebouncer();
     private readonly NvidiaGpuManager _gpuManager = new();
@@ -406,19 +406,31 @@ public class DashboardViewModel : ObservableObject
         Task.Run(async () =>
         {
             using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+            int sleepSkipTicks = 0;
 
             while (!token.IsCancellationRequested)
             {
                 try
                 {
-                    // Run Acer WMI and Nvidia SMI concurrently in the background
+                    // Run Acer WMI and optionally Nvidia SMI concurrently in the background
                     var wmiTask = Task.Run(() => AcerWmiManager.GetSystemTelemetry(), token);
 
-                    // Conditionally fetch deep NVIDIA SMI stats
+                    // Conditionally fetch deep NVIDIA SMI stats with sleep back-off to protect battery
                     Task<NvidiaGpuManager.GpuTelemetry>? smiTask = null;
                     if (DeepGpuTelemetry)
                     {
-                        smiTask = NvidiaGpuManager.GetSmiTelemetryAsync(token);
+                        if (sleepSkipTicks > 0)
+                        {
+                            sleepSkipTicks--;
+                        }
+                        else
+                        {
+                            smiTask = NvidiaGpuManager.GetSmiTelemetryAsync(token);
+                        }
+                    }
+
+                    if (smiTask != null)
+                    {
                         await Task.WhenAll(wmiTask, smiTask);
                     }
                     else
@@ -428,6 +440,20 @@ public class DashboardViewModel : ObservableObject
 
                     var telemetry = await wmiTask;
                     var smi = smiTask != null ? await smiTask : null;
+
+                    if (DeepGpuTelemetry && smiTask != null)
+                    {
+                        // If dGPU is asleep (CoreTemp 0 or unknown name), back off polling for 3 intervals (6 seconds)
+                        // to prevent repeatedly waking up the discrete GPU into full power state
+                        if (smi == null || string.IsNullOrEmpty(smi.Name) || smi.Name == "Unknown" || smi.CoreTemp == 0)
+                        {
+                            sleepSkipTicks = 3;
+                        }
+                        else
+                        {
+                            sleepSkipTicks = 0;
+                        }
+                    }
 
                     // Push property changes asynchronously to the WPF UI Thread (non-blocking)
                     _ = System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
@@ -486,5 +512,13 @@ public class DashboardViewModel : ObservableObject
                 }
             }
         }, token);
+    }
+
+    public void Dispose()
+    {
+        _pollingCts?.Cancel();
+        _pollingCts?.Dispose();
+        _pollingCts = null;
+        _gpuManager.Dispose();
     }
 }
