@@ -57,6 +57,14 @@ public partial class FanCurveWindow : Window
         {
             LoadCurvesForProfile(_viewModel.ActivePowerProfile);
         }
+        // If the user switches Fan Mode away from Custom, close the editor automatically
+        else if (e.PropertyName == nameof(DashboardViewModel.IsCustomFanEnabled))
+        {
+            if (!_viewModel.IsCustomFanEnabled)
+            {
+                this.Close();
+            }
+        }
     }
 
     private void LoadCurvesForProfile(PowerProfile profile)
