@@ -16,7 +16,7 @@ public partial class NitroKeyHook : IDisposable
 
     public event EventHandler? NitroKeyPressed;
 
-    private static readonly FrozenSet<uint> NitroScanCodes = new[] { 117u, 148u, 175u, 236u, 245u }.ToFrozenSet();
+    private static readonly FrozenSet<uint> NitroScanCodes = new[] { 117u, 175u, 236u }.ToFrozenSet();
 
     public NitroKeyHook()
     {
