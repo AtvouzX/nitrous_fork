@@ -103,6 +103,14 @@ public class DashboardViewModel : ObservableObject, IDisposable
         set => SetProperty(ref _gpuNameText, value);
     }
 
+    private string _gpuArchText = "";
+
+    public string GpuArchText
+    {
+        get => _gpuArchText;
+        set => SetProperty(ref _gpuArchText, value);
+    }
+
     private string _gpuLoadText = "0%";
 
     public string GpuLoadText
@@ -565,6 +573,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
     private void ClearDeepTelemetryUI()
     {
         GpuNameText = "NVIDIA GPU (SLEEPING)";
+        GpuArchText = "";
         GpuLoadText = "-- %";
         GpuLoadColor = "#888890";
         GpuVramText = "-- / -- MB";
@@ -624,7 +633,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
                         }
                         else
                         {
-                            smiTask = NvidiaGpuManager.GetSmiTelemetryAsync(token);
+                            smiTask = _gpuManager.GetNvmlTelemetryAsync(token);
                         }
                     }
 
@@ -670,6 +679,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
                         if (smi != null && !string.IsNullOrEmpty(smi.Name) && smi.Name != "Unknown")
                         {
                             GpuNameText = smi.Name;
+                            GpuArchText = smi.Architecture;
 
                             GpuLoadText = $"{smi.GpuLoad}%";
                             GpuLoadColor = smi.GpuLoad >= 95 ? "#FF453A" : (smi.GpuLoad >= 80 ? "#FF9F0A" : "White");
