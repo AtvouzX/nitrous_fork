@@ -256,8 +256,20 @@ public class TrayApplication : ApplicationContext
     [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
+    private static extern bool AllowSetForegroundWindow(int dwProcessId);
+
+    private const int ASFW_ANY = -1;
+
     private void ShowDashboard()
     {
+        try
+        {
+            AllowSetForegroundWindow(ASFW_ANY);
+        }
+        catch { }
+
         // 1. Fast signal: If a dashboard process is already running and listening, signal it to restore/activate
         try
         {

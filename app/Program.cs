@@ -29,6 +29,12 @@ static class Program
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern IntPtr FindWindow(string? lpClassName, string lpWindowName);
 
+    [DllImport("user32.dll")]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static extern bool AllowSetForegroundWindow(int dwProcessId);
+
+    private const int ASFW_ANY = -1;
+
     [STAThread]
     static void Main(string[] args)
     {
@@ -117,6 +123,12 @@ static class Program
 
     public static void SignalExistingDashboard()
     {
+        try
+        {
+            AllowSetForegroundWindow(ASFW_ANY);
+        }
+        catch { }
+
         try
         {
             if (EventWaitHandle.TryOpenExisting(DashboardEventName, out var showEvent))

@@ -11,6 +11,7 @@ namespace Nitrous.Ui;
 public partial class NitrousDashboard : Window
 {
     private bool _isDialogOpen = false;
+    private long _lastActivationTick = Environment.TickCount64;
 
     public NitrousDashboard()
     {
@@ -207,6 +208,7 @@ public partial class NitrousDashboard : Window
     {
         base.OnSourceInitialized(e);
 
+        _lastActivationTick = Environment.TickCount64;
         this.Topmost = SettingsManager.Get("IsPinned", false);
 
         // Dock to Windows Quick Settings position (bottom-right above taskbar)
@@ -217,6 +219,9 @@ public partial class NitrousDashboard : Window
     private void Window_Deactivated(object sender, EventArgs e)
     {
         if (this.Topmost || _isDialogOpen) return;
+
+        // Grace period: ignore transient deactivation during process startup or companion IFEO execution
+        if (Environment.TickCount64 - _lastActivationTick < 1500) return;
 
         this.WindowState = WindowState.Minimized;
         Nitrous.Helpers.MemoryHelper.TrimWorkingSet();
@@ -244,22 +249,9 @@ public partial class NitrousDashboard : Window
     [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
-    private static extern IntPtr GetForegroundWindow();
-
     public void RestoreAndActivate()
     {
-        var helper = new System.Windows.Interop.WindowInteropHelper(this);
-        IntPtr fgWnd = GetForegroundWindow();
-
-        // If the dashboard is currently visible, active, and focused, toggle/minimize it
-        if (this.IsVisible && this.WindowState == WindowState.Normal && helper.Handle != IntPtr.Zero && fgWnd == helper.Handle)
-        {
-            this.WindowState = WindowState.Minimized;
-            Nitrous.Helpers.MemoryHelper.TrimWorkingSet();
-            return;
-        }
+        _lastActivationTick = Environment.TickCount64;
 
         if (this.WindowState == WindowState.Minimized)
         {
@@ -270,11 +262,17 @@ public partial class NitrousDashboard : Window
         this.Activate();
         this.Focus();
 
+        var helper = new System.Windows.Interop.WindowInteropHelper(this);
         if (helper.Handle != IntPtr.Zero)
         {
             const int SW_RESTORE = 9;
             ShowWindow(helper.Handle, SW_RESTORE);
             SetForegroundWindow(helper.Handle);
+        }
+
+        if (_activeCurveWindow != null && _activeCurveWindow.IsLoaded)
+        {
+            _activeCurveWindow.Activate();
         }
 
         RefreshDashboardState();
