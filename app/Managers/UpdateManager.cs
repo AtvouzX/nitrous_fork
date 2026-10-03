@@ -1,10 +1,7 @@
-using System;
 using System.Net.Http;
 using System.Text.Json;
-using System.Windows.Forms;
 using System.Diagnostics;
 using System.IO;
-using System.Threading.Tasks;
 
 namespace Nitrous.Managers;
 

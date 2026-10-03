@@ -417,7 +417,7 @@
 						<Border Background="#1C1C1F" CornerRadius="8" BorderBrush="#2A2A30" BorderThickness="1" Padding="12,12,12,16">
 							<StackPanel>
 								<Grid Margin="0,0,0,12">
-									<TextBlock Text="{Binding CustomFanHeaderText}" Foreground="#888890" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
+									<TextBlock Text="{Binding CustomFanHeaderText}" Foreground="{Binding CustomFanHeaderColor}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
 									<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
 										<!-- Button to open Fan Curve Editor Window -->
 										<Button Content="CURVE EDITOR"
@@ -436,17 +436,17 @@
 									</StackPanel>
 								</Grid>
 								<!-- CPU Slider -->
-								<Grid Margin="0,0,0,4">
+								<Grid Margin="0,0,0,4" ToolTip="{Binding SliderDisabledTooltip}" ToolTipService.ShowOnDisabled="True">
 									<TextBlock Text="CPU Fan Speed" Foreground="White" FontSize="11" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
 									<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-										<TextBox x:Name="CpuFanInput" Text="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" Foreground="#B388FF" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0" MaxLength="3" Width="26" TextAlignment="Right" VerticalContentAlignment="Center" CaretBrush="#B388FF" IsEnabled="{Binding IsManualSliderEnabled}"/>
+										<TextBox x:Name="CpuFanInput" Text="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" Foreground="#B388FF" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0" MaxLength="3" Width="26" TextAlignment="Right" VerticalContentAlignment="Center" CaretBrush="#B388FF" IsEnabled="{Binding IsManualSliderEnabled}" ToolTip="{Binding SliderDisabledTooltip}" ToolTipService.ShowOnDisabled="True"/>
 										<TextBlock Text="%" Foreground="#B388FF" FontSize="11" FontWeight="Bold" VerticalAlignment="Center">
       										<TextBlock.Style>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Foreground" Value="#B388FF"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsManualSliderEnabled}" Value="False">
-                                                            <Setter Property="Opacity" Value="0.3"/>
+                                                             <Setter Property="Opacity" Value="0.3"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -454,19 +454,19 @@
 										</TextBlock>
 									</StackPanel>
 								</Grid>
-								<Slider x:Name="CpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100" Value="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1" ToolTip="{Binding SliderDisabledTooltip}" Margin="0,0,0,12"/>
+								<Slider x:Name="CpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100" Value="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1" ToolTip="{Binding SliderDisabledTooltip}" ToolTipService.ShowOnDisabled="True" Margin="0,0,0,12"/>
 								<!-- GPU Slider -->
-								<Grid Margin="0,0,0,4">
+								<Grid Margin="0,0,0,4" ToolTip="{Binding SliderDisabledTooltip}" ToolTipService.ShowOnDisabled="True">
 									<TextBlock Text="GPU Fan Speed" Foreground="White" FontSize="11" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
 									<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-										<TextBox x:Name="GpuFanInput" Text="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" Foreground="#B388FF" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0" MaxLength="3" Width="26" TextAlignment="Right" VerticalContentAlignment="Center" CaretBrush="#B388FF" IsEnabled="{Binding IsManualSliderEnabled}"/>
+										<TextBox x:Name="GpuFanInput" Text="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" Foreground="#B388FF" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0" MaxLength="3" Width="26" TextAlignment="Right" VerticalContentAlignment="Center" CaretBrush="#B388FF" IsEnabled="{Binding IsManualSliderEnabled}" ToolTip="{Binding SliderDisabledTooltip}" ToolTipService.ShowOnDisabled="True"/>
 										<TextBlock Text="%" Foreground="#B388FF" FontSize="11" FontWeight="Bold" VerticalAlignment="Center">
     										<TextBlock.Style>
                                                 <Style TargetType="TextBlock">
                                                     <Setter Property="Foreground" Value="#B388FF"/>
                                                     <Style.Triggers>
                                                         <DataTrigger Binding="{Binding IsManualSliderEnabled}" Value="False">
-                                                            <Setter Property="Opacity" Value="0.3"/>
+                                                             <Setter Property="Opacity" Value="0.3"/>
                                                         </DataTrigger>
                                                     </Style.Triggers>
                                                 </Style>
@@ -474,7 +474,7 @@
 										</TextBlock>
 									</StackPanel>
 								</Grid>
-								<Slider x:Name="GpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100" Value="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1" ToolTip="{Binding SliderDisabledTooltip}"/>
+								<Slider x:Name="GpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100" Value="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1" ToolTip="{Binding SliderDisabledTooltip}" ToolTipService.ShowOnDisabled="True"/>
 							</StackPanel>
 						</Border>
 					</StackPanel>

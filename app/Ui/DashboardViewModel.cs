@@ -202,6 +202,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
             {
                 SettingsManager.Save("IsCurveModeEnabled", value ? 1 : 0);
                 OnPropertyChanged(nameof(IsManualSliderEnabled));
+                OnPropertyChanged(nameof(CustomFanHeaderText));
+                OnPropertyChanged(nameof(CustomFanHeaderColor));
                 OnPropertyChanged(nameof(FanModeSubtext));
                 OnPropertyChanged(nameof(FanModeSubtextColor));
                 OnPropertyChanged(nameof(SliderDisabledTooltip));
@@ -210,6 +212,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
     }
 
     public bool IsManualSliderEnabled => IsCustomFanEnabled && !IsCurveModeEnabled;
+    public string CustomFanHeaderText => IsCurveModeEnabled ? "CUSTOM FANS · CURVE" : "CUSTOM FANS · FIXED";
+    public string CustomFanHeaderColor => IsCurveModeEnabled ? "#34C759" : "#888890";
     public string FanModeSubtext => IsCurveModeEnabled ? "CURVE ACTIVE" : "MANUAL (FIXED)";
     public string FanModeSubtextColor => IsCurveModeEnabled ? "#34C759" : "#B388FF";
 
@@ -421,6 +425,9 @@ public class DashboardViewModel : ObservableObject, IDisposable
             {
                 OnPropertyChanged(nameof(CustomFanOpacity));
                 OnPropertyChanged(nameof(IsManualSliderEnabled));
+                OnPropertyChanged(nameof(CustomFanHeaderText));
+                OnPropertyChanged(nameof(CustomFanHeaderColor));
+                OnPropertyChanged(nameof(SliderDisabledTooltip));
             }
         }
     }

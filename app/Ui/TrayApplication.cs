@@ -75,7 +75,6 @@ public class TrayApplication : ApplicationContext
 
         // Power Profiles Submenu
         var powerMenu = new ToolStripMenuItem("Power Profile");
-        var activePower = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
 
         void AddPowerItem(string name, PowerProfile profile)
         {
@@ -86,8 +85,16 @@ public class TrayApplication : ApplicationContext
                 bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
                 SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)profile);
                 await _gpuManager.ApplyPowerProfileOcAsync(profile);
-                BuildContextMenu();
-            }) { Checked = activePower == profile };
+
+                foreach (ToolStripItem sibling in powerMenu.DropDownItems)
+                {
+                    if (sibling is ToolStripMenuItem mi)
+                        mi.Checked = (mi.Tag is PowerProfile p && p == profile);
+                }
+            })
+            {
+                Tag = profile
+            };
             powerMenu.DropDownItems.Add(item);
         }
 
@@ -103,10 +110,8 @@ public class TrayApplication : ApplicationContext
 
         // Fan Profiles Submenu
         var fanMenu = new ToolStripMenuItem("Fan Profile");
-        string fanModeStr = SettingsManager.Get("LastFanMode", "Auto");
-        var activeFan = Enum.TryParse(fanModeStr, out FanProfile f) ? f : FanProfile.Auto;
 
-        void AddFanItem(string name, FanProfile profile, bool isChecked)
+        void AddFanItem(string name, FanProfile profile)
         {
             var item = new ToolStripMenuItem(name, null, async (s, e) =>
             {
@@ -123,15 +128,51 @@ public class TrayApplication : ApplicationContext
                 SettingsManager.Save("LastFanMode", profile.ToString());
                 bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
                 SettingsManager.Save(isOnline ? "LastAcFanMode" : "LastDcFanMode", profile.ToString());
-                BuildContextMenu();
-            }) { Checked = isChecked };
+
+                foreach (ToolStripItem sibling in fanMenu.DropDownItems)
+                {
+                    if (sibling is ToolStripMenuItem mi)
+                        mi.Checked = (mi.Tag is FanProfile fp && fp == profile);
+                }
+            })
+            {
+                Tag = profile
+            };
             fanMenu.DropDownItems.Add(item);
         }
 
-        AddFanItem("Auto", FanProfile.Auto, activeFan == FanProfile.Auto);
-        AddFanItem("Max", FanProfile.Max, activeFan == FanProfile.Max);
-        AddFanItem("Custom", FanProfile.Medium, activeFan == FanProfile.Medium);
+        AddFanItem("Auto", FanProfile.Auto);
+        AddFanItem("Max", FanProfile.Max);
+        AddFanItem("Custom", FanProfile.Medium);
         menu.Items.Add(fanMenu);
+
+        void SyncMenuCheckedStates()
+        {
+            var currentPower = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+            foreach (ToolStripItem item in powerMenu.DropDownItems)
+            {
+                if (item is ToolStripMenuItem mi && mi.Tag is PowerProfile p)
+                {
+                    mi.Checked = (p == currentPower);
+                }
+            }
+
+            string fanModeStr = SettingsManager.Get("LastFanMode", "Auto");
+            var currentFan = Enum.TryParse(fanModeStr, out FanProfile f) ? f : FanProfile.Auto;
+            foreach (ToolStripItem item in fanMenu.DropDownItems)
+            {
+                if (item is ToolStripMenuItem mi && mi.Tag is FanProfile fp)
+                {
+                    mi.Checked = (fp == currentFan);
+                }
+            }
+        }
+
+        // Synchronize checkmarks immediately and whenever the menu or submenus open
+        SyncMenuCheckedStates();
+        menu.Opening += (s, e) => SyncMenuCheckedStates();
+        powerMenu.DropDownOpening += (s, e) => SyncMenuCheckedStates();
+        fanMenu.DropDownOpening += (s, e) => SyncMenuCheckedStates();
 
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Check for Updates...", null, async (s, e) => await UpdateManager.CheckForUpdatesAsync(false, () => Exit(null, EventArgs.Empty)));
