@@ -6,6 +6,7 @@ namespace Nitrous.Helpers;
 public static class MemoryHelper
 {
     [DllImport("psapi.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern int EmptyWorkingSet(IntPtr hwProc);
 
     /// <summary>
