@@ -23,4 +23,8 @@
 	<ItemGroup>
 		<Resource Include="..\assets\logo.png" Link="assets\logo.png" />
 	</ItemGroup>
+
+	<ItemGroup>
+		<InternalsVisibleTo Include="Nitrous.Tests" />
+	</ItemGroup>
 </Project>

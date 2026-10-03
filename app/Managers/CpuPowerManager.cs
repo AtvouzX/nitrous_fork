@@ -19,7 +19,7 @@ public static class CpuPowerManager
     private static int _lastDcMax = -1;
     private static int _lastDcBoost = -1;
 
-    public static async Task ApplyProfileLimitsAsync(PowerProfile profile, bool isOnline = true)
+    public static (int acMin, int acMax, int acBoost, int dcMin, int dcMax, int dcBoost) GetProfileLimits(PowerProfile profile)
     {
         // By user requirement: Turbo Boost is disabled (PROCTHROTTLEMAX <= 99% and BoostMode = 0)
         // This stops aggressive CPU clock spikes and thermal surges on both Intel and AMD Ryzen.
@@ -67,6 +67,12 @@ public static class CpuPowerManager
                 break;
         }
 
+        return (acMin, acMax, acBoost, dcMin, dcMax, dcBoost);
+    }
+
+    public static async Task ApplyProfileLimitsAsync(PowerProfile profile, bool isOnline = true)
+    {
+        var (acMin, acMax, acBoost, dcMin, dcMax, dcBoost) = GetProfileLimits(profile);
         await SetDualLimitsAsync(acMin, acMax, acBoost, dcMin, dcMax, dcBoost);
     }
 

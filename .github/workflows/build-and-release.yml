@@ -27,10 +27,15 @@ jobs:
           dotnet-version: '10.0.x'
 
       - name: Restore Dependencies
-        run: dotnet restore app/Nitrous.csproj
+        run: |
+          dotnet restore app/Nitrous.csproj
+          dotnet restore tests/Nitrous.Tests/Nitrous.Tests.csproj
 
       - name: Build Solution
         run: dotnet build app/Nitrous.csproj -c Release --no-restore
+
+      - name: Run Automated Tests
+        run: dotnet test tests/Nitrous.Tests/Nitrous.Tests.csproj -c Release --no-restore
 
       - name: Publish Single-File Executable
         run: >
