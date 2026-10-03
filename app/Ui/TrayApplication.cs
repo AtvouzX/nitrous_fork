@@ -19,6 +19,12 @@ public class TrayApplication : ApplicationContext
     private int _lastAppliedCpuSpeed = -1;
     private int _lastAppliedGpuSpeed = -1;
 
+    private readonly GlobalHotkeyManager _hotkeys = new();
+    private readonly OsdForm _osd = new();
+
+    private const int HK_CYCLE_POWER = 1;
+    private const int HK_DASHBOARD = 99;
+
     private static readonly Font BoldMenuFont = new(Control.DefaultFont, FontStyle.Bold);
 
     public TrayApplication()
@@ -37,6 +43,9 @@ public class TrayApplication : ApplicationContext
 
         _nitroHook = new NitroKeyHook();
         _nitroHook.NitroKeyPressed += (s, e) => ShowDashboard();
+
+        _hotkeys.HotkeyPressed += OnCustomHotkeyPressed;
+        ReloadHotkeys();
 
         _ = Task.Run(async () =>
         {
@@ -219,6 +228,7 @@ public class TrayApplication : ApplicationContext
             }
         });
         menu.Items.Add(new ToolStripSeparator());
+        menu.Items.Add("Restart", null, Restart);
         menu.Items.Add("Exit", null, Exit);
 
         trayIcon.ContextMenuStrip = menu;
@@ -471,17 +481,105 @@ public class TrayApplication : ApplicationContext
         });
     }
 
-    private void Exit(object? sender, EventArgs e)
+    private void ReloadHotkeys()
     {
+        _hotkeys.UnregisterAll(HK_CYCLE_POWER, HK_DASHBOARD);
+
+        RegisterSavedHotkey("Hotkey_CyclePower", HK_CYCLE_POWER);
+        RegisterSavedHotkey("Hotkey_Dashboard", HK_DASHBOARD);
+    }
+
+    private void RegisterSavedHotkey(string settingKey, int id)
+    {
+        string saved = SettingsManager.Get(settingKey, "");
+        if (string.IsNullOrEmpty(saved)) return;
+
+        try
+        {
+            // Example saved format: "2|81" (Modifiers=2 (Ctrl), Key=81 (Q))
+            var parts = saved.Split('|');
+            uint mods = uint.Parse(parts[0]);
+            uint key = uint.Parse(parts[1]);
+            _hotkeys.Register(id, mods, key);
+        }
+        catch { }
+    }
+
+    private void OnCustomHotkeyPressed(int id)
+    {
+        switch (id)
+        {
+            case HK_CYCLE_POWER:
+                CyclePowerMode();
+                break;
+            case HK_DASHBOARD:
+                ShowDashboard();
+                break;
+        }
+    }
+
+    private void CyclePowerMode()
+    {
+        bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
+        string acDcKey = isOnline ? "LastAcPowerMode" : "LastDcPowerMode";
+
+        // Get the current mode
+        var currentProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+        PowerProfile nextProfile;
+
+        // Determine the next mode in the sequence
+        switch (currentProfile)
+        {
+            case PowerProfile.Quiet:
+                nextProfile = PowerProfile.Balanced;
+                break;
+            case PowerProfile.Balanced:
+                nextProfile = PowerProfile.Performance;
+                break;
+            case PowerProfile.Performance:
+                // Skip Turbo and wrap around to Quiet if it isn't supported
+                nextProfile = AcerWmiManager.IsTurboModeSupported() ? PowerProfile.Turbo : PowerProfile.Quiet;
+                break;
+            case PowerProfile.Turbo:
+            default:
+                nextProfile = PowerProfile.Quiet;
+                break;
+        }
+
+        // Apply the new mode
+        _ = AcerWmiManager.SetPowerModeAsync(nextProfile);
+        SettingsManager.Save("LastPowerMode", (int)nextProfile);
+        SettingsManager.Save(acDcKey, (int)nextProfile);
+
+        // Show the correct color on the OSD
+        Color osdColor = nextProfile switch
+        {
+            PowerProfile.Quiet => Color.FromArgb(52, 199, 89),       // Green
+            PowerProfile.Balanced => Color.FromArgb(10, 132, 255),   // Blue
+            PowerProfile.Performance => Color.FromArgb(255, 159, 10),// Orange
+            PowerProfile.Turbo => Color.FromArgb(255, 69, 58),       // Red
+            _ => Color.White
+        };
+
+        _osd.ShowProfile($"{nextProfile} MODE", osdColor, nextProfile);
+    }
+
+    private void CleanupResources()
+    {
+        // 1. Cancel background loops and unhook events
         _engineCts.Cancel();
         _nitroHook.Dispose();
         SystemEvents.PowerModeChanged -= OnPowerStateChanged;
+
+        // 2. Hide and dispose tray icon to prevent ghost icons
         trayIcon.Visible = false;
         trayIcon.ContextMenuStrip?.Dispose();
         trayIcon.Dispose();
         _gpuManager.Dispose();
         _engineCts.Dispose();
+        _hotkeys.Dispose();
 
+        // 3. Kill any open Dashboard UI processes BEFORE spawning a new one
         try
         {
             using var currentProcess = Process.GetCurrentProcess();
@@ -502,7 +600,18 @@ public class TrayApplication : ApplicationContext
             }
         }
         catch { }
+    }
 
+    private void Restart(object? sender, EventArgs e)
+    {
+        CleanupResources();
+        Process.Start(new ProcessStartInfo(Application.ExecutablePath) { UseShellExecute = true });
+        Application.Exit();
+    }
+
+    private void Exit(object? sender, EventArgs e)
+    {
+        CleanupResources();
         Application.Exit();
     }
 }

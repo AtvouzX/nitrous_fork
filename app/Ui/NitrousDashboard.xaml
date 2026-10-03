@@ -252,6 +252,37 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <Style x:Key="HotkeyTextBoxStyle" TargetType="TextBox">
+            <Setter Property="Background" Value="#26262A"/>
+            <Setter Property="Foreground" Value="#a855f7"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="Cursor" Value="Hand"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="TextBox">
+                        <Border Background="{TemplateBinding Background}"
+                                BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}"
+                                CornerRadius="6" Padding="0,4,0,0">
+                            <ScrollViewer x:Name="PART_ContentHost" Margin="0"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <!-- Hover effect -->
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter Property="Background" Value="#2D2D32"/>
+                            </Trigger>
+                            <!-- Clicked / Active effect -->
+                            <Trigger Property="IsKeyboardFocused" Value="True">
+                                <Setter Property="BorderBrush" Value="#a855f7"/>
+                                <Setter Property="Background" Value="#1C1C1F"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 	</Window.Resources>
 	<!-- Outer Frame with Rounded Corners -->
 	<Border Background="#121214" CornerRadius="16" BorderBrush="#2A2A30" BorderThickness="1">
@@ -737,11 +768,42 @@
 						<Button Grid.Column="2" Content="{Binding ApplyBtnText}" Command="{Binding ApplyGpuClocksCommand}" Background="{Binding ApplyBtnColor}" Style="{StaticResource AccentBtn}" FontSize="12" FontWeight="Heavy" Height="40"/>
 					</Grid>
 				</StackPanel>
+
+				<!-- 4. KEYBOARD PAGE -->
+                <StackPanel x:Name="KeyboardPage" Visibility="Collapsed" Margin="20,10,20,0">
+					<Border Background="#1C1C1F" CornerRadius="12" Margin="0,0,0,12" Padding="12">
+						<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+							<Border Width="44" Height="44" CornerRadius="10" Background="#26262A" Margin="0,0,12,0">
+								<Image Source="{StaticResource CachedAppLogo}" RenderOptions.BitmapScalingMode="HighQuality" Margin="8" Stretch="Uniform"/>
+							</Border>
+							<StackPanel VerticalAlignment="Center">
+								<TextBlock x:Name="KeyboardVersionText" Text="Nitrous" Foreground="White" FontWeight="Bold" FontSize="14"/>
+								<TextBlock Text="Pure hardware control for Acer Nitro laptops." Foreground="#888890" FontSize="11" Margin="0,2,0,0"/>
+							</StackPanel>
+						</StackPanel>
+					</Border>
+
+                    <!-- Custom Hotkeys Setup -->
+                   <Border Background="#1C1C1F" CornerRadius="10" Margin="0,0,0,10" BorderBrush="#2A2A30" BorderThickness="1" Padding="15">
+                        <StackPanel>
+                            <TextBlock Text="Click a box and press a key combination to bind. Press ESC to clear. Restart Nitrous to apply changes." Foreground="#888890" FontSize="11" Margin="0,0,0,15" TextWrapping="Wrap"/>
+                            <Grid Margin="0,0,0,8">
+                                <TextBlock Text="Cycle Power Mode" Foreground="White" FontSize="12" VerticalAlignment="Center"/>
+                                <TextBox x:Name="TxtHkCycle" Style="{StaticResource HotkeyTextBoxStyle}" Width="120" HorizontalAlignment="Right" IsReadOnly="True" TextAlignment="Center" PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_CyclePower"/>
+                            </Grid>
+                            <Grid>
+                                <TextBlock Text="Open Dashboard" Foreground="White" FontSize="12" VerticalAlignment="Center"/>
+                                <TextBox x:Name="TxtHkDash" Style="{StaticResource HotkeyTextBoxStyle}" Width="120" HorizontalAlignment="Right" IsReadOnly="True" TextAlignment="Center" PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_Dashboard"/>
+                            </Grid>
+                        </StackPanel>
+                    </Border>
+                </StackPanel>
 			</Grid>
 			<!-- Bottom Navigation -->
 			<Border Grid.Row="2" Background="#1C1C1F" CornerRadius="0,0,15,15">
 				<Grid>
 					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="*"/>
 						<ColumnDefinition Width="*"/>
 						<ColumnDefinition Width="*"/>
 						<ColumnDefinition Width="*"/>
@@ -760,8 +822,15 @@
 							<TextBlock x:Name="NavGpuText" Text="GPU" Foreground="#888890" FontSize="10" FontWeight="Bold" Margin="0,4,0,0" HorizontalAlignment="Center"/>
 						</StackPanel>
 					</Button>
+					<!-- Keyboard Nav -->
+					<Button x:Name="NavKeyboardBtn" Tag="0,0,0,0" Style="{StaticResource NavButtonStyle}" Grid.Column="2" Click="NavKeyboardBtn_Click">
+                        <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
+                            <Path x:Name="NavKeyboardIcon" Data="M19,10H17V8H19M19,13H17V11H19M16,10H14V8H16M16,13H14V11H16M13,10H11V8H13M13,13H11V11H13M8,10H6V8H8M8,13H6V11H8M5,10H3V8H5M5,13H3V11H5M4,17H20V15H4M22,5H2A2,2 0 0,0 0,7V17A2,2 0 0,0 2,19H22A2,2 0 0,0 24,17V7A2,2 0 0,0 22,5Z" Fill="#888890" Stretch="Uniform" Width="16" Height="16" HorizontalAlignment="Center"/>
+                            <TextBlock x:Name="NavKeyboardText" Text="KB" Foreground="#888890" FontSize="10" FontWeight="Bold" Margin="0,4,0,0" HorizontalAlignment="Center"/>
+                        </StackPanel>
+                    </Button>
 					<!-- Settings Nav -->
-					<Button x:Name="NavSetBtn" Tag="0,0,15,0" Style="{StaticResource NavButtonStyle}" Grid.Column="2" Click="NavSetBtn_Click">
+					<Button x:Name="NavSetBtn" Tag="0,0,15,0" Style="{StaticResource NavButtonStyle}" Grid.Column="3" Click="NavSetBtn_Click">
 						<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
 							<Path x:Name="NavSetIcon" Data="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.98C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.98L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.98Z" Fill="#888890" Stretch="Uniform" Width="15" Height="15" HorizontalAlignment="Center"/>
 							<TextBlock x:Name="NavSetText" Text="SETUP" Foreground="#888890" FontSize="10" FontWeight="Bold" Margin="0,4,0,0" HorizontalAlignment="Center"/>
