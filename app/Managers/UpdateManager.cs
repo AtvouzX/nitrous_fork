@@ -7,7 +7,7 @@ namespace Nitrous.Managers;
 
 public static class UpdateManager
 {
-    public const string CurrentVersion = "0.7.4";
+    public const string CurrentVersion = "0.7.5";
     private const string GithubRepo = "AtvouzX/nitrous_fork";
 
     private static HttpClient CreateHttpClient()

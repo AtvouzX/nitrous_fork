@@ -4,7 +4,7 @@
 
 # Nitrous
 
-**Pure, zero-bloat hardware control for Acer Nitro laptops.**
+**Lightweight, zero-bloat hardware control utility for Acer Nitro laptops.**
 
 <p align="center">
   <img src="assets/dashboard.png" alt="Main Dashboard" width="30%" />
@@ -16,37 +16,40 @@
 
 </div>
 
-Nitrous bypasses heavy, bloated OEM telemetry services by communicating directly with your Acer Nitro’s Embedded Controller (EC) via WMI. It gives you a ultra-fast, lightweight dashboard for raw, instant hardware control.
+Nitrous interacts directly with your laptop's Embedded Controller (EC) via Windows Management Instrumentation (WMI), eliminating the need for heavy OEM background services. It provides an ultra-fast dashboard, comprehensive tray controls, and low resource overhead.
 
-### Key Features
-* **Dedicated GPU OC/UC Tab:** Fine-tune core and memory offsets to overclock or underclock your GPU.
-* **In-Depth GPU Telemetry:** Monitor real-time GPU metrics, clock speeds, usage, and thermal performance alongside your tuning controls.
-* **Auto-Apply OC Profiles:** Automatically trigger default GPU overclocks based on active power profiles (mimicking native NitroSense behavior) or automatically apply your custom OC profile on system boot.
-* **Granular Fan Control:** Set precise fan speeds from 0% to 100%, or toggle Auto and Max modes via verified 64-bit WMI payloads.
-* **Smart Automation:** Automatically applies quiet modes and 60Hz screen refresh on battery, then restores performance and high refresh rate on AC power.
-* **Battery Protection:** Hardware-level 80% charge limit to extend battery lifespan.
-* **Dynamic Power Profiles:** Toggle instantly between Quiet, Balanced, Performance, and Turbo TDP modes.
-* **Silent Boot:** Bypasses Windows UAC using Task Scheduler to start silently with Windows.
-* **Built-in Auto-Updater:** Detects and installs updates directly from GitHub.
+### Features
+
+- **Interactive Fan Curve Editor:** Create custom CPU and GPU fan curves per power profile with waypoint grid snapping, hysteresis anti-revving delays, and direct hardware EC application.
+- **Manual and Preset Fan Modes:** Instantly toggle between Auto, Max, Fixed Manual Percentage, or Dynamic Curve modes.
+- **Quick-Access Tray Menu:** Control power profiles and fan modes, check for updates, or monitor temperatures directly from the Windows taskbar tray without opening the full dashboard.
+- **Dynamic Power Modes:** Fast switching between Quiet, Balanced, Performance, and Turbo TDP modes.
+- **GPU Overclocking and Underclocking:** Tune core and memory clock offsets with auto-apply profile support and hardware safety bounds.
+- **Display Refresh Rate Automation:** Automatically switch to 60Hz on DC battery power and restore maximum panel refresh rate on AC power, with manual overrides.
+- **Battery Health Control:** Hardware-level 80% charge threshold to prolong battery longevity.
+- **Ultra-Low Resource Footprint:** Split-process transient UI architecture and optimized WMI polling keep idle background memory around 8-15 MB RAM.
+- **dGPU Sleep Preservation:** Back-off polling logic prevents NVIDIA discrete graphics from waking up unnecessarily on battery.
+- **Silent Windows Startup:** Starts automatically at boot without Windows UAC prompts using Windows Task Scheduler.
+- **Built-in GitHub Auto-Updater:** Checks and applies new releases seamlessly.
 
 ### Quick Start
 
-Nitrous is a portable application (1MB) with no setup wizard needed.
+Nitrous is portable and requires no installation.
 
-1. Download **`Nitrous.exe`** from [Releases](https://github.com/AtvouzX/nitrous_fork/releases).
-2. Save it anywhere on your PC (e.g., `C:\Tools`).
-3. Launch the executable.
+1. Download `Nitrous.exe` from [Releases](https://github.com/AtvouzX/nitrous_fork/releases).
+2. Place the executable in a directory of your choice (e.g., `C:\Tools\Nitrous`).
+3. Run `Nitrous.exe`.
 
-> **Usage:** Nitrous runs silently in your System Tray. Click the tray icon or press your keyboard's dedicated Nitro key to open the dashboard. Configure automation rules in the **Settings** menu.
+The application minimizes to the System Tray. Click the tray icon, right-click for the quick menu, or press the dedicated Nitro keyboard key to bring up the dashboard.
 
 ### Compatibility
 
-Designed for modern Acer Nitro laptops (2021+) using `AcerGamingFunction` WMI classes.
+Designed for modern Acer Nitro laptops (2021+) supporting the `AcerGamingFunction` WMI interface.
 
-**Confirmed Models:**
-* Acer Nitro 16S (`AN16S-61`)
-* Acer Nitro V 15 (`ANV15-41`<!--, `ANV15-52` — *Thanks [@Baymax0251](https://github.com/Baymax0251) for testing!* -->)
+**Tested Models:**
+- Acer Nitro 16S (`AN16S-61`)
+- Acer Nitro V 15 (`ANV15-41`, `ANV15-51`)
 
 ---
 
-*Disclaimer: Unofficial open-source utility. Not affiliated with Acer. Use at your own risk.*
+*Disclaimer: Unofficial open-source utility. Not affiliated with Acer Inc. Use at your own risk.*
