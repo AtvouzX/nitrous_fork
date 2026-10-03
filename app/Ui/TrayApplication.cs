@@ -1,7 +1,3 @@
-using System;
-using System.Drawing;
-using System.Threading.Tasks;
-using System.Windows.Forms;
 using System.Diagnostics;
 using Microsoft.Win32;
 using Nitrous.Enums;
@@ -80,16 +76,23 @@ public class TrayApplication : ApplicationContext
         {
             var item = new ToolStripMenuItem(name, null, async (s, e) =>
             {
-                await AcerWmiManager.SetPowerModeAsync(profile);
-                SettingsManager.Save("LastPowerMode", (int)profile);
-                bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
-                SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)profile);
-                await _gpuManager.ApplyPowerProfileOcAsync(profile);
-
-                foreach (ToolStripItem sibling in powerMenu.DropDownItems)
+                try
                 {
-                    if (sibling is ToolStripMenuItem mi)
-                        mi.Checked = (mi.Tag is PowerProfile p && p == profile);
+                    await AcerWmiManager.SetPowerModeAsync(profile);
+                    SettingsManager.Save("LastPowerMode", (int)profile);
+                    bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
+                    SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)profile);
+                    await _gpuManager.ApplyPowerProfileOcAsync(profile);
+
+                    foreach (ToolStripItem sibling in powerMenu.DropDownItems)
+                    {
+                        if (sibling is ToolStripMenuItem mi)
+                            mi.Checked = (mi.Tag is PowerProfile p && p == profile);
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to set power mode: {ex.Message}");
                 }
             })
             {
@@ -115,24 +118,31 @@ public class TrayApplication : ApplicationContext
         {
             var item = new ToolStripMenuItem(name, null, async (s, e) =>
             {
-                if (profile == FanProfile.Medium)
+                try
                 {
-                    await AcerWmiManager.SetCustomFansAsync(
-                        SettingsManager.Get("CustomFanSpeedCpu", 50),
-                        SettingsManager.Get("CustomFanSpeedGpu", 50));
-                }
-                else
-                {
-                    await AcerWmiManager.SetFansAsync(profile);
-                }
-                SettingsManager.Save("LastFanMode", profile.ToString());
-                bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
-                SettingsManager.Save(isOnline ? "LastAcFanMode" : "LastDcFanMode", profile.ToString());
+                    if (profile == FanProfile.Medium)
+                    {
+                        await AcerWmiManager.SetCustomFansAsync(
+                            SettingsManager.Get("CustomFanSpeedCpu", 50),
+                            SettingsManager.Get("CustomFanSpeedGpu", 50));
+                    }
+                    else
+                    {
+                        await AcerWmiManager.SetFansAsync(profile);
+                    }
+                    SettingsManager.Save("LastFanMode", profile.ToString());
+                    bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
+                    SettingsManager.Save(isOnline ? "LastAcFanMode" : "LastDcFanMode", profile.ToString());
 
-                foreach (ToolStripItem sibling in fanMenu.DropDownItems)
+                    foreach (ToolStripItem sibling in fanMenu.DropDownItems)
+                    {
+                        if (sibling is ToolStripMenuItem mi)
+                            mi.Checked = (mi.Tag is FanProfile fp && fp == profile);
+                    }
+                }
+                catch (Exception ex)
                 {
-                    if (sibling is ToolStripMenuItem mi)
-                        mi.Checked = (mi.Tag is FanProfile fp && fp == profile);
+                    Debug.WriteLine($"Failed to set fan mode: {ex.Message}");
                 }
             })
             {
@@ -175,7 +185,17 @@ public class TrayApplication : ApplicationContext
         fanMenu.DropDownOpening += (s, e) => SyncMenuCheckedStates();
 
         menu.Items.Add(new ToolStripSeparator());
-        menu.Items.Add("Check for Updates...", null, async (s, e) => await UpdateManager.CheckForUpdatesAsync(false, () => Exit(null, EventArgs.Empty)));
+        menu.Items.Add("Check for Updates...", null, async (s, e) =>
+        {
+            try
+            {
+                await UpdateManager.CheckForUpdatesAsync(false, () => Exit(null, EventArgs.Empty));
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to check for updates: {ex.Message}");
+            }
+        });
         menu.Items.Add(new ToolStripSeparator());
         menu.Items.Add("Exit", null, Exit);
 

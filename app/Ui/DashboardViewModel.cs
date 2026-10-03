@@ -1,11 +1,10 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Windows;
+using System.Diagnostics;
 using System.Windows.Input;
 using Nitrous.Enums;
 using Nitrous.Managers;
 using Nitrous.Mvvm;
+using PowerLineStatus = System.Windows.Forms.PowerLineStatus;
+using SystemInformation = System.Windows.Forms.SystemInformation;
 
 namespace Nitrous.Ui;
 
@@ -280,19 +279,25 @@ public class DashboardViewModel : ObservableObject, IDisposable
         {
             if (Enum.TryParse(param?.ToString(), out PowerProfile mode))
             {
-                ActivePowerProfile = mode;
-
-                _ = AcerWmiManager.SetPowerModeAsync(mode);
-                SettingsManager.Save("LastPowerMode", (int)mode);
-                bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
-                                System.Windows.Forms.PowerLineStatus.Online;
-                SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)mode);
-
-                await _gpuManager.ApplyPowerProfileOcAsync(mode);
-                if (_gpuManager.GetClocks(out int c, out int m))
+                try
                 {
-                    GpuCoreOffset = c;
-                    GpuMemoryOffset = m;
+                    ActivePowerProfile = mode;
+
+                    _ = AcerWmiManager.SetPowerModeAsync(mode);
+                    SettingsManager.Save("LastPowerMode", (int)mode);
+                    bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
+                    SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)mode);
+
+                    await _gpuManager.ApplyPowerProfileOcAsync(mode);
+                    if (_gpuManager.GetClocks(out int c, out int m))
+                    {
+                        GpuCoreOffset = c;
+                        GpuMemoryOffset = m;
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Debug.WriteLine($"Failed to set power mode: {ex.Message}");
                 }
             }
         });
@@ -308,8 +313,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
                     _ = AcerWmiManager.SetFansAsync(mode);
 
                 SettingsManager.Save("LastFanMode", mode.ToString());
-                bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
-                                System.Windows.Forms.PowerLineStatus.Online;
+                bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
                 SettingsManager.Save(isOnline ? "LastAcFanMode" : "LastDcFanMode", mode.ToString());
             }
         });
@@ -319,47 +323,60 @@ public class DashboardViewModel : ObservableObject, IDisposable
             if (Enum.TryParse(param?.ToString(), out RefreshProfile profile))
             {
                 SettingsManager.Save("RefreshMode", (int)profile);
-                bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
-                                System.Windows.Forms.PowerLineStatus.Online;
+                bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
                 DisplayManager.ApplyRefreshProfile(profile, isOnline);
             }
         });
 
         ApplyGpuClocksCommand = new RelayCommand(async _ =>
         {
-            var currentProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-
-            // Save to the active profile
-            _gpuManager.SaveCustomProfileOc(currentProfile, GpuCoreOffset, GpuMemoryOffset);
-            int result = _gpuManager.SetClocks(GpuCoreOffset, GpuMemoryOffset);
-
-            if (result == 1)
+            try
             {
-                ApplyBtnText = "APPLIED!";
-                ApplyBtnColor = "#34C759";
-            }
-            else
-            {
-                ApplyBtnText = "ERROR";
-                ApplyBtnColor = "#FF453A";
-            }
+                var currentProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
 
-            await Task.Delay(2000);
-            ApplyBtnText = "APPLY";
-            ApplyBtnColor = "#B388FF";
+                // Save to the active profile
+                _gpuManager.SaveCustomProfileOc(currentProfile, GpuCoreOffset, GpuMemoryOffset);
+                int result = _gpuManager.SetClocks(GpuCoreOffset, GpuMemoryOffset);
+
+                if (result == 1)
+                {
+                    ApplyBtnText = "APPLIED!";
+                    ApplyBtnColor = "#34C759";
+                }
+                else
+                {
+                    ApplyBtnText = "ERROR";
+                    ApplyBtnColor = "#FF453A";
+                }
+
+                await Task.Delay(2000);
+                ApplyBtnText = "APPLY";
+                ApplyBtnColor = "#B388FF";
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to apply GPU clocks: {ex.Message}");
+            }
         });
 
         ResetGpuClocksCommand = new RelayCommand(async _ =>
         {
-            var currentProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-
-            // Wipe custom save and load default config
-            await _gpuManager.ResetProfileToDefaultsAsync(currentProfile);
-
-            if (_gpuManager.GetClocks(out int c, out int m))
+            try
             {
-                GpuCoreOffset = c;
-                GpuMemoryOffset = m;
+                var currentProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+
+                // Wipe custom save and load default config
+                await _gpuManager.ResetProfileToDefaultsAsync(currentProfile);
+
+                if (_gpuManager.GetClocks(out int c, out int m))
+                {
+                    GpuCoreOffset = c;
+                    GpuMemoryOffset = m;
+                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to reset GPU clocks: {ex.Message}");
             }
         });
 
@@ -522,7 +539,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
         set
         {
             if (SetProperty(ref _runOnStartup, value))
-                StartupManager.ToggleStartupTask(value, System.Windows.Forms.Application.ExecutablePath);
+                StartupManager.ToggleStartupTask(value, Environment.ProcessPath ?? "");
         }
     }
 
