@@ -797,6 +797,21 @@
                             </Grid>
                         </StackPanel>
                     </Border>
+
+					<!-- Physical Nitro Button Integration -->
+					<Border Background="#1C1C1F" CornerRadius="10" Margin="0,0,0,10" BorderBrush="#2A2A30" BorderThickness="1" Padding="15">
+						<Grid>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="*"/>
+								<ColumnDefinition Width="Auto"/>
+							</Grid.ColumnDefinitions>
+							<StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,15,0">
+								<TextBlock Text="Nitro Key Integration" Foreground="White" FontWeight="SemiBold" FontSize="13"/>
+								<TextBlock Text="Intercepts the physical Nitro button to launch Nitrous, even when the app is completely closed." Foreground="#888890" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"/>
+							</StackPanel>
+							<CheckBox Grid.Column="1" x:Name="TogNitroKey" Style="{StaticResource ModernToggleStyle}" HorizontalAlignment="Right" IsChecked="{Binding IsNitroKeyIntegrated, UpdateSourceTrigger=PropertyChanged}"/>
+						</Grid>
+					</Border>
                 </StackPanel>
 			</Grid>
 			<!-- Bottom Navigation -->

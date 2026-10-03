@@ -292,6 +292,12 @@ public class DashboardViewModel : ObservableObject, IDisposable
         {
             bool isTurbo = AcerWmiManager.IsTurboModeSupported();
             bool isTaskEnabled = StartupManager.CheckStartupTask();
+            bool isNitroKeyEnabled = NitroKeyManager.IsIntegrationEnabled() || SettingsManager.Get("NitroKeyIntegrated", 0) == 1;
+
+            if (isNitroKeyEnabled)
+            {
+                NitroKeyManager.SyncExecutablePath(Environment.ProcessPath ?? "");
+            }
 
             int core = 0, memory = 0;
             bool hasClocks = _gpuManager.IsValid && _gpuManager.GetClocks(out core, out memory);
@@ -303,6 +309,9 @@ public class DashboardViewModel : ObservableObject, IDisposable
 
                 _runOnStartup = isTaskEnabled;
                 OnPropertyChanged(nameof(RunOnStartup));
+
+                _isNitroKeyIntegrated = isNitroKeyEnabled;
+                OnPropertyChanged(nameof(IsNitroKeyIntegrated));
 
                 if (hasClocks)
                 {
@@ -626,6 +635,21 @@ public class DashboardViewModel : ObservableObject, IDisposable
         {
             if (SetProperty(ref _runOnStartup, value))
                 StartupManager.ToggleStartupTask(value, Environment.ProcessPath ?? "");
+        }
+    }
+
+    private bool _isNitroKeyIntegrated;
+
+    public bool IsNitroKeyIntegrated
+    {
+        get => _isNitroKeyIntegrated;
+        set
+        {
+            if (SetProperty(ref _isNitroKeyIntegrated, value))
+            {
+                NitroKeyManager.SetIntegration(value, Environment.ProcessPath ?? "");
+                SettingsManager.Save("NitroKeyIntegrated", value ? 1 : 0);
+            }
         }
     }
 
