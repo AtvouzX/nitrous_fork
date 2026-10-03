@@ -16,69 +16,175 @@ public class DashboardViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _pollingCts;
 
     private string _cpuTempText = "--°C";
-    public string CpuTempText { get => _cpuTempText; set => SetProperty(ref _cpuTempText, value); }
+
+    public string CpuTempText
+    {
+        get => _cpuTempText;
+        set => SetProperty(ref _cpuTempText, value);
+    }
 
     private string _cpuTempColor = "White";
-    public string CpuTempColor { get => _cpuTempColor; set => SetProperty(ref _cpuTempColor, value); }
+
+    public string CpuTempColor
+    {
+        get => _cpuTempColor;
+        set => SetProperty(ref _cpuTempColor, value);
+    }
 
     private string _cpuRpmText = "-- RPM";
-    public string CpuRpmText { get => _cpuRpmText; set => SetProperty(ref _cpuRpmText, value); }
+
+    public string CpuRpmText
+    {
+        get => _cpuRpmText;
+        set => SetProperty(ref _cpuRpmText, value);
+    }
 
     private string _gpuTempText = "--°C";
-    public string GpuTempText { get => _gpuTempText; set => SetProperty(ref _gpuTempText, value); }
+
+    public string GpuTempText
+    {
+        get => _gpuTempText;
+        set => SetProperty(ref _gpuTempText, value);
+    }
 
     private string _gpuRpmText = "-- RPM";
-    public string GpuRpmText { get => _gpuRpmText; set => SetProperty(ref _gpuRpmText, value); }
+
+    public string GpuRpmText
+    {
+        get => _gpuRpmText;
+        set => SetProperty(ref _gpuRpmText, value);
+    }
 
     private string _gpuTempColor = "White";
-    public string GpuTempColor { get => _gpuTempColor; set => SetProperty(ref _gpuTempColor, value); }
+
+    public string GpuTempColor
+    {
+        get => _gpuTempColor;
+        set => SetProperty(ref _gpuTempColor, value);
+    }
 
     private string _applyBtnText = "APPLY";
-    public string ApplyBtnText { get => _applyBtnText; set => SetProperty(ref _applyBtnText, value); }
+
+    public string ApplyBtnText
+    {
+        get => _applyBtnText;
+        set => SetProperty(ref _applyBtnText, value);
+    }
 
     private string _applyBtnColor = "#B388FF";
-    public string ApplyBtnColor { get => _applyBtnColor; set => SetProperty(ref _applyBtnColor, value); }
+
+    public string ApplyBtnColor
+    {
+        get => _applyBtnColor;
+        set => SetProperty(ref _applyBtnColor, value);
+    }
 
     private int _gpuCoreOffset;
-    public int GpuCoreOffset { get => _gpuCoreOffset; set => SetProperty(ref _gpuCoreOffset, value); }
+
+    public int GpuCoreOffset
+    {
+        get => _gpuCoreOffset;
+        set => SetProperty(ref _gpuCoreOffset, value);
+    }
 
     private int _gpuMemoryOffset;
-    public int GpuMemoryOffset { get => _gpuMemoryOffset; set => SetProperty(ref _gpuMemoryOffset, value); }
+
+    public int GpuMemoryOffset
+    {
+        get => _gpuMemoryOffset;
+        set => SetProperty(ref _gpuMemoryOffset, value);
+    }
 
     private string _gpuNameText = "NVIDIA GPU";
-    public string GpuNameText { get => _gpuNameText; set => SetProperty(ref _gpuNameText, value); }
+
+    public string GpuNameText
+    {
+        get => _gpuNameText;
+        set => SetProperty(ref _gpuNameText, value);
+    }
 
     private string _gpuLoadText = "0%";
-    public string GpuLoadText { get => _gpuLoadText; set => SetProperty(ref _gpuLoadText, value); }
+
+    public string GpuLoadText
+    {
+        get => _gpuLoadText;
+        set => SetProperty(ref _gpuLoadText, value);
+    }
 
     private string _gpuVramText = "0 / 0 MB";
-    public string GpuVramText { get => _gpuVramText; set => SetProperty(ref _gpuVramText, value); }
+
+    public string GpuVramText
+    {
+        get => _gpuVramText;
+        set => SetProperty(ref _gpuVramText, value);
+    }
 
     private string _gpuDeepTempText = "0 C";
-    public string GpuDeepTempText { get => _gpuDeepTempText; set => SetProperty(ref _gpuDeepTempText, value); }
+
+    public string GpuDeepTempText
+    {
+        get => _gpuDeepTempText;
+        set => SetProperty(ref _gpuDeepTempText, value);
+    }
 
     private string _gpuPStateText = "P0";
-    public string GpuPStateText { get => _gpuPStateText; set => SetProperty(ref _gpuPStateText, value); }
+
+    public string GpuPStateText
+    {
+        get => _gpuPStateText;
+        set => SetProperty(ref _gpuPStateText, value);
+    }
 
     private string _gpuLoadColor = "#B388FF";
-    public string GpuLoadColor { get => _gpuLoadColor; set => SetProperty(ref _gpuLoadColor, value); }
+
+    public string GpuLoadColor
+    {
+        get => _gpuLoadColor;
+        set => SetProperty(ref _gpuLoadColor, value);
+    }
 
     private string _gpuDeepTempColor = "#B388FF";
-    public string GpuDeepTempColor { get => _gpuDeepTempColor; set => SetProperty(ref _gpuDeepTempColor, value); }
+
+    public string GpuDeepTempColor
+    {
+        get => _gpuDeepTempColor;
+        set => SetProperty(ref _gpuDeepTempColor, value);
+    }
 
     private string _gpuCoreClockText = "0 MHz";
-    public string GpuCoreClockText { get => _gpuCoreClockText; set => SetProperty(ref _gpuCoreClockText, value); }
+
+    public string GpuCoreClockText
+    {
+        get => _gpuCoreClockText;
+        set => SetProperty(ref _gpuCoreClockText, value);
+    }
 
     private string _gpuMemClockText = "0 MHz";
-    public string GpuMemClockText { get => _gpuMemClockText; set => SetProperty(ref _gpuMemClockText, value); }
+
+    public string GpuMemClockText
+    {
+        get => _gpuMemClockText;
+        set => SetProperty(ref _gpuMemClockText, value);
+    }
 
     private string _gpuPowerText = "0.0 W";
-    public string GpuPowerText { get => _gpuPowerText; set => SetProperty(ref _gpuPowerText, value); }
+
+    public string GpuPowerText
+    {
+        get => _gpuPowerText;
+        set => SetProperty(ref _gpuPowerText, value);
+    }
 
     private bool _isTurboSupported = true;
-    public bool IsTurboSupported { get => _isTurboSupported; set => SetProperty(ref _isTurboSupported, value); }
+
+    public bool IsTurboSupported
+    {
+        get => _isTurboSupported;
+        set => SetProperty(ref _isTurboSupported, value);
+    }
 
     private PowerProfile _activePowerProfile;
+
     public PowerProfile ActivePowerProfile
     {
         get => _activePowerProfile;
@@ -86,6 +192,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
     }
 
     private bool _isCurveModeEnabled;
+
     public bool IsCurveModeEnabled
     {
         get => _isCurveModeEnabled;
@@ -105,6 +212,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
     public bool IsManualSliderEnabled => IsCustomFanEnabled && !IsCurveModeEnabled;
     public string FanModeSubtext => IsCurveModeEnabled ? "CURVE ACTIVE" : "MANUAL (FIXED)";
     public string FanModeSubtextColor => IsCurveModeEnabled ? "#34C759" : "#B388FF";
+
     public string SliderDisabledTooltip => IsCurveModeEnabled
         ? "Manual sliders are disabled while Fan Curve is active. Adjust your curve in CURVE EDITOR."
         : "Adjust fixed fan percentage";
@@ -123,7 +231,9 @@ public class DashboardViewModel : ObservableObject, IDisposable
             ClearDeepTelemetryUI();
         }
 
-        var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f) ? f : FanProfile.Auto;
+        var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f)
+            ? f
+            : FanProfile.Auto;
         IsCustomFanEnabled = activeFan == FanProfile.Medium;
 
         // Initialize Refresh Rate Label
@@ -170,7 +280,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
 
                 _ = AcerWmiManager.SetPowerModeAsync(mode);
                 SettingsManager.Save("LastPowerMode", (int)mode);
-                bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Online;
+                bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
+                                System.Windows.Forms.PowerLineStatus.Online;
                 SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)mode);
 
                 await _gpuManager.ApplyPowerProfileOcAsync(mode);
@@ -193,7 +304,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
                     _ = AcerWmiManager.SetFansAsync(mode);
 
                 SettingsManager.Save("LastFanMode", mode.ToString());
-                bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Online;
+                bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
+                                System.Windows.Forms.PowerLineStatus.Online;
                 SettingsManager.Save(isOnline ? "LastAcFanMode" : "LastDcFanMode", mode.ToString());
             }
         });
@@ -203,7 +315,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
             if (Enum.TryParse(param?.ToString(), out RefreshProfile profile))
             {
                 SettingsManager.Save("RefreshMode", (int)profile);
-                bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Online;
+                bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
+                                System.Windows.Forms.PowerLineStatus.Online;
                 DisplayManager.ApplyRefreshProfile(profile, isOnline);
             }
         });
@@ -253,6 +366,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
 
     // --- FAN PROPERTIES & LOGIC ---
     private int _cpuFanSpeed;
+
     public int CpuFanSpeed
     {
         get => _cpuFanSpeed;
@@ -267,6 +381,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
     }
 
     private int _gpuFanSpeed;
+
     public int GpuFanSpeed
     {
         get => _gpuFanSpeed;
@@ -281,6 +396,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
     }
 
     private bool _isUnifiedFans;
+
     public bool IsUnifiedFans
     {
         get => _isUnifiedFans;
@@ -295,6 +411,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
     }
 
     private bool _isCustomFanEnabled;
+
     public bool IsCustomFanEnabled
     {
         get => _isCustomFanEnabled;
@@ -323,6 +440,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
 
     // --- SETTINGS PROPERTIES & LOGIC ---
     private bool _chargeLimit;
+
     public bool ChargeLimit
     {
         get => _chargeLimit;
@@ -337,6 +455,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
     }
 
     private bool _autoSwitch;
+
     public bool AutoSwitch
     {
         get => _autoSwitch;
@@ -348,6 +467,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
     }
 
     private bool _refreshAutoSwitch;
+
     public bool RefreshAutoSwitch
     {
         get => _refreshAutoSwitch;
@@ -359,6 +479,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
     }
 
     private bool _deepGpuTelemetry;
+
     public bool DeepGpuTelemetry
     {
         get => _deepGpuTelemetry;
@@ -387,6 +508,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
     }
 
     private bool _runOnStartup;
+
     public bool RunOnStartup
     {
         get => _runOnStartup;
@@ -486,7 +608,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
                             GpuVramText = $"{smi.VramUsedMb} / {smi.VramTotalMb} MB";
 
                             GpuDeepTempText = $"{smi.CoreTemp} C";
-                            GpuDeepTempColor = smi.CoreTemp >= 85 ? "#FF453A" : (smi.CoreTemp >= 78 ? "#FF9F0A" : "White");
+                            GpuDeepTempColor =
+                                smi.CoreTemp >= 85 ? "#FF453A" : (smi.CoreTemp >= 78 ? "#FF9F0A" : "White");
 
                             GpuPStateText = smi.PState;
                             GpuCoreClockText = $"{smi.CurrentCoreClock} MHz";
@@ -494,7 +617,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
 
                             if (smi.EnforcedPowerLimitW > 0 && smi.MaxPowerLimitW > 0)
                             {
-                                GpuPowerText = $"{smi.PowerDrawW:0.0} / {smi.EnforcedPowerLimitW:0} / {smi.MaxPowerLimitW:0} W";
+                                GpuPowerText =
+                                    $"{smi.PowerDrawW:0.0} / {smi.EnforcedPowerLimitW:0} / {smi.MaxPowerLimitW:0} W";
                             }
                             else if (smi.EnforcedPowerLimitW > 0)
                             {
@@ -520,6 +644,16 @@ public class DashboardViewModel : ObservableObject, IDisposable
                 }
             }
         }, token);
+    }
+
+    public void PausePolling()
+    {
+        _pollingCts?.Cancel();
+    }
+
+    public void ResumePolling()
+    {
+        StartTelemetryPolling();
     }
 
     public void Dispose()

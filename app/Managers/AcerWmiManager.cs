@@ -8,25 +8,56 @@ namespace Nitrous.Managers;
 
 public static class AcerWmiManager
 {
+    private static ManagementObject? _cachedGamingFunction;
+    private static readonly object _wmiLock = new();
+
+    private static ManagementObject? GetGamingFunctionInstance()
+    {
+        lock (_wmiLock)
+        {
+            if (_cachedGamingFunction != null)
+            {
+                try
+                {
+                    _ = _cachedGamingFunction.ClassPath;
+                    return _cachedGamingFunction;
+                }
+                catch
+                {
+                    try { _cachedGamingFunction.Dispose(); } catch { }
+                    _cachedGamingFunction = null;
+                }
+            }
+
+            try
+            {
+                using var searcher = new ManagementObjectSearcher(@"root\wmi", "SELECT * FROM AcerGamingFunction");
+                using var collection = searcher.Get();
+                foreach (ManagementObject instance in collection)
+                {
+                    _cachedGamingFunction = instance;
+                    return _cachedGamingFunction;
+                }
+            }
+            catch { }
+
+            return null;
+        }
+    }
+
     public static bool IsHardwareSupported()
     {
-        try
-        {
-            using var searcher = new ManagementObjectSearcher(@"root\wmi", "SELECT * FROM AcerGamingFunction");
-            using var collection = searcher.Get();
-            return collection.Count > 0;
-        }
-        catch { return false; }
+        return GetGamingFunctionInstance() != null;
     }
 
     public static bool IsTurboModeSupported()
     {
         try
         {
-            using var searcher = new ManagementObjectSearcher(@"root\wmi", "SELECT * FROM AcerGamingFunction");
-            foreach (ManagementObject instance in searcher.Get())
+            var instance = GetGamingFunctionInstance();
+            if (instance != null)
             {
-                using (instance)
+                lock (_wmiLock)
                 {
                     // 0x0A represents the "Supported Profiles" registry
                     using var inParams = instance.GetMethodParameters("GetGamingMiscSetting");
@@ -48,7 +79,6 @@ public static class AcerWmiManager
                             return (supportedBitmap & (1 << 5)) != 0;
                         }
                     }
-                    break;
                 }
             }
         }
@@ -100,10 +130,10 @@ public static class AcerWmiManager
 
         try
         {
-            using var searcher = new ManagementObjectSearcher(@"root\wmi", "SELECT * FROM AcerGamingFunction");
-            foreach (ManagementObject instance in searcher.Get())
+            var instance = GetGamingFunctionInstance();
+            if (instance != null)
             {
-                using (instance)
+                lock (_wmiLock)
                 {
                     // 1. CPU Temperature (Address: 0x0101)
                     cpuTemp = ReadAcerSensor(instance, 0x0101u, 0xFF);
@@ -118,8 +148,6 @@ public static class AcerWmiManager
 
                     // 4. GPU Fan Speed (Address: 0x0601)
                     gpuRpm = ReadAcerSensor(instance, 0x0601u, 0xFFFF);
-
-                    break; // Only process the first instance
                 }
             }
         }
@@ -131,15 +159,17 @@ public static class AcerWmiManager
         return (cpuTemp, cpuRpm, gpuTemp, gpuRpm);
     }
 
+    private static ManagementBaseObject? _cachedInParams;
+
     // Helper method to isolate exceptions per-sensor and handle WMI output safely
     private static int ReadAcerSensor(ManagementObject instance, uint address, ulong bitmask)
     {
         try
         {
-            using var inParams = instance.GetMethodParameters("GetGamingSysInfo");
-            inParams["gmInput"] = address; // Must be uint (UInt32)
+            _cachedInParams ??= instance.GetMethodParameters("GetGamingSysInfo");
+            _cachedInParams["gmInput"] = address; // Must be uint (UInt32)
 
-            using var outParams = instance.InvokeMethod("GetGamingSysInfo", inParams, null);
+            using var outParams = instance.InvokeMethod("GetGamingSysInfo", _cachedInParams, null);
             if (outParams != null)
             {
                 // Safely check for gmOutput or outValue depending on the BIOS version
@@ -154,7 +184,8 @@ public static class AcerWmiManager
         }
         catch
         {
-            // If one sensor fails (e.g., GPU is asleep), it won't crash the other sensors
+            try { _cachedInParams?.Dispose(); } catch { }
+            _cachedInParams = null;
         }
 
         return 0;

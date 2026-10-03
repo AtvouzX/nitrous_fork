@@ -28,7 +28,14 @@ public partial class NitrousDashboard : Window
             Dispatcher.Invoke(() => SystemModelText.Text = $"{modelName}");
         });
 
-        SystemEvents.PowerModeChanged += OnPowerStateChanged;
+        this.Loaded += (s, e) =>
+        {
+            Dispatcher.InvokeAsync(async () =>
+            {
+                await System.Threading.Tasks.Task.Delay(600);
+                Nitrous.Helpers.MemoryHelper.TrimWorkingSet();
+            }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+        };
     }
 
     private void OnPowerStateChanged(object sender, PowerModeChangedEventArgs e)
@@ -47,6 +54,27 @@ public partial class NitrousDashboard : Window
         if (e.ChangedButton == MouseButton.Left) DragMove();
     }
 
+    private static readonly SolidColorBrush ActiveBrush = CreateFrozenBrush("#B388FF");
+    private static readonly SolidColorBrush InactiveBrush = CreateFrozenBrush("#888890");
+    private static readonly SolidColorBrush AcColorBrush = CreateFrozenBrush("#FF453A");
+    private static readonly SolidColorBrush BattColorBrush = CreateFrozenBrush("#34C759");
+
+    private static readonly Geometry AcGeom = Geometry.Parse("M16,7V3H14V7H10V3H8V7C8,10 9.79,11.4 11,11.83V16H13V11.83C14.21,11.4 16,10 16,7M10,18H14V22H10V18Z");
+    private static readonly Geometry BattGeom = Geometry.Parse("M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z");
+
+    static NitrousDashboard()
+    {
+        AcGeom.Freeze();
+        BattGeom.Freeze();
+    }
+
+    private static SolidColorBrush CreateFrozenBrush(string hex)
+    {
+        var brush = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex));
+        brush.Freeze();
+        return brush;
+    }
+
     private void CloseBtn_Click(object sender, RoutedEventArgs e) => this.Close();
 
     private void NavDashBtn_Click(object sender, RoutedEventArgs e)
@@ -55,17 +83,14 @@ public partial class NitrousDashboard : Window
         GpuPage.Visibility = Visibility.Collapsed;
         SettingsPage.Visibility = Visibility.Collapsed;
 
-        var activeBrush = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#B388FF"));
-        var inactiveBrush = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#888890"));
+        NavDashIcon.Fill = ActiveBrush;
+        NavDashText.Foreground = ActiveBrush;
 
-        NavDashIcon.Fill = activeBrush;
-        NavDashText.Foreground = activeBrush;
+        NavGpuIcon.Fill = InactiveBrush;
+        NavGpuText.Foreground = InactiveBrush;
 
-        NavGpuIcon.Fill = inactiveBrush;
-        NavGpuText.Foreground = inactiveBrush;
-
-        NavSetIcon.Fill = inactiveBrush;
-        NavSetText.Foreground = inactiveBrush;
+        NavSetIcon.Fill = InactiveBrush;
+        NavSetText.Foreground = InactiveBrush;
     }
 
     private void NavGpuBtn_Click(object sender, RoutedEventArgs e)
@@ -74,17 +99,14 @@ public partial class NitrousDashboard : Window
         GpuPage.Visibility = Visibility.Visible;
         SettingsPage.Visibility = Visibility.Collapsed;
 
-        var activeBrush = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#B388FF"));
-        var inactiveBrush = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#888890"));
+        NavDashIcon.Fill = InactiveBrush;
+        NavDashText.Foreground = InactiveBrush;
 
-        NavDashIcon.Fill = inactiveBrush;
-        NavDashText.Foreground = inactiveBrush;
+        NavGpuIcon.Fill = ActiveBrush;
+        NavGpuText.Foreground = ActiveBrush;
 
-        NavGpuIcon.Fill = activeBrush;
-        NavGpuText.Foreground = activeBrush;
-
-        NavSetIcon.Fill = inactiveBrush;
-        NavSetText.Foreground = inactiveBrush;
+        NavSetIcon.Fill = InactiveBrush;
+        NavSetText.Foreground = InactiveBrush;
     }
 
     private void NavSetBtn_Click(object sender, RoutedEventArgs e)
@@ -93,17 +115,14 @@ public partial class NitrousDashboard : Window
         GpuPage.Visibility = Visibility.Collapsed;
         SettingsPage.Visibility = Visibility.Visible;
 
-        var activeBrush = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#B388FF"));
-        var inactiveBrush = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString("#888890"));
+        NavDashIcon.Fill = InactiveBrush;
+        NavDashText.Foreground = InactiveBrush;
 
-        NavDashIcon.Fill = inactiveBrush;
-        NavDashText.Foreground = inactiveBrush;
+        NavGpuIcon.Fill = InactiveBrush;
+        NavGpuText.Foreground = InactiveBrush;
 
-        NavGpuIcon.Fill = inactiveBrush;
-        NavGpuText.Foreground = inactiveBrush;
-
-        NavSetIcon.Fill = activeBrush;
-        NavSetText.Foreground = activeBrush;
+        NavSetIcon.Fill = ActiveBrush;
+        NavSetText.Foreground = ActiveBrush;
     }
 
     private void Window_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
@@ -114,23 +133,14 @@ public partial class NitrousDashboard : Window
     public void RefreshDashboardState()
     {
         bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Online;
-        var powerColor = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(isOnline ? "#FF453A" : "#34C759"));
+        var powerColor = isOnline ? AcColorBrush : BattColorBrush;
         string powerText = isOnline ? "AC POWER" : "BATTERY";
-
-        var acGeom = Geometry.Parse("M16,7V3H14V7H10V3H8V7C8,10 9.79,11.4 11,11.83V16H13V11.83C14.21,11.4 16,10 16,7M10,18H14V22H10V18Z");
-        var battGeom = Geometry.Parse("M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z");
 
         DashPowerPillBorder.BorderBrush = powerColor;
         DashPowerPillIcon.Fill = powerColor;
         DashPowerPillText.Foreground = powerColor;
         DashPowerPillText.Text = powerText;
-        DashPowerPillIcon.Data = isOnline ? acGeom : battGeom;
-
-        // SettingsPowerPillBorder.BorderBrush = powerColor;
-        // SettingsPowerPillIcon.Fill = powerColor;
-        // SettingsPowerPillText.Foreground = powerColor;
-        // SettingsPowerPillText.Text = powerText;
-        // SettingsPowerPillIcon.Data = isOnline ? acGeom : battGeom;
+        DashPowerPillIcon.Data = isOnline ? AcGeom : BattGeom;
 
         var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
         var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f) ? f : FanProfile.Auto;
@@ -161,17 +171,9 @@ public partial class NitrousDashboard : Window
 
         this.Topmost = SettingsManager.Get("IsPinned", false);
 
-        int top = SettingsManager.Get("WindowTop", -9999);
-        int left = SettingsManager.Get("WindowLeft", -9999);
-        if (top != -9999 && left != -9999)
-        {
-            this.Top = top;
-            this.Left = left;
-        }
-        else
-        {
-            this.WindowStartupLocation = WindowStartupLocation.CenterScreen;
-        }
+        // Dock to Windows Quick Settings position (bottom-right above taskbar)
+        this.Left = SystemParameters.WorkArea.Right - this.Width - 12;
+        this.Top = SystemParameters.WorkArea.Bottom - this.Height - 12;
     }
 
     private void Window_Deactivated(object sender, EventArgs e)
@@ -179,14 +181,27 @@ public partial class NitrousDashboard : Window
         if (this.Topmost || _isDialogOpen) return;
 
         this.WindowState = WindowState.Minimized;
+        Nitrous.Helpers.MemoryHelper.TrimWorkingSet();
+    }
+
+    protected override void OnStateChanged(EventArgs e)
+    {
+        base.OnStateChanged(e);
+        if (this.WindowState == WindowState.Minimized)
+        {
+            (DataContext as DashboardViewModel)?.PausePolling();
+            Nitrous.Helpers.MemoryHelper.TrimWorkingSet();
+        }
+        else if (this.WindowState == WindowState.Normal)
+        {
+            (DataContext as DashboardViewModel)?.ResumePolling();
+        }
     }
 
     protected override void OnClosed(EventArgs e)
     {
         base.OnClosed(e);
         SystemEvents.PowerModeChanged -= OnPowerStateChanged;
-        SettingsManager.Save("WindowTop", (int)this.Top);
-        SettingsManager.Save("WindowLeft", (int)this.Left);
         SettingsManager.Save("IsPinned", this.Topmost);
         (DataContext as IDisposable)?.Dispose();
     }

@@ -417,12 +417,7 @@
 						<Border Background="#1C1C1F" CornerRadius="8" BorderBrush="#2A2A30" BorderThickness="1" Padding="12,12,12,16">
 							<StackPanel>
 								<Grid Margin="0,0,0,12">
-									<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-										<TextBlock Text="CUSTOM FAN SPEED" Foreground="#888890" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,8,0"/>
-										<Border CornerRadius="4" Background="#222226" Padding="6,2" VerticalAlignment="Center">
-											<TextBlock Text="{Binding FanModeSubtext}" Foreground="{Binding FanModeSubtextColor}" FontSize="8" FontWeight="Bold"/>
-										</Border>
-									</StackPanel>
+									<TextBlock Text="{Binding CustomFanHeaderText}" Foreground="#888890" FontSize="10" FontWeight="Bold" VerticalAlignment="Center"/>
 									<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
 										<!-- Button to open Fan Curve Editor Window -->
 										<Button Content="CURVE EDITOR"

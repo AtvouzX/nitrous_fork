@@ -23,6 +23,8 @@ public class TrayApplication : ApplicationContext
     private int _lastAppliedCpuSpeed = -1;
     private int _lastAppliedGpuSpeed = -1;
 
+    private static readonly Font BoldMenuFont = new(Control.DefaultFont, FontStyle.Bold);
+
     public TrayApplication()
     {
         Icon appIcon = SystemIcons.Shield;
@@ -42,11 +44,18 @@ public class TrayApplication : ApplicationContext
 
         _ = Task.Run(async () =>
         {
-            await Task.Delay(8000);
+            // Initial quick memory trim after JIT compilation
+            await Task.Delay(2000);
+            MemoryHelper.TrimWorkingSet();
+
+            await Task.Delay(6000);
             ApplyPowerSettings(true);
 
             var bootProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
             await _gpuManager.ApplyOnBootAsync(bootProfile);
+
+            // Final trim after all boot settings are applied
+            MemoryHelper.TrimWorkingSet();
         });
 
         StartBackgroundEngine();
@@ -54,11 +63,12 @@ public class TrayApplication : ApplicationContext
 
     private void BuildContextMenu()
     {
+        trayIcon.ContextMenuStrip?.Dispose();
         var menu = new ContextMenuStrip { ShowImageMargin = false, ShowCheckMargin = true };
 
         var openItem = new ToolStripMenuItem("Open Nitrous", null, (s, e) => ShowDashboard())
         {
-            Font = new Font(Control.DefaultFont, FontStyle.Bold)
+            Font = BoldMenuFont
         };
         menu.Items.Add(openItem);
         menu.Items.Add(new ToolStripSeparator());
@@ -171,7 +181,20 @@ public class TrayApplication : ApplicationContext
         }
 
         // If no UI process is running, start a new one
-        Process.Start(new ProcessStartInfo(Application.ExecutablePath, "--ui") { UseShellExecute = true });
+        var uiProc = Process.Start(new ProcessStartInfo(Application.ExecutablePath, "--ui") { UseShellExecute = true });
+        if (uiProc != null)
+        {
+            try
+            {
+                uiProc.EnableRaisingEvents = true;
+                uiProc.Exited += (s, e) =>
+                {
+                    try { uiProc.Dispose(); } catch { }
+                    MemoryHelper.TrimWorkingSet();
+                };
+            }
+            catch { }
+        }
     }
 
     private async void OnPowerStateChanged(object sender, PowerModeChangedEventArgs e)
@@ -183,6 +206,7 @@ public class TrayApplication : ApplicationContext
             if (eventId != _powerEventId) return;
 
             ApplyPowerSettings(false);
+            MemoryHelper.TrimWorkingSet();
         }
     }
 
@@ -230,83 +254,102 @@ public class TrayApplication : ApplicationContext
         Task.Run(async () =>
         {
             using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+            int tickCounter = 0;
+
             while (!_engineCts.Token.IsCancellationRequested)
             {
                 try
                 {
-                    // 1. Fetch live telemetry for hover tooltip & fan curve
-                    var telemetry = AcerWmiManager.GetSystemTelemetry();
-                    int effectiveGpuTemp = telemetry.GpuTemp;
+                    tickCounter++;
 
-                    // Update tray hover tooltip safely (<= 63 characters limit in WinForms NotifyIcon)
-                    string gpuTip = effectiveGpuTemp > 0 ? $"{effectiveGpuTemp}°C" : "Sleep";
-                    string tipText = $"Nitrous | CPU: {telemetry.CpuTemp}°C  GPU: {gpuTip}";
-                    trayIcon.Text = tipText.Length > 63 ? tipText[..63] : tipText;
-
-                    // 2. Check if the user wants Custom Fan Mode and if the Curve is enabled
+                    // 1. Check if the user wants Custom Fan Mode and if the Curve is enabled
                     string currentFanMode = SettingsManager.Get("LastFanMode", "Auto");
                     bool isCurveEnabled = SettingsManager.Get("IsCurveModeEnabled", 0) == 1;
+                    bool isCurveActive = currentFanMode == "Medium" && isCurveEnabled;
 
-                    if (currentFanMode == "Medium" && isCurveEnabled)
+                    // If curve is active: poll telemetry and evaluate curves every 2s (1 tick).
+                    // If curve is NOT active: hardware EC handles fan speeds, so poll every 10s (every 5 ticks) for tooltip.
+                    if (isCurveActive || (tickCounter % 5 == 0))
                     {
-                        // 3. Load curves from cache or Registry if profile changed
-                        var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-                        if (_cachedCpuCurve == null || _cachedGpuCurve == null || _cachedProfile != activeMode)
+                        var telemetry = AcerWmiManager.GetSystemTelemetry();
+                        int effectiveGpuTemp = telemetry.GpuTemp;
+
+                        string gpuTip = effectiveGpuTemp > 0 ? $"{effectiveGpuTemp}°C" : "Sleep";
+                        string tipText = $"Nitrous | CPU: {telemetry.CpuTemp}°C  GPU: {gpuTip}";
+                        string truncatedTip = tipText.Length > 63 ? tipText[..63] : tipText;
+                        if (trayIcon.Text != truncatedTip)
                         {
-                            _cachedProfile = activeMode;
-                            string pName = activeMode.ToString();
-                            _cachedCpuCurve = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{pName}", FanCurveHelper.GetDefaultCpuCurve(activeMode));
-                            _cachedGpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}", FanCurveHelper.GetDefaultGpuCurve(activeMode));
+                            trayIcon.Text = truncatedTip;
                         }
 
-                        // 4. Interpolate raw target speeds
-                        int targetCpuSpeed = FanCurveHelper.InterpolateSpeed(_cachedCpuCurve, telemetry.CpuTemp);
-                        int targetGpuSpeed = effectiveGpuTemp == 0
-                            ? targetCpuSpeed
-                            : FanCurveHelper.InterpolateSpeed(_cachedGpuCurve, effectiveGpuTemp);
+                        if (isCurveActive)
+                        {
+                            // 3. Load curves from cache or Registry if profile changed
+                            var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+                            if (_cachedCpuCurve == null || _cachedGpuCurve == null || _cachedProfile != activeMode)
+                            {
+                                _cachedProfile = activeMode;
+                                string pName = activeMode.ToString();
+                                _cachedCpuCurve = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{pName}", FanCurveHelper.GetDefaultCpuCurve(activeMode));
+                                _cachedGpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}", FanCurveHelper.GetDefaultGpuCurve(activeMode));
+                            }
 
-                        // 5. Apply Hysteresis (Anti-Revving):
-                        // Ramp-up: Immediate (protects hardware)
-                        // Ramp-down: Hold for HysteresisHoldCycles (4s) before stepping down
-                        int appliedCpuSpeed = _lastAppliedCpuSpeed;
-                        if (_lastAppliedCpuSpeed == -1 || targetCpuSpeed >= _lastAppliedCpuSpeed)
-                        {
-                            appliedCpuSpeed = targetCpuSpeed;
-                            _cpuDownstepHoldTicks = 0;
-                        }
-                        else
-                        {
-                            _cpuDownstepHoldTicks++;
-                            if (_cpuDownstepHoldTicks >= HysteresisHoldCycles)
+                            // 4. Interpolate raw target speeds
+                            int targetCpuSpeed = FanCurveHelper.InterpolateSpeed(_cachedCpuCurve, telemetry.CpuTemp);
+                            int targetGpuSpeed = effectiveGpuTemp == 0
+                                ? targetCpuSpeed
+                                : FanCurveHelper.InterpolateSpeed(_cachedGpuCurve, effectiveGpuTemp);
+
+                            // 5. Apply Hysteresis (Anti-Revving):
+                            // Ramp-up: Immediate (protects hardware)
+                            // Ramp-down: Hold for HysteresisHoldCycles (4s) before stepping down
+                            int appliedCpuSpeed = _lastAppliedCpuSpeed;
+                            if (_lastAppliedCpuSpeed == -1 || targetCpuSpeed >= _lastAppliedCpuSpeed)
                             {
                                 appliedCpuSpeed = targetCpuSpeed;
                                 _cpuDownstepHoldTicks = 0;
                             }
-                        }
+                            else
+                            {
+                                _cpuDownstepHoldTicks++;
+                                if (_cpuDownstepHoldTicks >= HysteresisHoldCycles)
+                                {
+                                    appliedCpuSpeed = targetCpuSpeed;
+                                    _cpuDownstepHoldTicks = 0;
+                                }
+                            }
 
-                        int appliedGpuSpeed = _lastAppliedGpuSpeed;
-                        if (_lastAppliedGpuSpeed == -1 || targetGpuSpeed >= _lastAppliedGpuSpeed)
-                        {
-                            appliedGpuSpeed = targetGpuSpeed;
-                            _gpuDownstepHoldTicks = 0;
-                        }
-                        else
-                        {
-                            _gpuDownstepHoldTicks++;
-                            if (_gpuDownstepHoldTicks >= HysteresisHoldCycles)
+                            int appliedGpuSpeed = _lastAppliedGpuSpeed;
+                            if (_lastAppliedGpuSpeed == -1 || targetGpuSpeed >= _lastAppliedGpuSpeed)
                             {
                                 appliedGpuSpeed = targetGpuSpeed;
                                 _gpuDownstepHoldTicks = 0;
                             }
-                        }
+                            else
+                            {
+                                _gpuDownstepHoldTicks++;
+                                if (_gpuDownstepHoldTicks >= HysteresisHoldCycles)
+                                {
+                                    appliedGpuSpeed = targetGpuSpeed;
+                                    _gpuDownstepHoldTicks = 0;
+                                }
+                            }
 
-                        // 6. Fire WMI only if changed
-                        if (appliedCpuSpeed != _lastAppliedCpuSpeed || appliedGpuSpeed != _lastAppliedGpuSpeed)
-                        {
-                            _lastAppliedCpuSpeed = appliedCpuSpeed;
-                            _lastAppliedGpuSpeed = appliedGpuSpeed;
-                            await AcerWmiManager.SetCustomFansAsync(appliedCpuSpeed, appliedGpuSpeed);
+                            // 6. Fire WMI only if changed
+                            if (appliedCpuSpeed != _lastAppliedCpuSpeed || appliedGpuSpeed != _lastAppliedGpuSpeed)
+                            {
+                                _lastAppliedCpuSpeed = appliedCpuSpeed;
+                                _lastAppliedGpuSpeed = appliedGpuSpeed;
+                                await AcerWmiManager.SetCustomFansAsync(appliedCpuSpeed, appliedGpuSpeed);
+                            }
                         }
+                    }
+
+                    // Periodic memory purge every ~60 seconds (every 30 ticks)
+                    if (tickCounter % 30 == 0)
+                    {
+                        GC.Collect(1, GCCollectionMode.Default, false);
+                        MemoryHelper.TrimWorkingSet();
                     }
                 }
                 catch { /* Absorb exceptions to keep background engine alive */ }
