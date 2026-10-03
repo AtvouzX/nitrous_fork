@@ -48,6 +48,7 @@ public partial class FanCurveWindow : Window
         LoadCurvesForProfile(_viewModel.ActivePowerProfile);
 
         this.Loaded += (s, e) => RedrawGraph();
+        GraphCanvas.SizeChanged += (s, e) => RedrawGraph();
     }
 
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
@@ -100,14 +101,42 @@ public partial class FanCurveWindow : Window
         RedrawGraph();
     }
 
-    private void SaveBtn_Click(object sender, RoutedEventArgs e)
+    private async void SaveBtn_Click(object sender, RoutedEventArgs e)
     {
-        // Save to the specific profile that is currently active
+        // 1. Activate Curve Override & Custom Fan Mode on the ViewModel
+        _viewModel.IsCurveModeEnabled = true;
+        _viewModel.IsCustomFanEnabled = true;
+
+        // 2. Save curves to registry for the active power profile
         string suffix = _viewModel.ActivePowerProfile.ToString();
         FanCurveHelper.SaveCurveToRegistry($"CpuCurve_{suffix}", _cpuPoints);
         FanCurveHelper.SaveCurveToRegistry($"GpuCurve_{suffix}", _gpuPoints);
 
+        // 3. Persist settings and bump version so background engine immediately reloads
+        SettingsManager.Save("IsCurveModeEnabled", 1);
         SettingsManager.Save("LastFanMode", "Medium");
+        bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
+                        System.Windows.Forms.PowerLineStatus.Online;
+        SettingsManager.Save(isOnline ? "LastAcFanMode" : "LastDcFanMode", "Medium");
+        SettingsManager.Save("FanCurveVersion", DateTime.UtcNow.Ticks);
+
+        // 4. Immediately evaluate current telemetry and apply fans to hardware EC
+        try
+        {
+            var telemetry = AcerWmiManager.GetSystemTelemetry();
+            int currentCpuTemp = telemetry.CpuTemp > 0 ? telemetry.CpuTemp : 50;
+            int currentGpuTemp = telemetry.GpuTemp > 0 ? telemetry.GpuTemp : currentCpuTemp;
+
+            int cpuSpd = Math.Clamp(FanCurveHelper.InterpolateSpeed(_cpuPoints, currentCpuTemp), 0, 100);
+            int gpuSpd = Math.Clamp(FanCurveHelper.InterpolateSpeed(_gpuPoints, currentGpuTemp), 0, 100);
+
+            await AcerWmiManager.SetCustomFansAsync(cpuSpd, gpuSpd);
+        }
+        catch (Exception ex)
+        {
+            System.Diagnostics.Debug.WriteLine($"Failed to immediately apply fan curve: {ex.Message}");
+        }
+
         Close();
     }
 
@@ -210,6 +239,7 @@ public partial class FanCurveWindow : Window
             NodeTooltip.Visibility = Visibility.Visible;
             Mouse.Capture(GraphCanvas);
             UpdateTooltipPosition();
+            e.Handled = true;
         }
     }
 
@@ -254,9 +284,11 @@ public partial class FanCurveWindow : Window
 
     private void GraphCanvas_MouseLeave(object sender, MouseEventArgs e)
     {
-        _draggingIndex = -1;
-        NodeTooltip.Visibility = Visibility.Hidden;
-        Mouse.Capture(null);
+        if (Mouse.Captured != GraphCanvas)
+        {
+            _draggingIndex = -1;
+            NodeTooltip.Visibility = Visibility.Hidden;
+        }
     }
 
     private void UpdateTooltipPosition()

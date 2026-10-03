@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.Windows.Input;
 using Nitrous.Enums;
+using Nitrous.Helpers;
 using Nitrous.Managers;
 using Nitrous.Mvvm;
 using PowerLineStatus = System.Windows.Forms.PowerLineStatus;
@@ -200,12 +201,18 @@ public class DashboardViewModel : ObservableObject, IDisposable
             if (SetProperty(ref _isCurveModeEnabled, value))
             {
                 SettingsManager.Save("IsCurveModeEnabled", value ? 1 : 0);
+                SettingsManager.Save("FanCurveVersion", DateTime.UtcNow.Ticks);
                 OnPropertyChanged(nameof(IsManualSliderEnabled));
                 OnPropertyChanged(nameof(CustomFanHeaderText));
                 OnPropertyChanged(nameof(CustomFanHeaderColor));
                 OnPropertyChanged(nameof(FanModeSubtext));
                 OnPropertyChanged(nameof(FanModeSubtextColor));
                 OnPropertyChanged(nameof(SliderDisabledTooltip));
+
+                if (value && IsCustomFanEnabled)
+                {
+                    ApplyCurrentFanCurve();
+                }
             }
         }
     }
@@ -294,6 +301,11 @@ public class DashboardViewModel : ObservableObject, IDisposable
                         GpuCoreOffset = c;
                         GpuMemoryOffset = m;
                     }
+
+                    if (IsCustomFanEnabled && IsCurveModeEnabled)
+                    {
+                        ApplyCurrentFanCurve();
+                    }
                 }
                 catch (Exception ex)
                 {
@@ -308,9 +320,16 @@ public class DashboardViewModel : ObservableObject, IDisposable
             {
                 IsCustomFanEnabled = mode == FanProfile.Medium;
                 if (mode == FanProfile.Medium)
-                    _ = AcerWmiManager.SetCustomFansAsync(CpuFanSpeed, GpuFanSpeed);
+                {
+                    if (IsCurveModeEnabled)
+                        ApplyCurrentFanCurve();
+                    else
+                        _ = AcerWmiManager.SetCustomFansAsync(CpuFanSpeed, GpuFanSpeed);
+                }
                 else
+                {
                     _ = AcerWmiManager.SetFansAsync(mode);
+                }
 
                 SettingsManager.Save("LastFanMode", mode.ToString());
                 bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
@@ -453,12 +472,38 @@ public class DashboardViewModel : ObservableObject, IDisposable
 
     private void TriggerFanSave()
     {
-        if (!IsCustomFanEnabled) return;
+        if (!IsCustomFanEnabled || IsCurveModeEnabled) return;
         _fanDebouncer.Debounce(250, () =>
         {
             SettingsManager.Save("CustomFanSpeedCpu", CpuFanSpeed);
             SettingsManager.Save("CustomFanSpeedGpu", GpuFanSpeed);
             _ = AcerWmiManager.SetCustomFansAsync(CpuFanSpeed, GpuFanSpeed);
+        });
+    }
+
+    public void ApplyCurrentFanCurve()
+    {
+        Task.Run(async () =>
+        {
+            try
+            {
+                string pName = ActivePowerProfile.ToString();
+                var cpuCurve = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{pName}", FanCurveHelper.GetDefaultCpuCurve(ActivePowerProfile));
+                var gpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}", FanCurveHelper.GetDefaultGpuCurve(ActivePowerProfile));
+
+                var telemetry = AcerWmiManager.GetSystemTelemetry();
+                int currentCpuTemp = telemetry.CpuTemp > 0 ? telemetry.CpuTemp : 50;
+                int currentGpuTemp = telemetry.GpuTemp > 0 ? telemetry.GpuTemp : currentCpuTemp;
+
+                int cpuSpd = Math.Clamp(FanCurveHelper.InterpolateSpeed(cpuCurve, currentCpuTemp), 0, 100);
+                int gpuSpd = Math.Clamp(FanCurveHelper.InterpolateSpeed(gpuCurve, currentGpuTemp), 0, 100);
+
+                await AcerWmiManager.SetCustomFansAsync(cpuSpd, gpuSpd);
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to apply current fan curve: {ex.Message}");
+            }
         });
     }
 
