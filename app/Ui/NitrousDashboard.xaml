@@ -283,6 +283,38 @@
                 </Setter.Value>
             </Setter>
         </Style>
+
+        <!-- Modern Dark Tooltip Style -->
+        <Style TargetType="ToolTip">
+            <Setter Property="Background" Value="#222226"/>
+            <Setter Property="Foreground" Value="#D8D8E0"/>
+            <Setter Property="BorderBrush" Value="#323238"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="FontSize" Value="11"/>
+            <Setter Property="Padding" Value="9,6"/>
+            <Setter Property="HasDropShadow" Value="True"/>
+            <Setter Property="ToolTipService.InitialShowDelay" Value="400"/>
+            <Setter Property="ToolTipService.BetweenShowDelay" Value="100"/>
+            <Setter Property="ToolTipService.ShowDuration" Value="7000"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ToolTip">
+                        <Border Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="6" 
+                                Padding="{TemplateBinding Padding}"
+                                SnapsToDevicePixels="True"
+                                MaxWidth="280">
+                            <TextBlock Text="{TemplateBinding Content}"
+                                       Foreground="{TemplateBinding Foreground}"
+                                       FontSize="{TemplateBinding FontSize}"
+                                       TextWrapping="Wrap"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
 	</Window.Resources>
 	<!-- Outer Frame with Rounded Corners -->
 	<Border Background="#121214" CornerRadius="16" BorderBrush="#2A2A30" BorderThickness="1">
@@ -298,7 +330,8 @@
 				<!-- Right Side: Power Pill, Pin to Top & Close -->
 				<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0">
 					<!-- 1. Dynamic Power State Pill -->
-                    <Border x:Name="DashPowerPillBorder" BorderBrush="#FF453A" BorderThickness="1" CornerRadius="6" Margin="0,0,12,0">
+                    <Border x:Name="DashPowerPillBorder" BorderBrush="#FF453A" BorderThickness="1" CornerRadius="6" Margin="0,0,12,0"
+                            ToolTip="Current power source. Nitrous automatically tunes power limits and display refresh rate when switching between AC and battery.">
                         <Grid>
                             <!-- Auto-tinting subtle background -->
                             <Border Background="{Binding BorderBrush, ElementName=DashPowerPillBorder}" Opacity="0.15" CornerRadius="5"/>
@@ -314,7 +347,7 @@
 					<ToggleButton x:Name="BtnPinTop"
                                 Cursor="Hand"
                                 Margin="0,0,12,0"
-                                ToolTip="Pin to Top"
+                                ToolTip="Keeps the Nitrous window floating above all other applications."
                                 IsChecked="{Binding Topmost, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}">
 						<ToggleButton.Template>
 							<ControlTemplate TargetType="ToggleButton">
@@ -341,7 +374,8 @@
 						</ToggleButton.Template>
 					</ToggleButton>
 					<!-- 3. Close Button -->
-					<Button Content="✕" Foreground="#888890" Background="Transparent" BorderThickness="0" FontSize="14" FontWeight="Bold" Click="CloseBtn_Click" Cursor="Hand">
+					<Button Content="✕" Foreground="#888890" Background="Transparent" BorderThickness="0" FontSize="14" FontWeight="Bold" Click="CloseBtn_Click" Cursor="Hand"
+                            ToolTip="Close dashboard window. Nitrous continues running silently in the system tray.">
 						<Button.Template>
 							<ControlTemplate TargetType="Button">
 								<TextBlock Text="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"/>
@@ -374,7 +408,8 @@
 							<ColumnDefinition Width="*"/>
 						</Grid.ColumnDefinitions>
 						<!-- CPU Telemetry -->
-						<Border Grid.Column="0" Background="#1C1C1F" CornerRadius="8" BorderBrush="#2A2A30" BorderThickness="1" Padding="10,8">
+						<Border Grid.Column="0" Background="#1C1C1F" CornerRadius="8" BorderBrush="#2A2A30" BorderThickness="1" Padding="10,8"
+                                ToolTip="Real-time CPU temperature and fan speed read directly from the Acer Embedded Controller (EC).">
 							<Grid>
 								<Grid.ColumnDefinitions>
 									<ColumnDefinition Width="*"/>
@@ -395,7 +430,8 @@
 							</Grid>
 						</Border>
 						<!-- GPU Telemetry -->
-						<Border Grid.Column="2" Background="#1C1C1F" CornerRadius="8" BorderBrush="#2A2A30" BorderThickness="1" Padding="10,8">
+						<Border Grid.Column="2" Background="#1C1C1F" CornerRadius="8" BorderBrush="#2A2A30" BorderThickness="1" Padding="10,8"
+                                ToolTip="Discrete GPU thermals. When the dGPU enters D3Cold sleep on battery, polling pauses to maximize battery life.">
 							<Grid>
 								<Grid.ColumnDefinitions>
 									<ColumnDefinition Width="*"/>
@@ -420,28 +456,38 @@
 					<TextBlock Text="POWER" Foreground="#888890" FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
 					<Border Background="#1C1C1F" BorderBrush="#2A2A30" BorderThickness="1" CornerRadius="8" Padding="3" Margin="0,0,0,16">
 						<UniformGrid Rows="1" Height="34">
-							<RadioButton x:Name="BtnPowerQuiet" TabIndex="0" GroupName="Power" Uid="Quiet" Tag="M1,13 L9.4,11.5 A3,3 0 1,1 9.4,14.5 Z M4.93,20.06 A10,10 0 1,1 19.07,20.06 C18.68,20.45 18.05,20.45 17.66,20.06 C17.27,19.67 17.27,19.04 17.66,18.65 A8,8 0 1,0 6.34,18.65 C6.74,19.04 6.74,19.67 6.35,20.06 C5.96,20.45 5.32,20.45 4.93,20.06 Z" Content="Quiet" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}" CommandParameter="Quiet"/>
-							<RadioButton x:Name="BtnPowerBal" TabIndex="1" GroupName="Power" Uid="Balanced" Tag="M12,2 L13.5,10.4 A3,3 0 1,1 10.5,10.4 Z M4.93,20.06 A10,10 0 1,1 19.07,20.06 C18.68,20.45 18.05,20.45 17.66,20.06 C17.27,19.67 17.27,19.04 17.66,18.65 A8,8 0 1,0 6.34,18.65 C6.74,19.04 6.74,19.67 6.35,20.06 C5.96,20.45 5.32,20.45 4.93,20.06 Z" Content="Bal" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}" CommandParameter="Balanced"/>
-							<RadioButton x:Name="BtnPowerPerf" TabIndex="1" GroupName="Power" Uid="Performance" Tag="M19.78,5.22 L14.9,12.22 A3,3 0 1,1 12.78,10.1 Z M4.93,20.06 A10,10 0 1,1 19.07,20.06 C18.68,20.45 18.05,20.45 17.66,20.06 C17.27,19.67 17.27,19.04 17.66,18.65 A8,8 0 1,0 6.34,18.65 C6.74,19.04 6.74,19.67 6.35,20.06 C5.96,20.45 5.32,20.45 4.93,20.06 Z" Content="Perf" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}" CommandParameter="Performance"/>
-							<RadioButton x:Name="BtnPowerTurbo" TabIndex="1" GroupName="Power" Uid="Turbo" Tag="M19.78,20.78 L12.78,15.9 A3,3 0 1,1 14.9,13.78 Z M4.93,20.06 A10,10 0 1,1 19.07,20.06 C18.68,20.45 18.05,20.45 17.66,20.06 C17.27,19.67 17.27,19.04 17.66,18.65 A8,8 0 1,0 6.34,18.65 C6.74,19.04 6.74,19.67 6.35,20.06 C5.96,20.45 5.32,20.45 4.93,20.06 Z" Content="Turbo" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}" CommandParameter="Turbo" Visibility="{Binding IsTurboSupported, Converter={StaticResource BoolToVis}}"/>
+							<RadioButton x:Name="BtnPowerQuiet" TabIndex="0" GroupName="Power" Uid="Quiet" Tag="M1,13 L9.4,11.5 A3,3 0 1,1 9.4,14.5 Z M4.93,20.06 A10,10 0 1,1 19.07,20.06 C18.68,20.45 18.05,20.45 17.66,20.06 C17.27,19.67 17.27,19.04 17.66,18.65 A8,8 0 1,0 6.34,18.65 C6.74,19.04 6.74,19.67 6.35,20.06 C5.96,20.45 5.32,20.45 4.93,20.06 Z" Content="Quiet" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}" CommandParameter="Quiet"
+                                         ToolTip="Quiet Profile: Lowers wattage limits and fan speeds. Windows processor state capped at 85% on AC (80% on DC) with CPU boost disabled for silent, cool operation."/>
+							<RadioButton x:Name="BtnPowerBal" TabIndex="1" GroupName="Power" Uid="Balanced" Tag="M12,2 L13.5,10.4 A3,3 0 1,1 10.5,10.4 Z M4.93,20.06 A10,10 0 1,1 19.07,20.06 C18.68,20.45 18.05,20.45 17.66,20.06 C17.27,19.67 17.27,19.04 17.66,18.65 A8,8 0 1,0 6.34,18.65 C6.74,19.04 6.74,19.67 6.35,20.06 C5.96,20.45 5.32,20.45 4.93,20.06 Z" Content="Bal" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}" CommandParameter="Balanced"
+                                         ToolTip="Balanced Profile: Balanced fan acoustics and standard performance. Windows processor state set to 99% on AC (95% on DC) with CPU boost disabled to eliminate temperature spikes."/>
+							<RadioButton x:Name="BtnPowerPerf" TabIndex="1" GroupName="Power" Uid="Performance" Tag="M19.78,5.22 L14.9,12.22 A3,3 0 1,1 12.78,10.1 Z M4.93,20.06 A10,10 0 1,1 19.07,20.06 C18.68,20.45 18.05,20.45 17.66,20.06 C17.27,19.67 17.27,19.04 17.66,18.65 A8,8 0 1,0 6.34,18.65 C6.74,19.04 6.74,19.67 6.35,20.06 C5.96,20.45 5.32,20.45 4.93,20.06 Z" Content="Perf" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}" CommandParameter="Performance"
+                                         ToolTip="Performance Profile: Increases wattage limits and fan speeds. Windows processor state set to 100% on AC with aggressive CPU boost enabled (99% on DC, boost disabled)."/>
+							<RadioButton x:Name="BtnPowerTurbo" TabIndex="1" GroupName="Power" Uid="Turbo" Tag="M19.78,20.78 L12.78,15.9 A3,3 0 1,1 14.9,13.78 Z M4.93,20.06 A10,10 0 1,1 19.07,20.06 C18.68,20.45 18.05,20.45 17.66,20.06 C17.27,19.67 17.27,19.04 17.66,18.65 A8,8 0 1,0 6.34,18.65 C6.74,19.04 6.74,19.67 6.35,20.06 C5.96,20.45 5.32,20.45 4.93,20.06 Z" Content="Turbo" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}" CommandParameter="Turbo" Visibility="{Binding IsTurboSupported, Converter={StaticResource BoolToVis}}"
+                                         ToolTip="Turbo Profile: Maximum cooling and maximum wattage. Windows processor state locked at 100% min/max on AC with aggressive CPU boost enabled."/>
 						</UniformGrid>
 					</Border>
 					<!-- Display Refresh Rates -->
 					<TextBlock Text="DISPLAY REFRESH" Foreground="#888890" FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
 					<Border Background="#1C1C1F" BorderBrush="#2A2A30" BorderThickness="1" CornerRadius="8" Padding="3" Margin="0,0,0,16">
 						<UniformGrid Rows="1" Height="34">
-							<RadioButton x:Name="BtnRefreshAuto" TabIndex="0" GroupName="Refresh" Uid="Auto" Tag="M12,4V1L7,5L12,9V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6.34,14H4.27A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z" Content="Auto" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetRefreshCommand}" CommandParameter="Auto"/>
-							<RadioButton x:Name="BtnRefresh60" TabIndex="1" GroupName="Refresh" Uid="Hz60" Tag="M2,12C4.5,6.5 7.5,6.5 10.5,12C13.5,17.5 16.5,17.5 19,12H22C18.5,19.5 14.5,19.5 10.5,14C7.5,8.5 5,8.5 2,12Z" Content="60Hz" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetRefreshCommand}" CommandParameter="Hz60"/>
-							<RadioButton x:Name="BtnRefreshMax" TabIndex="1" GroupName="Refresh" Uid="MaxHz" Tag="M13,2L4,14H11L9,22L20,10H13L15,2Z" Content="{Binding MaxRefreshText}" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetRefreshCommand}" CommandParameter="MaxHz"/>
+							<RadioButton x:Name="BtnRefreshAuto" TabIndex="0" GroupName="Refresh" Uid="Auto" Tag="M12,4V1L7,5L12,9V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6.34,14H4.27A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z" Content="Auto" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetRefreshCommand}" CommandParameter="Auto"
+                                         ToolTip="Automatically switches to maximum refresh rate on AC power and 60Hz on battery to save power."/>
+							<RadioButton x:Name="BtnRefresh60" TabIndex="1" GroupName="Refresh" Uid="Hz60" Tag="M2,12C4.5,6.5 7.5,6.5 10.5,12C13.5,17.5 16.5,17.5 19,12H22C18.5,19.5 14.5,19.5 10.5,14C7.5,8.5 5,8.5 2,12Z" Content="60Hz" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetRefreshCommand}" CommandParameter="Hz60"
+                                         ToolTip="Locks display to 60Hz to reduce display panel power consumption."/>
+							<RadioButton x:Name="BtnRefreshMax" TabIndex="1" GroupName="Refresh" Uid="MaxHz" Tag="M13,2L4,14H11L9,22L20,10H13L15,2Z" Content="{Binding MaxRefreshText}" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetRefreshCommand}" CommandParameter="MaxHz"
+                                         ToolTip="Forces maximum display refresh rate for fluid, low-latency visuals."/>
 						</UniformGrid>
 					</Border>
 					<!-- Fans -->
 					<TextBlock Text="FANS" Foreground="#888890" FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
 					<Border Background="#1C1C1F" BorderBrush="#2A2A30" BorderThickness="1" CornerRadius="8" Padding="3" Margin="0,0,0,16">
 						<UniformGrid Rows="1" Height="34">
-							<RadioButton x:Name="BtnFanAuto" TabIndex="0" GroupName="Fans" Uid="Auto" Tag="M12,4V1L7,5L12,9V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6.34,14H4.27A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z" Content="Auto" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetFanCommand}" CommandParameter="Auto"/>
-							<RadioButton x:Name="BtnFanMax" TabIndex="1" GroupName="Fans" Uid="Max" Tag="M19.78,20.78 L12.78,15.9 A3,3 0 1,1 14.9,13.78 Z M4.93,20.06 A10,10 0 1,1 19.07,20.06 C18.68,20.45 18.05,20.45 17.66,20.06 C17.27,19.67 17.27,19.04 17.66,18.65 A8,8 0 1,0 6.34,18.65 C6.74,19.04 6.74,19.67 6.35,20.06 C5.96,20.45 5.32,20.45 4.93,20.06 Z" Content="Max" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetFanCommand}" CommandParameter="Max"/>
-							<RadioButton x:Name="BtnFanCustom" TabIndex="1" GroupName="Fans" Uid="Medium" Tag="M3,7V9H13V7H3M15,11H17V9H21V7H17V5H15V11ZM3,15V17H9V15H3M13,19V17H21V15H13V13H11V19H13Z" Content="Custom" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetFanCommand}" CommandParameter="Medium"/>
+							<RadioButton x:Name="BtnFanAuto" TabIndex="0" GroupName="Fans" Uid="Auto" Tag="M12,4V1L7,5L12,9V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6.34,14H4.27A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z" Content="Auto" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetFanCommand}" CommandParameter="Auto"
+                                         ToolTip="Restores factory Acer Embedded Controller automatic fan management."/>
+							<RadioButton x:Name="BtnFanMax" TabIndex="1" GroupName="Fans" Uid="Max" Tag="M19.78,20.78 L12.78,15.9 A3,3 0 1,1 14.9,13.78 Z M4.93,20.06 A10,10 0 1,1 19.07,20.06 C18.68,20.45 18.05,20.45 17.66,20.06 C17.27,19.67 17.27,19.04 17.66,18.65 A8,8 0 1,0 6.34,18.65 C6.74,19.04 6.74,19.67 6.35,20.06 C5.96,20.45 5.32,20.45 4.93,20.06 Z" Content="Max" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetFanCommand}" CommandParameter="Max"
+                                         ToolTip="Forces all cooling fans to 100% maximum RPM."/>
+							<RadioButton x:Name="BtnFanCustom" TabIndex="1" GroupName="Fans" Uid="Medium" Tag="M3,7V9H13V7H3M15,11H17V9H21V7H17V5H15V11ZM3,15V17H9V15H3M13,19V17H21V15H13V13H11V19H13Z" Content="Custom" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetFanCommand}" CommandParameter="Medium"
+                                         ToolTip="Enables custom fan speed controls and waypoint temperature curves."/>
 						</UniformGrid>
 					</Border>
 					<StackPanel x:Name="CustomFanSection" Opacity="{Binding CustomFanOpacity}">
@@ -457,13 +503,15 @@
 												FontSize="9"
 												Padding="6,2"
 												Margin="0,0,8,0"
-												IsEnabled="{Binding IsCustomFanEnabled}"/>
+												IsEnabled="{Binding IsCustomFanEnabled}"
+                                                ToolTip="Opens the interactive fan curve editor to configure custom temperature-to-speed waypoints."/>
 
 										<CheckBox x:Name="TogUnifiedFans"
 												Content="UNIFIED"
 												Style="{StaticResource SquareCheckBoxStyle}"
 												IsChecked="{Binding IsUnifiedFans, UpdateSourceTrigger=PropertyChanged}"
-												IsEnabled="{Binding IsManualSliderEnabled}"/>
+												IsEnabled="{Binding IsManualSliderEnabled}"
+                                                ToolTip="Locks CPU and GPU fan speeds together to adjust both fans simultaneously."/>
 									</StackPanel>
 								</Grid>
 								<!-- CPU Slider -->
@@ -525,7 +573,8 @@
 					</Border>
 					<TextBlock Text="POWER &amp; PERFORMANCE RULES" Foreground="#888890" FontSize="10" FontWeight="Bold" Margin="0,0,0,8"/>
 					<!-- Manage CPU Power Toggle -->
-					<Border Background="#1C1C1F" CornerRadius="10" Height="70" BorderBrush="#2A2A30" BorderThickness="1" Margin="0,0,0,10">
+					<Border Background="#1C1C1F" CornerRadius="10" Height="70" BorderBrush="#2A2A30" BorderThickness="1" Margin="0,0,0,10"
+                            ToolTip="Synchronizes Windows processor limits per profile: Quiet (85% max, Boost Off), Balanced (99% max, Boost Off), Performance (100% max, Boost On), and Turbo (100% min/max, Boost On). Eliminates thermal throttling and fan revving.">
 						<Grid>
 							<Grid.ColumnDefinitions>
 								<ColumnDefinition Width="*"/>
@@ -539,10 +588,12 @@
 								</StackPanel>
 								<TextBlock Text="Automatically adjust Windows CPU power limits based on the active profile." Foreground="#888890" FontSize="11" TextWrapping="Wrap"/>
 							</StackPanel>
-							<CheckBox Grid.Column="1" x:Name="TogManageCpu" Style="{StaticResource ModernToggleStyle}" HorizontalAlignment="Right" Margin="0,0,15,0" IsChecked="{Binding ManageCpuPower, UpdateSourceTrigger=PropertyChanged}"/>
+							<CheckBox Grid.Column="1" x:Name="TogManageCpu" Style="{StaticResource ModernToggleStyle}" HorizontalAlignment="Right" Margin="0,0,15,0" IsChecked="{Binding ManageCpuPower, UpdateSourceTrigger=PropertyChanged}"
+                                      ToolTip="Synchronizes Windows processor limits per profile: Quiet (85% max, Boost Off), Balanced (99% max, Boost Off), Performance (100% max, Boost On), and Turbo (100% min/max, Boost On). Eliminates thermal throttling and fan revving."/>
 						</Grid>
 					</Border>
-					<Border Background="#1C1C1F" CornerRadius="10" Height="70" Margin="0,0,0,10" BorderBrush="#2A2A30" BorderThickness="1">
+					<Border Background="#1C1C1F" CornerRadius="10" Height="70" Margin="0,0,0,10" BorderBrush="#2A2A30" BorderThickness="1"
+                            ToolTip="Signals the Acer EC to cap battery charging at 80%, reducing chemical stress and extending battery longevity.">
 					    <Grid>
 							<Grid.ColumnDefinitions>
 								<ColumnDefinition Width="*"/>
@@ -555,10 +606,12 @@
 								</StackPanel>
 								<TextBlock Text="Extends battery lifespan by capping max charge." Foreground="#888890" FontSize="11" TextWrapping="Wrap"/>
 							</StackPanel>
-							<CheckBox Grid.Column="1" x:Name="TogCharge" Style="{StaticResource ModernToggleStyle}" HorizontalAlignment="Right" Margin="0,0,15,0" IsChecked="{Binding ChargeLimit, UpdateSourceTrigger=PropertyChanged}"/>
+							<CheckBox Grid.Column="1" x:Name="TogCharge" Style="{StaticResource ModernToggleStyle}" HorizontalAlignment="Right" Margin="0,0,15,0" IsChecked="{Binding ChargeLimit, UpdateSourceTrigger=PropertyChanged}"
+                                      ToolTip="Signals the Acer EC to cap battery charging at 80%, reducing chemical stress and extending battery longevity."/>
 						</Grid>
 					</Border>
-					<Border Background="#1C1C1F" CornerRadius="10" Height="70" Margin="0,0,0,10" BorderBrush="#2A2A30" BorderThickness="1">
+					<Border Background="#1C1C1F" CornerRadius="10" Height="70" Margin="0,0,0,10" BorderBrush="#2A2A30" BorderThickness="1"
+                            ToolTip="Automatically activates your preferred AC profile when plugged in and DC profile when running on battery.">
 						<Grid>
 							<Grid.ColumnDefinitions>
 								<ColumnDefinition Width="*"/>
@@ -571,10 +624,12 @@
 								</StackPanel>
 								<TextBlock Text="Adapts performance plan based on AC/DC state." Foreground="#888890" FontSize="11" TextWrapping="Wrap"/>
 							</StackPanel>
-							<CheckBox Grid.Column="1" x:Name="TogAutoSwitch" Style="{StaticResource ModernToggleStyle}" HorizontalAlignment="Right" Margin="0,0,15,0" IsChecked="{Binding AutoSwitch, UpdateSourceTrigger=PropertyChanged}"/>
+							<CheckBox Grid.Column="1" x:Name="TogAutoSwitch" Style="{StaticResource ModernToggleStyle}" HorizontalAlignment="Right" Margin="0,0,15,0" IsChecked="{Binding AutoSwitch, UpdateSourceTrigger=PropertyChanged}"
+                                      ToolTip="Automatically activates your preferred AC profile when plugged in and DC profile when running on battery."/>
 						</Grid>
 					</Border>
-					<Border Background="#1C1C1F" CornerRadius="10" Height="70" Margin="0,0,0,10" BorderBrush="#2A2A30" BorderThickness="1">
+					<Border Background="#1C1C1F" CornerRadius="10" Height="70" Margin="0,0,0,10" BorderBrush="#2A2A30" BorderThickness="1"
+                            ToolTip="Enables detailed NVML queries (clocks, load, VRAM, wattage). Automatically pauses on battery to preserve D3Cold sleep.">
                         <Grid>
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="*"/>
@@ -589,10 +644,12 @@
                                 <TextBlock Text="Live NVIDIA statistics." Foreground="#888890" FontSize="11" TextWrapping="Wrap"/>
                             </StackPanel>
                             <!-- Bound to the new DeepGpuTelemetry property -->
-                            <CheckBox Grid.Column="1" x:Name="TogGpuTelemetry" Style="{StaticResource ModernToggleStyle}" HorizontalAlignment="Right" Margin="0,0,15,0" IsChecked="{Binding DeepGpuTelemetry, UpdateSourceTrigger=PropertyChanged}"/>
+                            <CheckBox Grid.Column="1" x:Name="TogGpuTelemetry" Style="{StaticResource ModernToggleStyle}" HorizontalAlignment="Right" Margin="0,0,15,0" IsChecked="{Binding DeepGpuTelemetry, UpdateSourceTrigger=PropertyChanged}"
+                                      ToolTip="Enables detailed NVML queries (clocks, load, VRAM, wattage). Automatically pauses on battery to preserve D3Cold sleep."/>
                         </Grid>
                     </Border>
-					<Border Background="#1C1C1F" CornerRadius="10" Height="70" BorderBrush="#2A2A30" BorderThickness="1">
+					<Border Background="#1C1C1F" CornerRadius="10" Height="70" BorderBrush="#2A2A30" BorderThickness="1"
+                            ToolTip="Registers an elevated Task Scheduler task to start Nitrous silently in the system tray at Windows logon without UAC prompts.">
 						<Grid>
 							<Grid.ColumnDefinitions>
 								<ColumnDefinition Width="*"/>
@@ -605,7 +662,8 @@
 								</StackPanel>
 								<TextBlock Text="Launch nitrous engine silently at boot." Foreground="#888890" FontSize="11" TextWrapping="Wrap"/>
 							</StackPanel>
-							<CheckBox Grid.Column="1" x:Name="TogStartup" Style="{StaticResource ModernToggleStyle}" HorizontalAlignment="Right" Margin="0,0,15,0" IsChecked="{Binding RunOnStartup, UpdateSourceTrigger=PropertyChanged}"/>
+							<CheckBox Grid.Column="1" x:Name="TogStartup" Style="{StaticResource ModernToggleStyle}" HorizontalAlignment="Right" Margin="0,0,15,0" IsChecked="{Binding RunOnStartup, UpdateSourceTrigger=PropertyChanged}"
+                                      ToolTip="Registers an elevated Task Scheduler task to start Nitrous silently in the system tray at Windows logon without UAC prompts."/>
 						</Grid>
 					</Border>
 				</StackPanel>
@@ -624,7 +682,8 @@
 						</StackPanel>
 					</Border>
 					<!-- GPU TELEMETRY STATS GRID -->
-					<Border Background="#1C1C1F" CornerRadius="10" BorderBrush="#2A2A30" BorderThickness="1" Padding="16" Margin="0,0,0,12">
+					<Border Background="#1C1C1F" CornerRadius="10" BorderBrush="#2A2A30" BorderThickness="1" Padding="16" Margin="0,0,0,12"
+                            ToolTip="Live NVIDIA GPU telemetry via NVML. Statistics update while dashboard is active.">
 						<StackPanel>
 							<!-- GPU Name Header -->
 							<StackPanel Orientation="Horizontal" Margin="0,0,0,16">
@@ -690,7 +749,8 @@
 									<TextBlock Text=" MHz" Foreground="#B388FF" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
 								</StackPanel>
 							</Grid>
-							<Slider x:Name="GpuCoreSlider" Style="{StaticResource ModernSliderStyle}" Minimum="-250" Maximum="250" Value="{Binding GpuCoreOffset, UpdateSourceTrigger=PropertyChanged}" IsSnapToTickEnabled="True" TickFrequency="5" Margin="0,0,0,12"/>
+							<Slider x:Name="GpuCoreSlider" Style="{StaticResource ModernSliderStyle}" Minimum="-250" Maximum="250" Value="{Binding GpuCoreOffset, UpdateSourceTrigger=PropertyChanged}" IsSnapToTickEnabled="True" TickFrequency="5" Margin="0,0,0,12"
+                                    ToolTip="Applies a frequency offset (-250 MHz to +250 MHz) to discrete GPU core clocks via NVML."/>
 							<!-- Memory Slider -->
 							<Grid Margin="0,0,0,4">
 								<TextBlock Text="Memory Clock" Foreground="White" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
@@ -700,7 +760,8 @@
 									<TextBlock Text=" MHz" Foreground="#B388FF" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
 								</StackPanel>
 							</Grid>
-							<Slider x:Name="GpuMemorySlider" Style="{StaticResource ModernSliderStyle}" Minimum="-1000" Maximum="1000" Value="{Binding GpuMemoryOffset, UpdateSourceTrigger=PropertyChanged}" IsSnapToTickEnabled="True" TickFrequency="10"/>
+							<Slider x:Name="GpuMemorySlider" Style="{StaticResource ModernSliderStyle}" Minimum="-1000" Maximum="1000" Value="{Binding GpuMemoryOffset, UpdateSourceTrigger=PropertyChanged}" IsSnapToTickEnabled="True" TickFrequency="10"
+                                    ToolTip="Applies a frequency offset (-1000 MHz to +1000 MHz) to discrete GPU video memory (VRAM)."/>
 						</StackPanel>
 					</Border>
 					<!-- ACTION BUTTONS -->
@@ -763,9 +824,11 @@
 							<ColumnDefinition Width="*"/>
 						</Grid.ColumnDefinitions>
 						<!-- Secondary Action (Ghost Button) - Explicit Height and larger font -->
-						<Button Grid.Column="0" Content="RESET" Command="{Binding ResetGpuClocksCommand}" Style="{StaticResource GhostBtn}" FontSize="12" FontWeight="Bold" Height="40"/>
+						<Button Grid.Column="0" Content="RESET" Command="{Binding ResetGpuClocksCommand}" Style="{StaticResource GhostBtn}" FontSize="12" FontWeight="Bold" Height="40"
+                                ToolTip="Reverts GPU core and memory clock offsets back to stock factory settings (0 MHz)."/>
 						<!-- Primary Action (Accent Button) - Explicit Height and larger font -->
-						<Button Grid.Column="2" Content="{Binding ApplyBtnText}" Command="{Binding ApplyGpuClocksCommand}" Background="{Binding ApplyBtnColor}" Style="{StaticResource AccentBtn}" FontSize="12" FontWeight="Heavy" Height="40"/>
+						<Button Grid.Column="2" Content="{Binding ApplyBtnText}" Command="{Binding ApplyGpuClocksCommand}" Background="{Binding ApplyBtnColor}" Style="{StaticResource AccentBtn}" FontSize="12" FontWeight="Heavy" Height="40"
+                                ToolTip="Commits the selected core and memory clock offsets to the discrete GPU."/>
 					</Grid>
 				</StackPanel>
 
@@ -789,17 +852,20 @@
                             <TextBlock Text="Click a box and press a key combination to bind. Press ESC to clear. Restart Nitrous to apply changes." Foreground="#888890" FontSize="11" Margin="0,0,0,15" TextWrapping="Wrap"/>
                             <Grid Margin="0,0,0,8">
                                 <TextBlock Text="Cycle Power Mode" Foreground="White" FontSize="12" VerticalAlignment="Center"/>
-                                <TextBox x:Name="TxtHkCycle" Style="{StaticResource HotkeyTextBoxStyle}" Width="120" HorizontalAlignment="Right" IsReadOnly="True" TextAlignment="Center" PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_CyclePower"/>
+                                <TextBox x:Name="TxtHkCycle" Style="{StaticResource HotkeyTextBoxStyle}" Width="120" HorizontalAlignment="Right" IsReadOnly="True" TextAlignment="Center" PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_CyclePower"
+                                         ToolTip="Click and press any key combination to bind a global hotkey for cycling power profiles with on-screen display."/>
                             </Grid>
                             <Grid>
                                 <TextBlock Text="Open Dashboard" Foreground="White" FontSize="12" VerticalAlignment="Center"/>
-                                <TextBox x:Name="TxtHkDash" Style="{StaticResource HotkeyTextBoxStyle}" Width="120" HorizontalAlignment="Right" IsReadOnly="True" TextAlignment="Center" PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_Dashboard"/>
+                                <TextBox x:Name="TxtHkDash" Style="{StaticResource HotkeyTextBoxStyle}" Width="120" HorizontalAlignment="Right" IsReadOnly="True" TextAlignment="Center" PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_Dashboard"
+                                         ToolTip="Click and press any key combination to bind a global hotkey to summon or hide the Nitrous dashboard."/>
                             </Grid>
                         </StackPanel>
                     </Border>
 
 					<!-- Physical Nitro Button Integration -->
-					<Border Background="#1C1C1F" CornerRadius="10" Margin="0,0,0,10" BorderBrush="#2A2A30" BorderThickness="1" Padding="15">
+					<Border Background="#1C1C1F" CornerRadius="10" Margin="0,0,0,10" BorderBrush="#2A2A30" BorderThickness="1" Padding="15"
+                            ToolTip="Hooks Acer Sense launchers via Windows IFEO so pressing the physical keyboard Nitro/Predator button opens Nitrous even when the app is completely closed.">
 						<Grid>
 							<Grid.ColumnDefinitions>
 								<ColumnDefinition Width="*"/>
@@ -809,7 +875,8 @@
 								<TextBlock Text="Nitro Key Integration" Foreground="White" FontWeight="SemiBold" FontSize="13"/>
 								<TextBlock Text="Intercepts the physical Nitro button to launch Nitrous, even when the app is completely closed." Foreground="#888890" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap"/>
 							</StackPanel>
-							<CheckBox Grid.Column="1" x:Name="TogNitroKey" Style="{StaticResource ModernToggleStyle}" HorizontalAlignment="Right" IsChecked="{Binding IsNitroKeyIntegrated, UpdateSourceTrigger=PropertyChanged}"/>
+							<CheckBox Grid.Column="1" x:Name="TogNitroKey" Style="{StaticResource ModernToggleStyle}" HorizontalAlignment="Right" IsChecked="{Binding IsNitroKeyIntegrated, UpdateSourceTrigger=PropertyChanged}"
+                                      ToolTip="Hooks Acer Sense launchers via Windows IFEO so pressing the physical keyboard Nitro/Predator button opens Nitrous even when the app is completely closed."/>
 						</Grid>
 					</Border>
                 </StackPanel>
@@ -824,28 +891,32 @@
 						<ColumnDefinition Width="*"/>
 					</Grid.ColumnDefinitions>
 					<!-- Dash Nav -->
-					<Button x:Name="NavDashBtn" Tag="0,0,0,15" Style="{StaticResource NavButtonStyle}" Grid.Column="0" Click="NavDashBtn_Click">
+					<Button x:Name="NavDashBtn" Tag="0,0,0,15" Style="{StaticResource NavButtonStyle}" Grid.Column="0" Click="NavDashBtn_Click"
+                            ToolTip="Dashboard: Power modes, fan controls, and thermal monitors.">
 						<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
 							<Path x:Name="NavDashIcon" Data="M3,3H11V11H3V3M13,3H21V11H13V3M3,13H11V21H3V13M13,13H21V21H13V13Z" Fill="#B388FF" Stretch="Uniform" Width="15" Height="15" HorizontalAlignment="Center"/>
 							<TextBlock x:Name="NavDashText" Text="DASH" Foreground="#B388FF" FontSize="10" FontWeight="Bold" Margin="0,4,0,0" HorizontalAlignment="Center"/>
 						</StackPanel>
 					</Button>
 					<!-- GPU Nav -->
-					<Button x:Name="NavGpuBtn" Tag="0,0,0,0" Style="{StaticResource NavButtonStyle}" Grid.Column="1" Click="NavGpuBtn_Click">
+					<Button x:Name="NavGpuBtn" Tag="0,0,0,0" Style="{StaticResource NavButtonStyle}" Grid.Column="1" Click="NavGpuBtn_Click"
+                            ToolTip="GPU Tuning: Clock offsets, live wattage, and VRAM telemetry.">
 						<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
 							<Path x:Name="NavGpuIcon" Data="M22,9V7H20V5A2,2 0 0,0 18,3H4A2,2 0 0,0 2,5V19A2,2 0 0,0 4,21H18A2,2 0 0,0 20,19V17H22V15H20V13H22V11H20V9H22M18,19H4V5H18V19" Fill="#888890" Stretch="Uniform" Width="15" Height="15" HorizontalAlignment="Center"/>
 							<TextBlock x:Name="NavGpuText" Text="GPU" Foreground="#888890" FontSize="10" FontWeight="Bold" Margin="0,4,0,0" HorizontalAlignment="Center"/>
 						</StackPanel>
 					</Button>
 					<!-- Keyboard Nav -->
-					<Button x:Name="NavKeyboardBtn" Tag="0,0,0,0" Style="{StaticResource NavButtonStyle}" Grid.Column="2" Click="NavKeyboardBtn_Click">
+					<Button x:Name="NavKeyboardBtn" Tag="0,0,0,0" Style="{StaticResource NavButtonStyle}" Grid.Column="2" Click="NavKeyboardBtn_Click"
+                            ToolTip="Keyboard: Global hotkeys and physical Nitro button integration.">
                         <StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
                             <Path x:Name="NavKeyboardIcon" Data="M19,10H17V8H19M19,13H17V11H19M16,10H14V8H16M16,13H14V11H16M13,10H11V8H13M13,13H11V11H13M8,10H6V8H8M8,13H6V11H8M5,10H3V8H5M5,13H3V11H5M4,17H20V15H4M22,5H2A2,2 0 0,0 0,7V17A2,2 0 0,0 2,19H22A2,2 0 0,0 24,17V7A2,2 0 0,0 22,5Z" Fill="#888890" Stretch="Uniform" Width="16" Height="16" HorizontalAlignment="Center"/>
                             <TextBlock x:Name="NavKeyboardText" Text="KB" Foreground="#888890" FontSize="10" FontWeight="Bold" Margin="0,4,0,0" HorizontalAlignment="Center"/>
                         </StackPanel>
                     </Button>
 					<!-- Settings Nav -->
-					<Button x:Name="NavSetBtn" Tag="0,0,15,0" Style="{StaticResource NavButtonStyle}" Grid.Column="3" Click="NavSetBtn_Click">
+					<Button x:Name="NavSetBtn" Tag="0,0,15,0" Style="{StaticResource NavButtonStyle}" Grid.Column="3" Click="NavSetBtn_Click"
+                            ToolTip="Setup: Power schemes, battery charge limit, and startup settings.">
 						<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
 							<Path x:Name="NavSetIcon" Data="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.98C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.98L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.98Z" Fill="#888890" Stretch="Uniform" Width="15" Height="15" HorizontalAlignment="Center"/>
 							<TextBlock x:Name="NavSetText" Text="SETUP" Foreground="#888890" FontSize="10" FontWeight="Bold" Margin="0,4,0,0" HorizontalAlignment="Center"/>
