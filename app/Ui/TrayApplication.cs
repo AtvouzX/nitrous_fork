@@ -244,46 +244,58 @@ public class TrayApplication : ApplicationContext
         trayIcon.ContextMenuStrip = menu;
     }
 
+    [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "FindWindow", SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
+    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
+    private static extern IntPtr FindWindow(string? lpClassName, string lpWindowName);
+
     [System.Runtime.InteropServices.DllImport("user32.dll")]
+    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
+    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
     private void ShowDashboard()
     {
-        using var currentProcess = Process.GetCurrentProcess();
-        string processName = currentProcess.ProcessName;
-        int currentId = currentProcess.Id;
-
-        var processes = Process.GetProcessesByName(processName);
+        // 1. Fast signal: If a dashboard process is already running and listening, signal it to restore/activate
         try
         {
-            foreach (var p in processes)
+            if (EventWaitHandle.TryOpenExisting(Program.DashboardEventName, out var showEvent))
             {
-                if (p.Id != currentId)
+                using (showEvent)
                 {
-                    // Found the existing UI process. Restore and bring to front.
-                    IntPtr hWnd = p.MainWindowHandle;
-                    if (hWnd != IntPtr.Zero)
-                    {
-                        const int SW_RESTORE = 9;
-                        ShowWindow(hWnd, SW_RESTORE);
-                        SetForegroundWindow(hWnd);
-                    }
-                    return; // Prevent spawning a new instance
+                    showEvent.Set();
+                    return;
                 }
             }
         }
-        finally
+        catch { }
+
+        // 2. Mutex check: If a dashboard is in the middle of launching, avoid spawning a duplicate
+        try
         {
-            foreach (var p in processes)
+            if (Mutex.TryOpenExisting(Program.DashboardMutexName, out var uiMutex))
             {
-                p.Dispose();
+                using (uiMutex)
+                {
+                    return;
+                }
             }
         }
+        catch { }
 
-        // If no UI process is running, start a new one
+        // 3. Fallback Win32 check by window title
+        IntPtr existingHwnd = FindWindow(null, "Nitrous Dashboard");
+        if (existingHwnd != IntPtr.Zero)
+        {
+            const int SW_RESTORE = 9;
+            ShowWindow(existingHwnd, SW_RESTORE);
+            SetForegroundWindow(existingHwnd);
+            return;
+        }
+
+        // 4. If no UI process is running, start a new one
         var uiProc = Process.Start(new ProcessStartInfo(Application.ExecutablePath, "--ui") { UseShellExecute = true });
         if (uiProc != null)
         {

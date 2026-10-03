@@ -236,6 +236,50 @@ public partial class NitrousDashboard : Window
         }
     }
 
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
+    private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
+    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
+
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
+    private static extern IntPtr GetForegroundWindow();
+
+    public void RestoreAndActivate()
+    {
+        var helper = new System.Windows.Interop.WindowInteropHelper(this);
+        IntPtr fgWnd = GetForegroundWindow();
+
+        // If the dashboard is currently visible, active, and focused, toggle/minimize it
+        if (this.IsVisible && this.WindowState == WindowState.Normal && helper.Handle != IntPtr.Zero && fgWnd == helper.Handle)
+        {
+            this.WindowState = WindowState.Minimized;
+            Nitrous.Helpers.MemoryHelper.TrimWorkingSet();
+            return;
+        }
+
+        if (this.WindowState == WindowState.Minimized)
+        {
+            this.WindowState = WindowState.Normal;
+        }
+
+        this.Show();
+        this.Activate();
+        this.Focus();
+
+        if (helper.Handle != IntPtr.Zero)
+        {
+            const int SW_RESTORE = 9;
+            ShowWindow(helper.Handle, SW_RESTORE);
+            SetForegroundWindow(helper.Handle);
+        }
+
+        RefreshDashboardState();
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         base.OnClosed(e);

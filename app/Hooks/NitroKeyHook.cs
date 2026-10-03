@@ -33,6 +33,8 @@ public partial class NitroKeyHook : IDisposable
         return SetWindowsHookEx(WH_KEYBOARD_LL, proc, hMod, 0);
     }
 
+    private long _lastTriggerTick = 0;
+
     private IntPtr HookCallback(int nCode, IntPtr wParam, IntPtr lParam)
     {
         // Only listen for key down events (ignore key releases)
@@ -42,8 +44,13 @@ public partial class NitroKeyHook : IDisposable
 
             if (NitroScanCodes.Contains(kbd.scanCode))
             {
-                // Asynchronously dispatch the event so the OS keyboard hook callback returns immediately
-                ThreadPool.QueueUserWorkItem(_ => NitroKeyPressed?.Invoke(this, EventArgs.Empty));
+                long now = Environment.TickCount64;
+                if (now - _lastTriggerTick >= 400)
+                {
+                    _lastTriggerTick = now;
+                    // Asynchronously dispatch the event so the OS keyboard hook callback returns immediately
+                    ThreadPool.QueueUserWorkItem(_ => NitroKeyPressed?.Invoke(this, EventArgs.Empty));
+                }
             }
         }
 
@@ -58,14 +65,18 @@ public partial class NitroKeyHook : IDisposable
     private delegate IntPtr LowLevelKeyboardProc(int nCode, IntPtr wParam, IntPtr lParam);
 
     [DllImport("user32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern IntPtr SetWindowsHookEx(int idHook, LowLevelKeyboardProc lpfn, IntPtr hMod, uint dwThreadId);
 
     [DllImport("user32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern bool UnhookWindowsHookEx(IntPtr hhk);
 
     [DllImport("user32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern IntPtr CallNextHookEx(IntPtr hhk, int nCode, IntPtr wParam, IntPtr lParam);
 
     [DllImport("kernel32.dll", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern IntPtr GetModuleHandle(string lpModuleName);
 }

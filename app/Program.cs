@@ -14,6 +14,9 @@ static class Program
     private static Mutex? mutex = null;
     private const string AppMutexName = "Nitrous_SingleInstance_Mutex_Lock";
 
+    public const string DashboardMutexName = @"Local\Nitrous_Dashboard_SingleInstance_Mutex";
+    public const string DashboardEventName = @"Local\Nitrous_ShowDashboard_Event";
+
     [DllImport("user32.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
@@ -21,6 +24,10 @@ static class Program
     [DllImport("user32.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+    [DllImport("user32.dll", EntryPoint = "FindWindow", SetLastError = true, CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    private static extern IntPtr FindWindow(string? lpClassName, string lpWindowName);
 
     [STAThread]
     static void Main(string[] args)
@@ -49,19 +56,44 @@ static class Program
         // 1. TRANSIENT UI MODE: Run the dashboard directly
         if ((args.Length > 0 && args[0] == "--ui") || isIfeoLaunch)
         {
-            // If dashboard window is already open, restore and bring to front
-            if (BringExistingDashboardToFront())
-            {
-                return;
-            }
-
             if (isIfeoLaunch)
             {
                 EnsureTrayRunning();
             }
 
+            // Strictly enforce single-instance Dashboard UI via named mutex
+            using var uiMutex = new Mutex(true, DashboardMutexName, out bool isOnlyUiInstance);
+            if (!isOnlyUiInstance)
+            {
+                // Another UI process is already running or initializing. Signal it to restore and bring to front.
+                SignalExistingDashboard();
+                return;
+            }
+
+            // Create named event to listen for subsequent activation signals (e.g. repeated Nitro button presses)
+            using var showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, DashboardEventName);
+
             var app = new System.Windows.Application();
-            app.Run(new NitrousDashboard());
+            var dashboard = new NitrousDashboard();
+
+            // Register background wait on the threadpool with zero CPU/thread polling overhead
+            var waitHandleReg = ThreadPool.RegisterWaitForSingleObject(showEvent, (state, timedOut) =>
+            {
+                dashboard.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    dashboard.RestoreAndActivate();
+                }));
+            }, null, Timeout.Infinite, false);
+
+            try
+            {
+                app.Run(dashboard);
+            }
+            finally
+            {
+                waitHandleReg.Unregister(null);
+            }
+
             return;
         }
 
@@ -69,8 +101,8 @@ static class Program
         mutex = new Mutex(true, AppMutexName, out bool createdNew);
         if (!createdNew)
         {
-            // If already running in tray, launching the executable opens the Dashboard
-            Process.Start(new ProcessStartInfo(Environment.ProcessPath ?? Application.ExecutablePath, "--ui") { UseShellExecute = true });
+            // If already running in tray, launching the executable opens or restores the Dashboard
+            SignalExistingDashboard();
             return;
         }
 
@@ -83,10 +115,49 @@ static class Program
         GC.KeepAlive(mutex);
     }
 
-    private static bool BringExistingDashboardToFront()
+    public static void SignalExistingDashboard()
     {
         try
         {
+            if (EventWaitHandle.TryOpenExisting(DashboardEventName, out var showEvent))
+            {
+                using (showEvent)
+                {
+                    showEvent.Set();
+                    return;
+                }
+            }
+        }
+        catch { }
+
+        // If event isn't ready or UI not running, launch or bring existing window to front
+        if (!BringExistingDashboardToFront())
+        {
+            try
+            {
+                Process.Start(new ProcessStartInfo(Environment.ProcessPath ?? Application.ExecutablePath, "--ui")
+                {
+                    UseShellExecute = true
+                });
+            }
+            catch { }
+        }
+    }
+
+    public static bool BringExistingDashboardToFront()
+    {
+        try
+        {
+            // Fast Win32 lookup by Dashboard window title
+            IntPtr hWnd = FindWindow(null, "Nitrous Dashboard");
+            if (hWnd != IntPtr.Zero)
+            {
+                const int SW_RESTORE = 9;
+                ShowWindow(hWnd, SW_RESTORE);
+                SetForegroundWindow(hWnd);
+                return true;
+            }
+
             using var cur = Process.GetCurrentProcess();
             var list = Process.GetProcessesByName(cur.ProcessName);
             foreach (var p in list)
