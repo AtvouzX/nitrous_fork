@@ -745,7 +745,8 @@
 								<TextBlock Text="Core Clock" Foreground="White" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
 								<!-- Pill border removed, back to clean floating text -->
 								<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-									<TextBox x:Name="GpuCoreInput" Text="{Binding GpuCoreOffset, UpdateSourceTrigger=PropertyChanged}" Foreground="#B388FF" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0" MaxLength="4" Width="36" TextAlignment="Right" VerticalContentAlignment="Center" CaretBrush="#B388FF"/>
+									<TextBox x:Name="GpuCoreInput" Text="{Binding GpuCoreOffset, UpdateSourceTrigger=PropertyChanged}" Foreground="#B388FF" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0" MaxLength="4" Width="36" TextAlignment="Right" VerticalContentAlignment="Center" CaretBrush="#B388FF"
+                                             ToolTip="Directly input discrete GPU core clock frequency offset in MHz (-250 to +250)."/>
 									<TextBlock Text=" MHz" Foreground="#B388FF" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
 								</StackPanel>
 							</Grid>
@@ -756,7 +757,8 @@
 								<TextBlock Text="Memory Clock" Foreground="White" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Left" VerticalAlignment="Center"/>
 								<!-- Pill border removed, back to clean floating text -->
 								<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-									<TextBox x:Name="GpuMemoryInput" Text="{Binding GpuMemoryOffset, UpdateSourceTrigger=PropertyChanged}" Foreground="#B388FF" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0" MaxLength="5" Width="36" TextAlignment="Right" VerticalContentAlignment="Center" CaretBrush="#B388FF"/>
+									<TextBox x:Name="GpuMemoryInput" Text="{Binding GpuMemoryOffset, UpdateSourceTrigger=PropertyChanged}" Foreground="#B388FF" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0" MaxLength="5" Width="36" TextAlignment="Right" VerticalContentAlignment="Center" CaretBrush="#B388FF"
+                                             ToolTip="Directly input discrete GPU video memory (VRAM) frequency offset in MHz (-1000 to +1000)."/>
 									<TextBlock Text=" MHz" Foreground="#B388FF" FontSize="11" FontWeight="Bold" VerticalAlignment="Center"/>
 								</StackPanel>
 							</Grid>

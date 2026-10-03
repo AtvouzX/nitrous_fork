@@ -39,7 +39,10 @@ public static class AcerWmiManager
                     return _cachedGamingFunction;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AcerWmiManager] Failed to get AcerGamingFunction: {ex.Message}");
+            }
 
             return null;
         }
@@ -249,7 +252,10 @@ public static class AcerWmiManager
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AcerWmiManager] Failed to set battery charge limit: {ex.Message}");
+            }
         });
     }
 
