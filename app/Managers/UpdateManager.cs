@@ -10,7 +10,7 @@ namespace Nitrous.Managers;
 
 public static class UpdateManager
 {
-    public const string CurrentVersion = "0.7.3";
+    public const string CurrentVersion = "0.7.4";
     private const string GithubRepo = "AtvouzX/nitrous_fork";
 
     private static HttpClient CreateHttpClient()
@@ -32,24 +32,29 @@ public static class UpdateManager
             string cleanLatest = latestTag.Trim().TrimStart('v', 'V');
             string cleanCurrent = CurrentVersion.Trim().TrimStart('v', 'V');
 
-            if (Version.TryParse(cleanLatest, out Version? vLatest) && Version.TryParse(cleanCurrent, out Version? vCurrent))
+            if (Version.TryParse(cleanLatest, out Version? vLatest) &&
+                Version.TryParse(cleanCurrent, out Version? vCurrent))
             {
                 if (vLatest > vCurrent)
                 {
-                    if (MessageBox.Show($"New version ({latestTag}) is available! Update now?", "Update", MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
+                    if (MessageBox.Show($"New version ({latestTag}) is available! Update now?", "Update",
+                            MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
                     {
                         await PerformUpdateAsync(latestTag, exitCallback);
                     }
                 }
                 else if (!silent)
                 {
-                    MessageBox.Show($"Nitrous is up to date! ({CurrentVersion})", "Up to date", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                    MessageBox.Show($"Nitrous is up to date! ({CurrentVersion})", "Up to date", MessageBoxButtons.OK,
+                        MessageBoxIcon.Information);
                 }
             }
         }
         catch (Exception ex)
         {
-            if (!silent) MessageBox.Show($"Update check failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+            if (!silent)
+                MessageBox.Show($"Update check failed: {ex.Message}", "Error", MessageBoxButtons.OK,
+                    MessageBoxIcon.Warning);
         }
     }
 
@@ -58,9 +63,11 @@ public static class UpdateManager
         try
         {
             // Validate tag to prevent path manipulation
-            if (string.IsNullOrWhiteSpace(tag) || tag.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 || tag.Contains(".."))
+            if (string.IsNullOrWhiteSpace(tag) || tag.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
+                tag.Contains(".."))
             {
-                MessageBox.Show("Invalid release tag received.", "Update Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                MessageBox.Show("Invalid release tag received.", "Update Error", MessageBoxButtons.OK,
+                    MessageBoxIcon.Error);
                 return;
             }
 
@@ -80,9 +87,11 @@ public static class UpdateManager
             // Escape paths for cmd.exe invocation
             string sanitizedTemp = tempExe.Replace("\"", "");
             string sanitizedCurrent = currentExe.Replace("\"", "");
-            string cmd = $"/c timeout /t 2 /nobreak & move /y \"{sanitizedTemp}\" \"{sanitizedCurrent}\" & start \"\" \"{sanitizedCurrent}\"";
+            string cmd =
+                $"/c timeout /t 2 /nobreak & move /y \"{sanitizedTemp}\" \"{sanitizedCurrent}\" & start \"\" \"{sanitizedCurrent}\"";
 
-            using var p = Process.Start(new ProcessStartInfo("cmd.exe", cmd) { CreateNoWindow = true, UseShellExecute = false });
+            using var p = Process.Start(new ProcessStartInfo("cmd.exe", cmd)
+                { CreateNoWindow = true, UseShellExecute = false });
 
             exitCallback.Invoke();
         }
