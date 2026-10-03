@@ -111,6 +111,30 @@ public class DashboardViewModel : ObservableObject, IDisposable
         set => SetProperty(ref _gpuArchText, value);
     }
 
+    private bool _manageCpuPower;
+
+    public bool ManageCpuPower
+    {
+        get => _manageCpuPower;
+        set
+        {
+            if (SetProperty(ref _manageCpuPower, value))
+            {
+                SettingsManager.Save("ManageCpuPower", value ? 1 : 0);
+                bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Online;
+
+                if (value)
+                {
+                    _ = CpuPowerManager.ApplyProfileLimitsAsync(ActivePowerProfile, isOnline);
+                }
+                else
+                {
+                    _ = CpuPowerManager.RestoreDefaultsAsync(isOnline);
+                }
+            }
+        }
+    }
+
     private string _gpuLoadText = "0%";
 
     public string GpuLoadText
@@ -242,6 +266,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
         _gpuFanSpeed = SettingsManager.Get("CustomFanSpeedGpu", 50);
         _isUnifiedFans = SettingsManager.Get("UnifiedFans", 1) == 1;
         _isCurveModeEnabled = SettingsManager.Get("IsCurveModeEnabled", 0) == 1;
+        _manageCpuPower = SettingsManager.Get("ManageCpuPower", 0) == 1;
 
         _deepGpuTelemetry = SettingsManager.Get("DeepGpuTelemetry", 1) == 1;
         if (!_deepGpuTelemetry)
@@ -302,6 +327,11 @@ public class DashboardViewModel : ObservableObject, IDisposable
                     SettingsManager.Save("LastPowerMode", (int)mode);
                     bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
                     SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)mode);
+
+                    if (ManageCpuPower)
+                    {
+                        _ = CpuPowerManager.ApplyProfileLimitsAsync(mode, isOnline);
+                    }
 
                     await _gpuManager.ApplyPowerProfileOcAsync(mode);
                     if (_gpuManager.GetClocks(out int c, out int m))

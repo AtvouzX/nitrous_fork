@@ -318,10 +318,21 @@ public class TrayApplication : ApplicationContext
             SettingsManager.Save("LastFanMode", activeFan.ToString());
         }
 
+        var currentProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+
+        // Apply CPU Power Management
+        if (SettingsManager.Get("ManageCpuPower", 0) == 1)
+        {
+            _ = CpuPowerManager.ApplyProfileLimitsAsync(currentProfile, isOnline);
+        }
+        else
+        {
+            _ = CpuPowerManager.RestoreDefaultsAsync(isOnline);
+        }
+
         var refreshMode = (RefreshProfile)SettingsManager.Get("RefreshMode", (int)RefreshProfile.Auto);
         DisplayManager.ApplyRefreshProfile(refreshMode, isOnline);
 
-        var currentProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
         _ = _gpuManager.ApplyPowerProfileOcAsync(currentProfile);
     }
 
