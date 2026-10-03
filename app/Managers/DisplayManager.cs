@@ -45,8 +45,12 @@ public static class DisplayManager
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
     private static extern int ChangeDisplaySettingsExW(string? lpszDeviceName, ref DEVMODEW lpDevMode, IntPtr hwnd, uint dwFlags, IntPtr lParam);
 
+    private static int _cachedMaxRefreshRate = 0;
+
     public static int GetPrimaryMaxRefreshRate()
     {
+        if (_cachedMaxRefreshRate > 0) return _cachedMaxRefreshRate;
+
         int maxHz = 60;
         try
         {
@@ -69,6 +73,8 @@ public static class DisplayManager
             }
         }
         catch { }
+
+        _cachedMaxRefreshRate = maxHz;
         return maxHz;
     }
 

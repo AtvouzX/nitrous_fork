@@ -217,18 +217,28 @@ public class NvidiaGpuManager : IDisposable
         public double EnforcedPowerLimitW { get; set; }
     }
 
+    private static readonly string CachedSmiPath = FindNvidiaSmiPath();
+
+    private static string FindNvidiaSmiPath()
+    {
+        string system32Path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "nvidia-smi.exe");
+        if (File.Exists(system32Path)) return system32Path;
+
+        string programFilesPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"NVIDIA Corporation\NVSMI\nvidia-smi.exe");
+        if (File.Exists(programFilesPath)) return programFilesPath;
+
+        return "nvidia-smi";
+    }
+
     public static async Task<GpuTelemetry> GetSmiTelemetryAsync(CancellationToken cancellationToken = default)
     {
         var t = new GpuTelemetry();
 
         try
         {
-            string smiPath = GetNvidiaSmiPath();
-            if (string.IsNullOrEmpty(smiPath)) return t;
-
             var psi = new ProcessStartInfo
             {
-                FileName = smiPath,
+                FileName = CachedSmiPath,
                 Arguments = "--query-gpu=gpu_name,temperature.gpu,utilization.gpu,memory.used,memory.total,pstate,clocks.current.graphics,clocks.current.memory,power.draw,power.min_limit,power.max_limit,enforced.power.limit --format=csv,noheader,nounits",
                 RedirectStandardOutput = true,
                 UseShellExecute = false,
@@ -242,10 +252,12 @@ public class NvidiaGpuManager : IDisposable
             using var timeoutCts = new CancellationTokenSource(1500);
             using var linkedCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, timeoutCts.Token);
 
+            string output;
             try
             {
-                // Asynchronously wait for process exit without blocking any threads
+                var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellationToken);
                 await process.WaitForExitAsync(linkedCts.Token);
+                output = (await stdoutTask).Trim();
             }
             catch (OperationCanceledException)
             {
@@ -253,8 +265,6 @@ public class NvidiaGpuManager : IDisposable
                 return t;
             }
 
-            // Asynchronously read standard output
-            string output = (await process.StandardOutput.ReadToEndAsync(cancellationToken)).Trim();
             if (string.IsNullOrWhiteSpace(output)) return t;
 
             string[] values = output.Split(',');
@@ -289,18 +299,5 @@ public class NvidiaGpuManager : IDisposable
         catch { }
 
         return t;
-    }
-
-    private static string GetNvidiaSmiPath()
-    {
-        string defaultPath = "nvidia-smi";
-
-        string system32Path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "nvidia-smi.exe");
-        if (File.Exists(system32Path)) return system32Path;
-
-        string programFilesPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles), @"NVIDIA Corporation\NVSMI\nvidia-smi.exe");
-        if (File.Exists(programFilesPath)) return programFilesPath;
-
-        return defaultPath;
     }
 }

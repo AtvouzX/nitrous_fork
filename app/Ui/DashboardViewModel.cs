@@ -661,6 +661,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
         _pollingCts?.Cancel();
         _pollingCts?.Dispose();
         _pollingCts = null;
+        _fanDebouncer.Dispose();
         _gpuManager.Dispose();
     }
 }

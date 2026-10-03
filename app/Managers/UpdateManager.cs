@@ -13,18 +13,19 @@ public static class UpdateManager
     public const string CurrentVersion = "0.7.3";
     private const string GithubRepo = "AtvouzX/nitrous_fork";
 
-    private static readonly HttpClient SharedClient = new HttpClient();
-
-    static UpdateManager()
+    private static HttpClient CreateHttpClient()
     {
-        SharedClient.DefaultRequestHeaders.UserAgent.ParseAdd("NitrousApp/1.0");
+        var client = new HttpClient { Timeout = TimeSpan.FromSeconds(10) };
+        client.DefaultRequestHeaders.UserAgent.ParseAdd("NitrousApp/1.0");
+        return client;
     }
 
     public static async Task CheckForUpdatesAsync(bool silent, Action exitCallback)
     {
         try
         {
-            string res = await SharedClient.GetStringAsync($"https://api.github.com/repos/{GithubRepo}/releases/latest");
+            using var client = CreateHttpClient();
+            string res = await client.GetStringAsync($"https://api.github.com/repos/{GithubRepo}/releases/latest");
             using var doc = JsonDocument.Parse(res);
             string latestTag = doc.RootElement.GetProperty("tag_name").GetString() ?? "";
 
@@ -67,7 +68,8 @@ public static class UpdateManager
             string tempExe = Path.Combine(Path.GetTempPath(), $"Nitrous_update_{Guid.NewGuid():N}.exe");
             string currentExe = Application.ExecutablePath;
 
-            byte[] data = await SharedClient.GetByteArrayAsync(dlUrl);
+            using var client = CreateHttpClient();
+            byte[] data = await client.GetByteArrayAsync(dlUrl);
             if (data.Length < 1024)
             {
                 throw new InvalidDataException("Downloaded update payload is corrupt or incomplete.");
