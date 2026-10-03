@@ -9,64 +9,103 @@ namespace Nitrous.Managers;
 public static class CpuPowerManager
 {
     private static readonly string CachedPowerCfgPath = Path.Combine(Environment.SystemDirectory, "powercfg.exe");
-    
+    private const string BoostModeGuid = "be337238-0d82-4146-a110-4a477b471251";
+
     // Cache the applied state to prevent redundant powercfg process executions
-    private static int _lastMin = -1;
-    private static int _lastMax = -1;
-    private static bool _lastIsOnline = false;
+    private static int _lastAcMin = -1;
+    private static int _lastAcMax = -1;
+    private static int _lastAcBoost = -1;
+    private static int _lastDcMin = -1;
+    private static int _lastDcMax = -1;
+    private static int _lastDcBoost = -1;
 
-    public static async Task ApplyProfileLimitsAsync(PowerProfile profile, bool isOnline)
+    public static async Task ApplyProfileLimitsAsync(PowerProfile profile, bool isOnline = true)
     {
-        int min = 5;
-        int max = 100;
+        // By user requirement: Turbo Boost is disabled (PROCTHROTTLEMAX <= 99% and BoostMode = 0)
+        // This stops aggressive CPU clock spikes and thermal surges on both Intel and AMD Ryzen.
+        int acMin = 5;
+        int acMax = 99;
+        int acBoost = 0; // 0 = Disabled
 
-        if (isOnline) // AC Power
+        int dcMin = 5;
+        int dcMax = 95;
+        int dcBoost = 0; // 0 = Disabled
+
+        switch (profile)
         {
-            switch (profile)
-            {
-                case PowerProfile.Quiet: max = 95; break;
-                case PowerProfile.Balanced: max = 100; break;
-                case PowerProfile.Performance: max = 100; break;
-                case PowerProfile.Turbo: min = 100; max = 100; break;
-            }
-        }
-        else // DC Power (Battery)
-        {
-            switch (profile)
-            {
-                case PowerProfile.Quiet: max = 88; break;
-                case PowerProfile.Balanced: max = 99; break;
-                case PowerProfile.Performance: max = 100; break;
-                case PowerProfile.Turbo: max = 100; break;
-            }
+            case PowerProfile.Quiet:
+                acMin = 5;
+                acMax = 85;
+                acBoost = 0;
+                dcMin = 5;
+                dcMax = 80;
+                dcBoost = 0;
+                break;
+            case PowerProfile.Balanced:
+                acMin = 5;
+                acMax = 99;
+                acBoost = 0;
+                dcMin = 5;
+                dcMax = 95;
+                dcBoost = 0;
+                break;
+            case PowerProfile.Performance:
+                acMin = 5;
+                acMax = 100;
+                acBoost = 2;
+                dcMin = 5;
+                dcMax = 99;
+                dcBoost = 0;
+                break;
+            case PowerProfile.Turbo:
+                acMin = 100;
+                acMax = 100;
+                acBoost = 2; // Aggressive only for dedicated Turbo on AC
+                dcMin = 5;
+                dcMax = 99;
+                dcBoost = 0;
+                break;
         }
 
-        await SetLimitsAsync(min, max, isOnline);
+        await SetDualLimitsAsync(acMin, acMax, acBoost, dcMin, dcMax, dcBoost);
     }
 
-    public static async Task RestoreDefaultsAsync(bool isOnline)
+    public static async Task RestoreDefaultsAsync(bool isOnline = true)
     {
-        // Standard Windows default is 5% min, 100% max
-        await SetLimitsAsync(5, 100, isOnline);
+        // Standard Windows default is 5% min, 100% max, Boost enabled (2 = Aggressive)
+        await SetDualLimitsAsync(5, 100, 2, 5, 100, 2);
     }
 
-    private static async Task SetLimitsAsync(int minPercent, int maxPercent, bool isOnline)
+    private static async Task SetDualLimitsAsync(int acMin, int acMax, int acBoost, int dcMin, int dcMax, int dcBoost)
     {
         // Zero-Process Execution: Prevent redundant process spawns if state hasn't changed
-        if (_lastMin == minPercent && _lastMax == maxPercent && _lastIsOnline == isOnline)
+        if (_lastAcMin == acMin && _lastAcMax == acMax && _lastAcBoost == acBoost &&
+            _lastDcMin == dcMin && _lastDcMax == dcMax && _lastDcBoost == dcBoost)
+        {
             return;
+        }
 
-        _lastMin = minPercent;
-        _lastMax = maxPercent;
-        _lastIsOnline = isOnline;
+        _lastAcMin = acMin;
+        _lastAcMax = acMax;
+        _lastAcBoost = acBoost;
+        _lastDcMin = dcMin;
+        _lastDcMax = dcMax;
+        _lastDcBoost = dcBoost;
 
         await Task.Run(() =>
         {
-            string powerType = isOnline ? "setacvalueindex" : "setdcvalueindex";
+            // Configure Plugged In (AC) values
+            RunPowerCfg($"/setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN {acMin}");
+            RunPowerCfg($"/setacvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMAX {acMax}");
+            RunPowerCfg($"/setacvalueindex SCHEME_CURRENT SUB_PROCESSOR {BoostModeGuid} {acBoost}");
 
-            RunPowerCfg($"/{powerType} SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN {minPercent}");
-            RunPowerCfg($"/{powerType} SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMAX {maxPercent}");
-            RunPowerCfg("/setactive SCHEME_CURRENT"); // Apply immediately
+            // Configure On Battery (DC) values
+            RunPowerCfg($"/setdcvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMIN {dcMin}");
+            RunPowerCfg($"/setdcvalueindex SCHEME_CURRENT SUB_PROCESSOR PROCTHROTTLEMAX {dcMax}");
+            RunPowerCfg($"/setdcvalueindex SCHEME_CURRENT SUB_PROCESSOR {BoostModeGuid} {dcBoost}");
+
+            // Commit and activate immediately
+            RunPowerCfg("/setactive SCHEME_CURRENT");
         });
     }
 
@@ -82,6 +121,8 @@ public static class CpuPowerManager
             using var p = Process.Start(psi);
             p?.WaitForExit();
         }
-        catch { }
+        catch
+        {
+        }
     }
 }

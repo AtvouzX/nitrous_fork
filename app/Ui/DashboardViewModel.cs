@@ -312,7 +312,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
             });
         });
 
-        ActivePowerProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+        ActivePowerProfile = AcerWmiManager.GetActivePowerMode() ?? (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
 
         // Setup Commands
         SetPowerCommand = new RelayCommand(async param =>
@@ -344,6 +344,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
                     {
                         ApplyCurrentFanCurve();
                     }
+
+                    TrayApplication.Instance?.TriggerProfileOsd(mode);
                 }
                 catch (Exception ex)
                 {

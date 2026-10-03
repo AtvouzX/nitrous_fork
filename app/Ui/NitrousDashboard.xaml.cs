@@ -172,7 +172,7 @@ public partial class NitrousDashboard : Window
         DashPowerPillText.Text = powerText;
         DashPowerPillIcon.Data = isOnline ? AcGeom : BattGeom;
 
-        var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+        var activeMode = AcerWmiManager.GetActivePowerMode() ?? (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
         var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f) ? f : FanProfile.Auto;
         var activeRefresh = (RefreshProfile)SettingsManager.Get("RefreshMode", (int)RefreshProfile.Auto);
 

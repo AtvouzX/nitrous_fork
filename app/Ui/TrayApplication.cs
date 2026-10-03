@@ -27,8 +27,11 @@ public class TrayApplication : ApplicationContext
 
     private static readonly Font BoldMenuFont = new(Control.DefaultFont, FontStyle.Bold);
 
+    public static TrayApplication? Instance { get; private set; }
+
     public TrayApplication()
     {
+        Instance = this;
         Icon appIcon = SystemIcons.Shield;
         try { appIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Shield; } catch { }
 
@@ -91,7 +94,14 @@ public class TrayApplication : ApplicationContext
                     SettingsManager.Save("LastPowerMode", (int)profile);
                     bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
                     SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)profile);
+
+                    if (SettingsManager.Get("ManageCpuPower", 0) == 1)
+                    {
+                        _ = CpuPowerManager.ApplyProfileLimitsAsync(profile, isOnline);
+                    }
+
                     await _gpuManager.ApplyPowerProfileOcAsync(profile);
+                    TriggerProfileOsd(profile);
 
                     foreach (ToolStripItem sibling in powerMenu.DropDownItems)
                     {
@@ -551,8 +561,18 @@ public class TrayApplication : ApplicationContext
         SettingsManager.Save("LastPowerMode", (int)nextProfile);
         SettingsManager.Save(acDcKey, (int)nextProfile);
 
-        // Show the correct color on the OSD
-        Color osdColor = nextProfile switch
+        if (SettingsManager.Get("ManageCpuPower", 0) == 1)
+        {
+            _ = CpuPowerManager.ApplyProfileLimitsAsync(nextProfile, isOnline);
+        }
+
+        _ = _gpuManager.ApplyPowerProfileOcAsync(nextProfile);
+        TriggerProfileOsd(nextProfile);
+    }
+
+    public void TriggerProfileOsd(PowerProfile profile)
+    {
+        Color osdColor = profile switch
         {
             PowerProfile.Quiet => Color.FromArgb(52, 199, 89),       // Green
             PowerProfile.Balanced => Color.FromArgb(10, 132, 255),   // Blue
@@ -561,7 +581,7 @@ public class TrayApplication : ApplicationContext
             _ => Color.White
         };
 
-        _osd.ShowProfile($"{nextProfile} MODE", osdColor, nextProfile);
+        _osd.ShowProfile($"{profile} MODE", osdColor, profile);
     }
 
     private void CleanupResources()

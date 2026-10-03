@@ -90,38 +90,72 @@ public static class AcerWmiManager
         return false;
     }
 
+    public static PowerProfile? GetActivePowerMode()
+    {
+        try
+        {
+            var instance = GetGamingFunctionInstance();
+            if (instance != null)
+            {
+                lock (_wmiLock)
+                {
+                    using var inParams = instance.GetMethodParameters("GetGamingMiscSetting");
+                    inParams["gmInput"] = 0x0Bu;
+
+                    using var outParams = instance.InvokeMethod("GetGamingMiscSetting", inParams, null);
+                    if (outParams != null)
+                    {
+                        object? rawValue = outParams.Properties["gmOutput"]?.Value ?? outParams.Properties["outValue"]?.Value;
+                        if (rawValue != null)
+                        {
+                            ulong rawOutput = Convert.ToUInt64(rawValue);
+                            int mode = (int)((rawOutput >> 8) & 0xFF);
+                            return (PowerProfile)mode;
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[AcerWmiManager] Failed reading active power mode: {ex.Message}");
+        }
+
+        return null;
+    }
+
     public static async Task SetPowerModeAsync(PowerProfile profile)
     {
         ulong payload = ((ulong)profile << 8) | 0x0B;
-        await InvokeWmiAsync("AcerGamingFunction", "SetGamingMiscSetting", payload.ToString());
+        await InvokeWmiAsync("AcerGamingFunction", "SetGamingMiscSetting", payload);
     }
 
     public static async Task SetFansAsync(FanProfile profile)
     {
         if (profile == FanProfile.Auto)
         {
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", 0x41000Ful.ToString());
+            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", 0x41000Ful);
         }
         else if (profile == FanProfile.Max)
         {
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", 0x82000Ful.ToString());
+            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", 0x82000Ful);
         }
         else // Custom (Unified)
         {
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", 0xC3000Ful.ToString());
+            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", 0xC3000Ful);
             ulong speedPercent = (ulong)profile;
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", (1ul | (speedPercent << 8)).ToString());
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", (2ul | (speedPercent << 8)).ToString());
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", (4ul | (speedPercent << 8)).ToString());
+            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 1ul | (speedPercent << 8));
+            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 2ul | (speedPercent << 8));
+            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 4ul | (speedPercent << 8));
         }
     }
 
     public static async Task SetCustomFansAsync(int cpuSpeed, int gpuSpeed)
     {
-        await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", 0xC3000Ful.ToString());
-        await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", (1ul | ((ulong)cpuSpeed << 8)).ToString());
-        await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", (2ul | ((ulong)gpuSpeed << 8)).ToString());
-        await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", (4ul | ((ulong)gpuSpeed << 8)).ToString());
+        await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", 0xC3000Ful);
+        await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 1ul | ((ulong)cpuSpeed << 8));
+        await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 2ul | ((ulong)gpuSpeed << 8));
+        await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 4ul | ((ulong)gpuSpeed << 8));
     }
 
     public static (int CpuTemp, int CpuRpm, int GpuTemp, int GpuRpm) GetSystemTelemetry()
@@ -219,7 +253,7 @@ public static class AcerWmiManager
         });
     }
 
-    private static async Task InvokeWmiAsync(string className, string methodName, string gmInputStr)
+    private static async Task InvokeWmiAsync(string className, string methodName, ulong gmInput)
     {
         await Task.Run(() =>
         {
@@ -233,12 +267,15 @@ public static class AcerWmiManager
                     using (instance)
                     {
                         using var inParams = instance.GetMethodParameters(methodName);
-                        inParams["gmInput"] = gmInputStr;
+                        inParams["gmInput"] = gmInput;
                         instance.InvokeMethod(methodName, inParams, null);
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"[AcerWmiManager] Error invoking {methodName}(0x{gmInput:X}): {ex.Message}");
+            }
         });
     }
 }
