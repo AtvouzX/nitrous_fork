@@ -21,6 +21,12 @@ public class OsdForm : Form
 
     public OsdForm()
     {
+        this.SetStyle(ControlStyles.AllPaintingInWmPaint |
+                      ControlStyles.UserPaint |
+                      ControlStyles.OptimizedDoubleBuffer |
+                      ControlStyles.ResizeRedraw, true);
+        this.DoubleBuffered = true;
+
         this.FormBorderStyle = FormBorderStyle.None;
         this.BackColor = Color.FromArgb(24, 24, 27);
         this.TopMost = true;
@@ -39,8 +45,23 @@ public class OsdForm : Form
         _fadeTimer.Tick += FadeTimer_Tick;
     }
 
+    public PowerProfile ActiveProfile => _activeProfile;
+    public string ProfileText => _profileText;
+
     public void ShowProfile(string profileName, Color color, PowerProfile profile)
     {
+        if (this.IsDisposed) return;
+
+        if (this.InvokeRequired)
+        {
+            try
+            {
+                this.BeginInvoke(new Action(() => ShowProfile(profileName, color, profile)));
+            }
+            catch { }
+            return;
+        }
+
         _profileText = profileName.ToUpper();
         _accentColor = color;
         _activeProfile = profile;
@@ -49,13 +70,24 @@ public class OsdForm : Form
         _opacity = 0.85;
         this.Opacity = _opacity;
 
-        this.Invalidate();
         this.Show();
+        this.Refresh();
 
         _fadeTimer.Stop();
         System.Threading.Tasks.Task.Delay(1500).ContinueWith(_ =>
         {
-            this.Invoke(new Action(() => _fadeTimer.Start()));
+            try
+            {
+                if (!this.IsDisposed && this.IsHandleCreated)
+                {
+                    this.BeginInvoke(new Action(() =>
+                    {
+                        if (!this.IsDisposed)
+                            _fadeTimer.Start();
+                    }));
+                }
+            }
+            catch { }
         });
     }
 
@@ -70,8 +102,19 @@ public class OsdForm : Form
         }
     }
 
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            _fadeTimer.Stop();
+            _fadeTimer.Dispose();
+        }
+        base.Dispose(disposing);
+    }
+
     protected override void OnPaint(PaintEventArgs e)
     {
+        e.Graphics.Clear(this.BackColor);
         e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
         e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
@@ -155,7 +198,6 @@ public class OsdForm : Form
         get
         {
             CreateParams cp = base.CreateParams;
-            cp.ExStyle |= 0x00000020; // WS_EX_TRANSPARENT
             cp.ExStyle |= 0x08000000; // WS_EX_NOACTIVATE
             return cp;
         }

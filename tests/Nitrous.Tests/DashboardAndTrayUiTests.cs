@@ -359,4 +359,155 @@ public class DashboardAndTrayUiTests
             Assert.False(tray.TrayIcon.Visible, "Tray icon Visible must be false after disposal.");
         });
     }
+
+    [Theory]
+    [InlineData(true, false, PowerProfile.Performance, PowerProfile.Quiet, PowerProfile.Quiet)] // AC -> DC (Unplugged)
+    [InlineData(false, true, PowerProfile.Quiet, PowerProfile.Performance, PowerProfile.Performance)] // DC -> AC (Plugged in)
+    public void TrayApplication_AutoSwitch_WhenPowerSourceChangesAndProfileSwitches_TriggersOsd(
+        bool initialAcState,
+        bool newAcState,
+        PowerProfile initialProfile,
+        PowerProfile targetProfile,
+        PowerProfile expectedOsdProfile)
+    {
+        RunInSta(() =>
+        {
+            int origAutoSwitch = SettingsManager.Get("AutoSwitch", 0);
+            int origLastPower = SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+            int origAcPower = SettingsManager.Get("LastAcPowerMode", (int)PowerProfile.Performance);
+            int origDcPower = SettingsManager.Get("LastDcPowerMode", (int)PowerProfile.Quiet);
+
+            try
+            {
+                SettingsManager.Save("AutoSwitch", 1);
+                SettingsManager.Save("LastPowerMode", (int)initialProfile);
+                SettingsManager.Save("LastAcPowerMode", (int)(newAcState ? targetProfile : initialProfile));
+                SettingsManager.Save("LastDcPowerMode", (int)(newAcState ? initialProfile : targetProfile));
+
+                using var tray = new TrayApplication();
+                tray.WasOnAcPower = initialAcState;
+                tray.LastOsdProfile = null;
+
+                tray.ApplyPowerSettings(isStartup: false, isOnlineOverride: newAcState);
+
+                Assert.Equal(expectedOsdProfile, tray.LastOsdProfile);
+                Assert.Equal((int)expectedOsdProfile, SettingsManager.Get("LastPowerMode", -1));
+            }
+            finally
+            {
+                SettingsManager.Save("AutoSwitch", origAutoSwitch);
+                SettingsManager.Save("LastPowerMode", origLastPower);
+                SettingsManager.Save("LastAcPowerMode", origAcPower);
+                SettingsManager.Save("LastDcPowerMode", origDcPower);
+            }
+        });
+    }
+
+    [Fact]
+    public void TrayApplication_AutoSwitch_WhenProfileDoesNotChange_SuppressesOsd()
+    {
+        RunInSta(() =>
+        {
+            int origAutoSwitch = SettingsManager.Get("AutoSwitch", 0);
+            int origLastPower = SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+            int origAcPower = SettingsManager.Get("LastAcPowerMode", (int)PowerProfile.Performance);
+            int origDcPower = SettingsManager.Get("LastDcPowerMode", (int)PowerProfile.Quiet);
+
+            try
+            {
+                SettingsManager.Save("AutoSwitch", 1);
+                SettingsManager.Save("LastPowerMode", (int)PowerProfile.Quiet);
+                SettingsManager.Save("LastAcPowerMode", (int)PowerProfile.Quiet);
+                SettingsManager.Save("LastDcPowerMode", (int)PowerProfile.Quiet);
+
+                using var tray = new TrayApplication();
+                tray.WasOnAcPower = true;
+                tray.LastOsdProfile = null;
+
+                // Unplugging, but target profile on DC is also Quiet (same as current)
+                tray.ApplyPowerSettings(isStartup: false, isOnlineOverride: false);
+
+                Assert.Null(tray.LastOsdProfile);
+            }
+            finally
+            {
+                SettingsManager.Save("AutoSwitch", origAutoSwitch);
+                SettingsManager.Save("LastPowerMode", origLastPower);
+                SettingsManager.Save("LastAcPowerMode", origAcPower);
+                SettingsManager.Save("LastDcPowerMode", origDcPower);
+            }
+        });
+    }
+
+    [Fact]
+    public void TrayApplication_AutoSwitch_WhenAutoSwitchDisabled_SuppressesOsd()
+    {
+        RunInSta(() =>
+        {
+            int origAutoSwitch = SettingsManager.Get("AutoSwitch", 0);
+            int origLastPower = SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+            int origAcPower = SettingsManager.Get("LastAcPowerMode", (int)PowerProfile.Performance);
+            int origDcPower = SettingsManager.Get("LastDcPowerMode", (int)PowerProfile.Quiet);
+
+            try
+            {
+                SettingsManager.Save("AutoSwitch", 0);
+                SettingsManager.Save("LastPowerMode", (int)PowerProfile.Performance);
+                SettingsManager.Save("LastAcPowerMode", (int)PowerProfile.Performance);
+                SettingsManager.Save("LastDcPowerMode", (int)PowerProfile.Quiet);
+
+                using var tray = new TrayApplication();
+                tray.WasOnAcPower = true;
+                tray.LastOsdProfile = null;
+
+                // Unplugging with AutoSwitch disabled
+                tray.ApplyPowerSettings(isStartup: false, isOnlineOverride: false);
+
+                Assert.Null(tray.LastOsdProfile);
+            }
+            finally
+            {
+                SettingsManager.Save("AutoSwitch", origAutoSwitch);
+                SettingsManager.Save("LastPowerMode", origLastPower);
+                SettingsManager.Save("LastAcPowerMode", origAcPower);
+                SettingsManager.Save("LastDcPowerMode", origDcPower);
+            }
+        });
+    }
+
+    [Fact]
+    public void TrayApplication_AutoSwitch_OnStartup_SuppressesOsd()
+    {
+        RunInSta(() =>
+        {
+            int origAutoSwitch = SettingsManager.Get("AutoSwitch", 0);
+            int origLastPower = SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+            int origAcPower = SettingsManager.Get("LastAcPowerMode", (int)PowerProfile.Performance);
+            int origDcPower = SettingsManager.Get("LastDcPowerMode", (int)PowerProfile.Quiet);
+
+            try
+            {
+                SettingsManager.Save("AutoSwitch", 1);
+                SettingsManager.Save("LastPowerMode", (int)PowerProfile.Performance);
+                SettingsManager.Save("LastAcPowerMode", (int)PowerProfile.Performance);
+                SettingsManager.Save("LastDcPowerMode", (int)PowerProfile.Quiet);
+
+                using var tray = new TrayApplication();
+                tray.WasOnAcPower = null;
+                tray.LastOsdProfile = null;
+
+                // Initial boot / startup apply
+                tray.ApplyPowerSettings(isStartup: true, isOnlineOverride: false);
+
+                Assert.Null(tray.LastOsdProfile);
+            }
+            finally
+            {
+                SettingsManager.Save("AutoSwitch", origAutoSwitch);
+                SettingsManager.Save("LastPowerMode", origLastPower);
+                SettingsManager.Save("LastAcPowerMode", origAcPower);
+                SettingsManager.Save("LastDcPowerMode", origDcPower);
+            }
+        });
+    }
 }

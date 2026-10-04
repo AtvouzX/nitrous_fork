@@ -16,6 +16,8 @@ public class TrayApplication : ApplicationContext
     internal ContextMenuStrip? ContextMenu => trayIcon?.ContextMenuStrip;
     internal NotifyIcon TrayIcon => trayIcon;
     private bool? _wasOnAcPower = null;
+    internal bool? WasOnAcPower { get => _wasOnAcPower; set => _wasOnAcPower = value; }
+    internal PowerProfile? LastOsdProfile { get; set; }
     private int _powerEventId = 0;
 
     private CancellationTokenSource _engineCts = new CancellationTokenSource();
@@ -339,19 +341,22 @@ public class TrayApplication : ApplicationContext
             if (eventId != _powerEventId) return;
 
             ApplyPowerSettings(false);
-            MemoryHelper.TrimWorkingSet();
+
+            // Defer aggressive working set trimming until after OSD display & fade animations finish
+            _ = Task.Delay(4000).ContinueWith(_ => MemoryHelper.TrimWorkingSet(), TaskScheduler.Default);
         }
     }
 
-    private void ApplyPowerSettings(bool isStartup = false)
+    internal void ApplyPowerSettings(bool isStartup = false, bool? isOnlineOverride = null)
     {
-        bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
+        bool isOnline = isOnlineOverride ?? (SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online);
 
         if (!isStartup && _wasOnAcPower.HasValue && _wasOnAcPower.Value == isOnline) return;
         _wasOnAcPower = isOnline;
 
         if (SettingsManager.Get("AutoSwitch", 0) == 1)
         {
+            var previousMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
             string keyMode = isOnline ? "LastAcPowerMode" : "LastDcPowerMode";
             var activeMode = (PowerProfile)SettingsManager.Get(keyMode, (int)(isOnline ? PowerProfile.Performance : PowerProfile.Quiet));
             _ = AcerWmiManager.SetPowerModeAsync(activeMode);
@@ -366,6 +371,11 @@ public class TrayApplication : ApplicationContext
                 _ = AcerWmiManager.SetFansAsync(activeFan);
 
             SettingsManager.Save("LastFanMode", activeFan.ToString());
+
+            if (!isStartup && activeMode != previousMode)
+            {
+                TriggerProfileOsd(activeMode);
+            }
         }
 
         var currentProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
@@ -606,6 +616,7 @@ public class TrayApplication : ApplicationContext
 
     public void TriggerProfileOsd(PowerProfile profile)
     {
+        LastOsdProfile = profile;
         Color osdColor = profile switch
         {
             PowerProfile.Quiet => Color.FromArgb(52, 199, 89),       // Green
@@ -638,6 +649,7 @@ public class TrayApplication : ApplicationContext
         trayIcon.Visible = false;
         trayIcon.ContextMenuStrip?.Dispose();
         trayIcon.Dispose();
+        _osd.Dispose();
         _gpuManager.Dispose();
         _engineCts.Dispose();
         _hotkeys.Dispose();
