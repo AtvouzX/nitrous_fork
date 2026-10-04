@@ -288,38 +288,41 @@ public class DashboardViewModel : ObservableObject, IDisposable
         _autoSwitch = SettingsManager.Get("AutoSwitch", 0) == 1;
         _refreshAutoSwitch = SettingsManager.Get("RefreshAutoSwitch", 0) == 1;
 
-        System.Threading.Tasks.Task.Run(() =>
+        if (!IsTestHost())
         {
-            bool isTurbo = AcerWmiManager.IsTurboModeSupported();
-            bool isTaskEnabled = StartupManager.CheckStartupTask();
-            bool isNitroKeyEnabled = NitroKeyManager.IsIntegrationEnabled() || SettingsManager.Get("NitroKeyIntegrated", 0) == 1;
-
-            if (isNitroKeyEnabled)
+            System.Threading.Tasks.Task.Run(() =>
             {
-                NitroKeyManager.SyncExecutablePath(Environment.ProcessPath ?? "");
-            }
+                bool isTurbo = AcerWmiManager.IsTurboModeSupported();
+                bool isTaskEnabled = StartupManager.CheckStartupTask();
+                bool isNitroKeyEnabled = NitroKeyManager.IsIntegrationEnabled() || SettingsManager.Get("NitroKeyIntegrated", 0) == 1;
 
-            int core = 0, memory = 0;
-            bool hasClocks = _gpuManager.IsValid && _gpuManager.GetClocks(out core, out memory);
-
-            // Push results back to the UI thread asynchronously
-            System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
-            {
-                IsTurboSupported = isTurbo;
-
-                _runOnStartup = isTaskEnabled;
-                OnPropertyChanged(nameof(RunOnStartup));
-
-                _isNitroKeyIntegrated = isNitroKeyEnabled;
-                OnPropertyChanged(nameof(IsNitroKeyIntegrated));
-
-                if (hasClocks)
+                if (isNitroKeyEnabled)
                 {
-                    GpuCoreOffset = core;
-                    GpuMemoryOffset = memory;
+                    NitroKeyManager.SyncExecutablePath(Environment.ProcessPath ?? "");
                 }
+
+                int core = 0, memory = 0;
+                bool hasClocks = _gpuManager.IsValid && _gpuManager.GetClocks(out core, out memory);
+
+                // Push results back to the UI thread asynchronously
+                System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
+                {
+                    IsTurboSupported = isTurbo;
+
+                    _runOnStartup = isTaskEnabled;
+                    OnPropertyChanged(nameof(RunOnStartup));
+
+                    _isNitroKeyIntegrated = isNitroKeyEnabled;
+                    OnPropertyChanged(nameof(IsNitroKeyIntegrated));
+
+                    if (hasClocks)
+                    {
+                        GpuCoreOffset = core;
+                        GpuMemoryOffset = memory;
+                    }
+                });
             });
-        });
+        }
 
         ActivePowerProfile = AcerWmiManager.GetActivePowerMode() ?? (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
 
@@ -611,7 +614,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
         }
     }
 
-    private void ClearDeepTelemetryUI()
+    public void ClearDeepTelemetryUI()
     {
         GpuNameText = "NVIDIA GPU (SLEEPING)";
         GpuArchText = "";
@@ -781,6 +784,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
         }, token);
     }
 
+    public bool IsPollingActive => _pollingCts != null && !_pollingCts.IsCancellationRequested;
+
     public void PausePolling()
     {
         _pollingCts?.Cancel();
@@ -798,5 +803,12 @@ public class DashboardViewModel : ObservableObject, IDisposable
         _pollingCts = null;
         _fanDebouncer.Dispose();
         _gpuManager.Dispose();
+    }
+
+    private static bool IsTestHost()
+    {
+        string procName = Process.GetCurrentProcess().ProcessName;
+        return procName.Contains("testhost", StringComparison.OrdinalIgnoreCase) ||
+               procName.Contains("vstest", StringComparison.OrdinalIgnoreCase);
     }
 }

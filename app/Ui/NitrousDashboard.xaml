@@ -10,7 +10,7 @@
         RenderOptions.ClearTypeHint="Enabled"
         Deactivated="Window_Deactivated">
 	<Window.Resources>
-		<BitmapImage x:Key="CachedAppLogo" UriSource="pack://application:,,,/assets/logo.png" CacheOption="OnLoad" />
+		<BitmapImage x:Key="CachedAppLogo" UriSource="pack://application:,,,/Nitrous;component/assets/logo.png" CacheOption="OnLoad" />
 		<Style x:Key="ActionButtonStyle" TargetType="RadioButton">
 			<!-- Default state: Transparent background to blend into the rail -->
 			<Setter Property="Background" Value="Transparent"/>

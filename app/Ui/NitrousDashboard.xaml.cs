@@ -22,20 +22,27 @@ public partial class NitrousDashboard : Window
         DashVersionText.Text = GpuVersionText.Text = KeyboardVersionText.Text =
             SettingsVersionText.Text = $"Nitrous {UpdateManager.CurrentVersion}";
 
-        System.Threading.Tasks.Task.Run(() =>
+        if (IsTestHost())
         {
-            string modelName = SystemInfoManager.GetSystemModel();
-            Dispatcher.Invoke(() => SystemModelText.Text = $"{modelName}");
-        });
-
-        this.Loaded += (s, e) =>
+            SystemModelText.Text = "Acer Nitro Test Unit";
+        }
+        else
         {
-            Dispatcher.InvokeAsync(async () =>
+            System.Threading.Tasks.Task.Run(() =>
             {
-                await System.Threading.Tasks.Task.Delay(600);
-                Nitrous.Helpers.MemoryHelper.TrimWorkingSet();
-            }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
-        };
+                string modelName = SystemInfoManager.GetSystemModel();
+                Dispatcher.Invoke(() => SystemModelText.Text = $"{modelName}");
+            });
+
+            this.Loaded += (s, e) =>
+            {
+                Dispatcher.InvokeAsync(async () =>
+                {
+                    await System.Threading.Tasks.Task.Delay(600);
+                    Nitrous.Helpers.MemoryHelper.TrimWorkingSet();
+                }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+            };
+        }
     }
 
     private void OnPowerStateChanged(object sender, PowerModeChangedEventArgs e)
@@ -161,6 +168,18 @@ public partial class NitrousDashboard : Window
 
         NavSetIcon.Fill = ActiveBrush;
         NavSetText.Foreground = ActiveBrush;
+    }
+
+    internal void NavigateToDashboard() => NavDashBtn_Click(this, new RoutedEventArgs());
+    internal void NavigateToGpu() => NavGpuBtn_Click(this, new RoutedEventArgs());
+    internal void NavigateToKeyboard() => NavKeyboardBtn_Click(this, new RoutedEventArgs());
+    internal void NavigateToSettings() => NavSetBtn_Click(this, new RoutedEventArgs());
+
+    private static bool IsTestHost()
+    {
+        string procName = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
+        return procName.Contains("testhost", StringComparison.OrdinalIgnoreCase) ||
+               procName.Contains("vstest", StringComparison.OrdinalIgnoreCase);
     }
 
     private void Window_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)

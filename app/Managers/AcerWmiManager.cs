@@ -8,6 +8,14 @@ namespace Nitrous.Managers;
 
 public static class AcerWmiManager
 {
+    // Acer EC Sensor Addresses for Hardware Telemetry
+    public const uint SensorCpuTemp = 0x0101u;
+    public const uint SensorCpuRpm = 0x0201u;
+    public const uint SensorGpuTempPrimary = 0x0A01u;
+    public const uint SensorGpuTempFallback1 = 0x0901u;
+    public const uint SensorGpuTempFallback2 = 0x0B01u;
+    public const uint SensorGpuRpm = 0x0601u;
+
     private static ManagementObject? _cachedGamingFunction;
     private static readonly object _wmiLock = new();
 
@@ -173,18 +181,18 @@ public static class AcerWmiManager
                 lock (_wmiLock)
                 {
                     // 1. CPU Temperature (Address: 0x0101)
-                    cpuTemp = ReadAcerSensor(instance, 0x0101u, 0xFF);
+                    cpuTemp = ReadAcerSensor(instance, SensorCpuTemp, 0xFF);
 
                     // 2. CPU Fan Speed (Address: 0x0201)
-                    cpuRpm = ReadAcerSensor(instance, 0x0201u, 0xFFFF);
+                    cpuRpm = ReadAcerSensor(instance, SensorCpuRpm, 0xFFFF);
 
-                    // 3. GPU Temperature (Address: 0x0A01)
-                    gpuTemp = ReadAcerSensor(instance, 0x0A01u, 0xFF);
-                    if (gpuTemp == 0) gpuTemp = ReadAcerSensor(instance, 0x0901u, 0xFF);
-                    if (gpuTemp == 0) gpuTemp = ReadAcerSensor(instance, 0x0B01u, 0xFF);
+                    // 3. GPU Temperature (Address: 0x0A01, with 0x0901/0x0B01 fallbacks)
+                    gpuTemp = ReadAcerSensor(instance, SensorGpuTempPrimary, 0xFF);
+                    if (gpuTemp == 0) gpuTemp = ReadAcerSensor(instance, SensorGpuTempFallback1, 0xFF);
+                    if (gpuTemp == 0) gpuTemp = ReadAcerSensor(instance, SensorGpuTempFallback2, 0xFF);
 
                     // 4. GPU Fan Speed (Address: 0x0601)
-                    gpuRpm = ReadAcerSensor(instance, 0x0601u, 0xFFFF);
+                    gpuRpm = ReadAcerSensor(instance, SensorGpuRpm, 0xFFFF);
                 }
             }
         }

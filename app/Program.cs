@@ -12,7 +12,7 @@ namespace Nitrous;
 static class Program
 {
     private static Mutex? mutex = null;
-    private const string AppMutexName = "Nitrous_SingleInstance_Mutex_Lock";
+    public const string AppMutexName = "Nitrous_SingleInstance_Mutex_Lock";
 
     public const string DashboardMutexName = @"Local\Nitrous_Dashboard_SingleInstance_Mutex";
     public const string DashboardEventName = @"Local\Nitrous_ShowDashboard_Event";

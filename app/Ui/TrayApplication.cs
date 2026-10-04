@@ -10,8 +10,11 @@ namespace Nitrous.Ui;
 public class TrayApplication : ApplicationContext
 {
     private readonly NotifyIcon trayIcon;
-    private readonly NitroKeyHook _nitroHook;
+    private readonly NitroKeyHook? _nitroHook;
     private readonly NvidiaGpuManager _gpuManager = new();
+
+    internal ContextMenuStrip? ContextMenu => trayIcon?.ContextMenuStrip;
+    internal NotifyIcon TrayIcon => trayIcon;
     private bool? _wasOnAcPower = null;
     private int _powerEventId = 0;
 
@@ -40,33 +43,36 @@ public class TrayApplication : ApplicationContext
 
         BuildContextMenu();
 
-        SystemEvents.PowerModeChanged += OnPowerStateChanged;
-
-        _ = Task.Run(() => UpdateManager.CheckForUpdatesAsync(true, () => Exit(null, EventArgs.Empty)));
-
-        _nitroHook = new NitroKeyHook();
-        _nitroHook.NitroKeyPressed += (s, e) => ShowDashboard();
-
-        _hotkeys.HotkeyPressed += OnCustomHotkeyPressed;
-        ReloadHotkeys();
-
-        _ = Task.Run(async () =>
+        if (!IsTestHost())
         {
-            // Initial quick memory trim after JIT compilation
-            await Task.Delay(2000);
-            MemoryHelper.TrimWorkingSet();
+            SystemEvents.PowerModeChanged += OnPowerStateChanged;
 
-            await Task.Delay(6000);
-            ApplyPowerSettings(true);
+            _ = Task.Run(() => UpdateManager.CheckForUpdatesAsync(true, () => Exit(null, EventArgs.Empty)));
 
-            var bootProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-            await _gpuManager.ApplyOnBootAsync(bootProfile);
+            _nitroHook = new NitroKeyHook();
+            _nitroHook.NitroKeyPressed += (s, e) => ShowDashboard();
 
-            // Final trim after all boot settings are applied
-            MemoryHelper.TrimWorkingSet();
-        });
+            _hotkeys.HotkeyPressed += OnCustomHotkeyPressed;
+            ReloadHotkeys();
 
-        StartBackgroundEngine();
+            _ = Task.Run(async () =>
+            {
+                // Initial quick memory trim after JIT compilation
+                await Task.Delay(2000);
+                MemoryHelper.TrimWorkingSet();
+
+                await Task.Delay(6000);
+                ApplyPowerSettings(true);
+
+                var bootProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+                await _gpuManager.ApplyOnBootAsync(bootProfile);
+
+                // Final trim after all boot settings are applied
+                MemoryHelper.TrimWorkingSet();
+            });
+
+            StartBackgroundEngine();
+        }
     }
 
     private void BuildContextMenu()
@@ -388,7 +394,14 @@ public class TrayApplication : ApplicationContext
     private bool _lastObservedCurveEnabled = false;
     private int _cpuDownstepHoldTicks;
     private int _gpuDownstepHoldTicks;
-    private const int HysteresisHoldCycles = 2; // 2 cycles * 2s = 4s delay before stepping down
+    public const int HysteresisHoldCycles = 2; // 2 cycles * 2s = 4s delay before stepping down
+
+    public static string FormatTrayTooltip(int cpuTemp, int gpuTemp)
+    {
+        string gpuTip = gpuTemp > 0 ? $"{gpuTemp}°C" : "Sleep";
+        string tipText = $"Nitrous | CPU: {cpuTemp}°C  GPU: {gpuTip}";
+        return tipText.Length > 63 ? tipText[..63] : tipText;
+    }
 
     private void StartBackgroundEngine()
     {
@@ -426,10 +439,7 @@ public class TrayApplication : ApplicationContext
                     {
                         var telemetry = AcerWmiManager.GetSystemTelemetry();
                         int effectiveGpuTemp = telemetry.GpuTemp;
-
-                        string gpuTip = effectiveGpuTemp > 0 ? $"{effectiveGpuTemp}°C" : "Sleep";
-                        string tipText = $"Nitrous | CPU: {telemetry.CpuTemp}°C  GPU: {gpuTip}";
-                        string truncatedTip = tipText.Length > 63 ? tipText[..63] : tipText;
+                        string truncatedTip = FormatTrayTooltip(telemetry.CpuTemp, effectiveGpuTemp);
                         if (trayIcon.Text != truncatedTip)
                         {
                             trayIcon.Text = truncatedTip;
@@ -608,11 +618,20 @@ public class TrayApplication : ApplicationContext
         _osd.ShowProfile($"{profile} MODE", osdColor, profile);
     }
 
+    protected override void Dispose(bool disposing)
+    {
+        if (disposing)
+        {
+            CleanupResources();
+        }
+        base.Dispose(disposing);
+    }
+
     private void CleanupResources()
     {
         // 1. Cancel background loops and unhook events
         _engineCts.Cancel();
-        _nitroHook.Dispose();
+        _nitroHook?.Dispose();
         SystemEvents.PowerModeChanged -= OnPowerStateChanged;
 
         // 2. Hide and dispose tray icon to prevent ghost icons
@@ -623,27 +642,37 @@ public class TrayApplication : ApplicationContext
         _engineCts.Dispose();
         _hotkeys.Dispose();
 
-        // 3. Kill any open Dashboard UI processes BEFORE spawning a new one
-        try
+        if (!IsTestHost())
         {
-            using var currentProcess = Process.GetCurrentProcess();
-            string pName = currentProcess.ProcessName;
-            int currentId = currentProcess.Id;
-            int currentSessionId = currentProcess.SessionId;
-
-            var processes = Process.GetProcessesByName(pName);
-            foreach (var p in processes)
+            // 3. Kill any open Dashboard UI processes BEFORE spawning a new one
+            try
             {
-                using (p)
+                using var currentProcess = Process.GetCurrentProcess();
+                string pName = currentProcess.ProcessName;
+                int currentId = currentProcess.Id;
+                int currentSessionId = currentProcess.SessionId;
+
+                var processes = Process.GetProcessesByName(pName);
+                foreach (var p in processes)
                 {
-                    if (p.Id != currentId && p.SessionId == currentSessionId)
+                    using (p)
                     {
-                        try { p.Kill(); } catch { }
+                        if (p.Id != currentId && p.SessionId == currentSessionId)
+                        {
+                            try { p.Kill(); } catch { }
+                        }
                     }
                 }
             }
+            catch { }
         }
-        catch { }
+    }
+
+    private static bool IsTestHost()
+    {
+        string procName = Process.GetCurrentProcess().ProcessName;
+        return procName.Contains("testhost", StringComparison.OrdinalIgnoreCase) ||
+               procName.Contains("vstest", StringComparison.OrdinalIgnoreCase);
     }
 
     private void Restart(object? sender, EventArgs e)

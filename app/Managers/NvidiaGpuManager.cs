@@ -39,6 +39,14 @@ public class NvidiaGpuManager : IDisposable
 
     private void InitializeNvAPI()
     {
+        // Guard against binding unmanaged GPU driver handles in test host environments
+        string procName = Process.GetCurrentProcess().ProcessName;
+        if (procName.Contains("testhost", StringComparison.OrdinalIgnoreCase) ||
+            procName.Contains("vstest", StringComparison.OrdinalIgnoreCase))
+        {
+            return;
+        }
+
         try
         {
             try { NVIDIA.Unload(); } catch { }

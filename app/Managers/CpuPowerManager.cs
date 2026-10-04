@@ -8,8 +8,8 @@ namespace Nitrous.Managers;
 
 public static class CpuPowerManager
 {
-    private static readonly string CachedPowerCfgPath = Path.Combine(Environment.SystemDirectory, "powercfg.exe");
-    private const string BoostModeGuid = "be337238-0d82-4146-a110-4a477b471251";
+    public static readonly string CachedPowerCfgPath = Path.Combine(Environment.SystemDirectory, "powercfg.exe");
+    public const string BoostModeGuid = "be337238-0d82-4146-a110-4a477b471251";
 
     // Cache the applied state to prevent redundant powercfg process executions
     private static int _lastAcMin = -1;
