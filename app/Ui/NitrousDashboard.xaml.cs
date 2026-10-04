@@ -19,7 +19,8 @@ public partial class NitrousDashboard : Window
 
         DataContext = new DashboardViewModel();
 
-        DashVersionText.Text = GpuVersionText.Text = KeyboardVersionText.Text = SettingsVersionText.Text = $"Nitrous {UpdateManager.CurrentVersion}";
+        DashVersionText.Text = GpuVersionText.Text = KeyboardVersionText.Text =
+            SettingsVersionText.Text = $"Nitrous {UpdateManager.CurrentVersion}";
 
         System.Threading.Tasks.Task.Run(() =>
         {
@@ -58,8 +59,13 @@ public partial class NitrousDashboard : Window
     private static readonly SolidColorBrush AcColorBrush = CreateFrozenBrush("#FF453A");
     private static readonly SolidColorBrush BattColorBrush = CreateFrozenBrush("#34C759");
 
-    private static readonly Geometry AcGeom = Geometry.Parse("M16,7V3H14V7H10V3H8V7C8,10 9.79,11.4 11,11.83V16H13V11.83C14.21,11.4 16,10 16,7M10,18H14V22H10V18Z");
-    private static readonly Geometry BattGeom = Geometry.Parse("M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z");
+    private static readonly Geometry AcGeom =
+        Geometry.Parse(
+            "M16,7V3H14V7H10V3H8V7C8,10 9.79,11.4 11,11.83V16H13V11.83C14.21,11.4 16,10 16,7M10,18H14V22H10V18Z");
+
+    private static readonly Geometry BattGeom =
+        Geometry.Parse(
+            "M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z");
 
     static NitrousDashboard()
     {
@@ -69,7 +75,8 @@ public partial class NitrousDashboard : Window
 
     private static SolidColorBrush CreateFrozenBrush(string hex)
     {
-        var brush = new SolidColorBrush((System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex));
+        var brush = new SolidColorBrush(
+            (System.Windows.Media.Color)System.Windows.Media.ColorConverter.ConvertFromString(hex));
         brush.Freeze();
         return brush;
     }
@@ -163,7 +170,8 @@ public partial class NitrousDashboard : Window
 
     public void RefreshDashboardState()
     {
-        bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Online;
+        bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
+                        System.Windows.Forms.PowerLineStatus.Online;
         var powerColor = isOnline ? AcColorBrush : BattColorBrush;
         string powerText = isOnline ? "AC POWER" : "BATTERY";
 
@@ -173,8 +181,11 @@ public partial class NitrousDashboard : Window
         DashPowerPillText.Text = powerText;
         DashPowerPillIcon.Data = isOnline ? AcGeom : BattGeom;
 
-        var activeMode = AcerWmiManager.GetActivePowerMode() ?? (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-        var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f) ? f : FanProfile.Auto;
+        var activeMode = AcerWmiManager.GetActivePowerMode() ??
+                         (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+        var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f)
+            ? f
+            : FanProfile.Auto;
         var activeRefresh = (RefreshProfile)SettingsManager.Get("RefreshMode", (int)RefreshProfile.Auto);
 
         BtnPowerQuiet.IsChecked = activeMode == PowerProfile.Quiet;
@@ -213,7 +224,7 @@ public partial class NitrousDashboard : Window
 
         // Dock to Windows Quick Settings position (bottom-right above taskbar)
         this.Left = SystemParameters.WorkArea.Right - this.Width - 12;
-        this.Top = SystemParameters.WorkArea.Bottom - this.Height - 12;
+        this.Top = SystemParameters.WorkArea.Bottom - this.Height - 50;
     }
 
     private void Window_Deactivated(object sender, EventArgs e)
@@ -242,11 +253,13 @@ public partial class NitrousDashboard : Window
     }
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
-    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
+    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath
+        .System32)]
     private static extern bool SetForegroundWindow(IntPtr hWnd);
 
     [System.Runtime.InteropServices.DllImport("user32.dll")]
-    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
+    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath
+        .System32)]
     private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
     public void RestoreAndActivate()
@@ -303,8 +316,12 @@ public partial class NitrousDashboard : Window
             WindowStartupLocation = WindowStartupLocation.Manual
         };
 
-        double currentLeft = double.IsNaN(this.Left) ? (SystemParameters.WorkArea.Width / 2) - (this.Width / 2) : this.Left;
-        double currentTop = double.IsNaN(this.Top) ? (SystemParameters.WorkArea.Height / 2) - (this.Height / 2) : this.Top;
+        double currentLeft = double.IsNaN(this.Left)
+            ? (SystemParameters.WorkArea.Width / 2) - (this.Width / 2)
+            : this.Left;
+        double currentTop = double.IsNaN(this.Top)
+            ? (SystemParameters.WorkArea.Height / 2) - (this.Height / 2)
+            : this.Top;
 
         double targetLeft = currentLeft - _activeCurveWindow.Width - 10;
 
@@ -384,6 +401,9 @@ public partial class NitrousDashboard : Window
             label += KeyInterop.KeyFromVirtualKey((int)vk).ToString();
             return label;
         }
-        catch { return "None"; }
+        catch
+        {
+            return "None";
+        }
     }
 }
