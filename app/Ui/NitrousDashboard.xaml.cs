@@ -49,7 +49,8 @@ public partial class NitrousDashboard : Window
     {
         if (e.Mode == PowerModes.StatusChange)
         {
-            System.Threading.Tasks.Task.Delay(5500).ContinueWith(_ =>
+            // Update UI quickly for the Power Pill (AC/Battery state)
+            System.Threading.Tasks.Task.Delay(1500).ContinueWith(_ =>
             {
                 Dispatcher.Invoke(() => RefreshDashboardState());
             });

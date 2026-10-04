@@ -796,6 +796,99 @@ public class DashboardViewModel : ObservableObject, IDisposable
         StartTelemetryPolling();
     }
 
+    public void SyncSettings()
+    {
+        var newPowerProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+        if (_activePowerProfile != newPowerProfile)
+        {
+            _activePowerProfile = newPowerProfile;
+            OnPropertyChanged(nameof(ActivePowerProfile));
+        }
+
+        var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f) ? f : FanProfile.Auto;
+        var newCustomFan = activeFan == FanProfile.Medium;
+        if (_isCustomFanEnabled != newCustomFan)
+        {
+            _isCustomFanEnabled = newCustomFan;
+            OnPropertyChanged(nameof(IsCustomFanEnabled));
+            OnPropertyChanged(nameof(CustomFanOpacity));
+            OnPropertyChanged(nameof(IsManualSliderEnabled));
+            OnPropertyChanged(nameof(CustomFanHeaderText));
+            OnPropertyChanged(nameof(CustomFanHeaderColor));
+            OnPropertyChanged(nameof(SliderDisabledTooltip));
+        }
+
+        var newCpu = SettingsManager.Get("CustomFanSpeedCpu", 50);
+        if (_cpuFanSpeed != newCpu)
+        {
+            _cpuFanSpeed = newCpu;
+            OnPropertyChanged(nameof(CpuFanSpeed));
+        }
+
+        var newGpu = SettingsManager.Get("CustomFanSpeedGpu", 50);
+        if (_gpuFanSpeed != newGpu)
+        {
+            _gpuFanSpeed = newGpu;
+            OnPropertyChanged(nameof(GpuFanSpeed));
+        }
+
+        var newUnified = SettingsManager.Get("UnifiedFans", 1) == 1;
+        if (_isUnifiedFans != newUnified)
+        {
+            _isUnifiedFans = newUnified;
+            OnPropertyChanged(nameof(IsUnifiedFans));
+        }
+
+        var newCurve = SettingsManager.Get("IsCurveModeEnabled", 0) == 1;
+        if (_isCurveModeEnabled != newCurve)
+        {
+            _isCurveModeEnabled = newCurve;
+            OnPropertyChanged(nameof(IsCurveModeEnabled));
+            OnPropertyChanged(nameof(IsManualSliderEnabled));
+            OnPropertyChanged(nameof(CustomFanHeaderText));
+            OnPropertyChanged(nameof(CustomFanHeaderColor));
+            OnPropertyChanged(nameof(FanModeSubtext));
+            OnPropertyChanged(nameof(FanModeSubtextColor));
+            OnPropertyChanged(nameof(SliderDisabledTooltip));
+        }
+
+        var newManageCpu = SettingsManager.Get("ManageCpuPower", 0) == 1;
+        if (_manageCpuPower != newManageCpu)
+        {
+            _manageCpuPower = newManageCpu;
+            OnPropertyChanged(nameof(ManageCpuPower));
+        }
+
+        var newCharge = SettingsManager.Get("ChargeLimit", 0) == 1;
+        if (_chargeLimit != newCharge)
+        {
+            _chargeLimit = newCharge;
+            OnPropertyChanged(nameof(ChargeLimit));
+        }
+
+        var newAuto = SettingsManager.Get("AutoSwitch", 0) == 1;
+        if (_autoSwitch != newAuto)
+        {
+            _autoSwitch = newAuto;
+            OnPropertyChanged(nameof(AutoSwitch));
+        }
+        
+        var newRefAuto = SettingsManager.Get("RefreshAutoSwitch", 0) == 1;
+        if (_refreshAutoSwitch != newRefAuto)
+        {
+            _refreshAutoSwitch = newRefAuto;
+            OnPropertyChanged(nameof(RefreshAutoSwitch));
+        }
+        
+        var newDeepGpu = SettingsManager.Get("DeepGpuTelemetry", 1) == 1;
+        if (_deepGpuTelemetry != newDeepGpu)
+        {
+            _deepGpuTelemetry = newDeepGpu;
+            OnPropertyChanged(nameof(DeepGpuTelemetry));
+            if (!_deepGpuTelemetry) ClearDeepTelemetryUI();
+        }
+    }
+
     public void Dispose()
     {
         _pollingCts?.Cancel();

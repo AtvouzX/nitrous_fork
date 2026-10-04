@@ -16,6 +16,7 @@ static class Program
 
     public const string DashboardMutexName = @"Local\Nitrous_Dashboard_SingleInstance_Mutex";
     public const string DashboardEventName = @"Local\Nitrous_ShowDashboard_Event";
+    public const string SettingsChangedEventName = @"Local\Nitrous_SettingsChanged_Event";
 
     [DllImport("user32.dll")]
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
@@ -76,6 +77,9 @@ static class Program
             // Create named event to listen for subsequent activation signals (e.g. repeated Nitro button presses)
             using var showEvent = new EventWaitHandle(false, EventResetMode.AutoReset, DashboardEventName);
 
+            // Create named event to listen for settings sync signals
+            using var syncEvent = new EventWaitHandle(false, EventResetMode.AutoReset, SettingsChangedEventName);
+
             var app = new System.Windows.Application();
             var dashboard = new NitrousDashboard();
 
@@ -88,6 +92,18 @@ static class Program
                 }));
             }, null, Timeout.Infinite, false);
 
+            var syncHandleReg = ThreadPool.RegisterWaitForSingleObject(syncEvent, (state, timedOut) =>
+            {
+                dashboard.Dispatcher.BeginInvoke(new Action(() =>
+                {
+                    dashboard.RefreshDashboardState();
+                    if (dashboard.DataContext is DashboardViewModel vm)
+                    {
+                        vm.SyncSettings();
+                    }
+                }));
+            }, null, Timeout.Infinite, false);
+
             try
             {
                 app.Run(dashboard);
@@ -95,6 +111,7 @@ static class Program
             finally
             {
                 waitHandleReg.Unregister(null);
+                syncHandleReg.Unregister(null);
             }
 
             return;

@@ -14,6 +14,18 @@ public static class SettingsManager
         {
             using RegistryKey regKey = Registry.CurrentUser.CreateSubKey(RegPath);
             regKey.SetValue(key, value);
+
+            try
+            {
+                if (System.Threading.EventWaitHandle.TryOpenExisting(Program.SettingsChangedEventName, out var syncEvent))
+                {
+                    using (syncEvent)
+                    {
+                        syncEvent.Set();
+                    }
+                }
+            }
+            catch { }
         }
         catch (UnauthorizedAccessException) { /* Safe failure on permission denial */ }
         catch (SecurityException) { /* Safe failure on security restriction */ }
