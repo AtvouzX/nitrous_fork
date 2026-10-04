@@ -865,8 +865,8 @@
                         </StackPanel>
                     </Border>
 
-					<!-- Physical Nitro Button Integration -->
-					<Border Background="#1C1C1F" CornerRadius="10" Margin="0,0,0,10" BorderBrush="#2A2A30" BorderThickness="1" Padding="15"
+					<!-- Physical Nitro Button Integration (Currently Disabled) -->
+					<Border Visibility="Collapsed" Background="#1C1C1F" CornerRadius="10" Margin="0,0,0,10" BorderBrush="#2A2A30" BorderThickness="1" Padding="15"
                             ToolTip="Hooks Acer Sense launchers via Windows IFEO so pressing the physical keyboard Nitro/Predator button opens Nitrous even when the app is completely closed.">
 						<Grid>
 							<Grid.ColumnDefinitions>

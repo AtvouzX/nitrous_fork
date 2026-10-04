@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using System.IO;
 using Microsoft.Win32;
 
 namespace Nitrous.Managers;
@@ -68,6 +69,9 @@ public static class NitroKeyManager
                     using var subKey = baseKey.CreateSubKey(exeName);
                     subKey.SetValue("Debugger", safePath, RegistryValueKind.String);
                 }
+                
+                // Deploy dummy executables to ensure IFEO triggers even if NitroSense is uninstalled
+                EnsureDummyExecutables();
             }
             else
             {
@@ -84,6 +88,8 @@ public static class NitroKeyManager
                         }
                     }
                 }
+                
+                RemoveDummyExecutables();
             }
 
             return true;
@@ -109,6 +115,52 @@ public static class NitroKeyManager
         catch (Exception ex)
         {
             Debug.WriteLine($"[NitroKeyManager] Failed to sync executable path: {ex.Message}");
+        }
+    }
+
+    private static void EnsureDummyExecutables()
+    {
+        try
+        {
+            string sysDir = Environment.SystemDirectory;
+            foreach (var exeName in AcerSenseExecutables)
+            {
+                string dummyPath = Path.Combine(sysDir, exeName);
+                if (!File.Exists(dummyPath))
+                {
+                    // Create a zero-byte file so CreateProcess succeeds and triggers IFEO
+                    File.WriteAllBytes(dummyPath, Array.Empty<byte>());
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[NitroKeyManager] Failed to create dummy executables: {ex.Message}");
+        }
+    }
+
+    private static void RemoveDummyExecutables()
+    {
+        try
+        {
+            string sysDir = Environment.SystemDirectory;
+            foreach (var exeName in AcerSenseExecutables)
+            {
+                string dummyPath = Path.Combine(sysDir, exeName);
+                if (File.Exists(dummyPath))
+                {
+                    FileInfo fi = new FileInfo(dummyPath);
+                    // Only delete if it's our zero-byte dummy file to avoid breaking real installations
+                    if (fi.Length == 0)
+                    {
+                        File.Delete(dummyPath);
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[NitroKeyManager] Failed to remove dummy executables: {ex.Message}");
         }
     }
 }
