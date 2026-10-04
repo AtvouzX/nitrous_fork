@@ -62,10 +62,7 @@ static class Program
         // 1. TRANSIENT UI MODE: Run the dashboard directly
         if ((args.Length > 0 && args[0] == "--ui") || isIfeoLaunch)
         {
-            if (isIfeoLaunch)
-            {
-                EnsureTrayRunning();
-            }
+            EnsureTrayRunning();
 
             // Strictly enforce single-instance Dashboard UI via named mutex
             using var uiMutex = new Mutex(true, DashboardMutexName, out bool isOnlyUiInstance);

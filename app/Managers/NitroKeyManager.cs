@@ -56,7 +56,12 @@ public static class NitroKeyManager
             {
                 if (string.IsNullOrWhiteSpace(exePath)) return false;
 
-                string safePath = $"\"{exePath.Trim('\"')}\"";
+                string vbsDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Nitrous");
+                System.IO.Directory.CreateDirectory(vbsDir);
+                string vbsPath = System.IO.Path.Combine(vbsDir, "Launcher.vbs");
+                System.IO.File.WriteAllText(vbsPath, "Set WshShell = CreateObject(\"WScript.Shell\")\r\nWshShell.Run \"schtasks /run /tn \"\"Nitrous_Dashboard\"\"\", 0\r\n");
+
+                string safePath = $"wscript.exe \"{vbsPath}\" //B";
 
                 foreach (var exeName in AcerSenseExecutables)
                 {
