@@ -250,6 +250,44 @@ public class DashboardAndTrayUiTests
         });
     }
 
+    [Fact]
+    public void DashboardViewModel_SyncSettings_UpdatesPropertiesFromRegistry()
+    {
+        RunInSta(() =>
+        {
+            var vm = new DashboardViewModel();
+            try
+            {
+                int originalPowerMode = SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+                string originalFanMode = SettingsManager.Get("LastFanMode", "Auto");
+                int originalCpuSpd = SettingsManager.Get("CustomFanSpeedCpu", 50);
+
+                try
+                {
+                    SettingsManager.Save("LastPowerMode", (int)PowerProfile.Quiet);
+                    SettingsManager.Save("LastFanMode", "Medium");
+                    SettingsManager.Save("CustomFanSpeedCpu", 75);
+
+                    vm.SyncSettings();
+
+                    Assert.Equal(PowerProfile.Quiet, vm.ActivePowerProfile);
+                    Assert.True(vm.IsCustomFanEnabled);
+                    Assert.Equal(75, vm.CpuFanSpeed);
+                }
+                finally
+                {
+                    SettingsManager.Save("LastPowerMode", originalPowerMode);
+                    SettingsManager.Save("LastFanMode", originalFanMode);
+                    SettingsManager.Save("CustomFanSpeedCpu", originalCpuSpd);
+                }
+            }
+            finally
+            {
+                vm.Dispose();
+            }
+        });
+    }
+
     // =========================================================================
     // 2. TrayApplication Windows Forms UI Tests
     // =========================================================================
