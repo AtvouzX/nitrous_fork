@@ -990,7 +990,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
                     NvidiaGpuManager.GpuTelemetry? smi = null;
                     bool gpuIsAwake = NvidiaGpuManager.IsGpuAwake();
 
-                    if (DeepGpuTelemetry && gpuIsAwake)
+                    if (gpuIsAwake)
                     {
                         smi = await _gpuManager.GetNvmlTelemetryAsync(token);
                     }
@@ -1017,34 +1017,37 @@ public class DashboardViewModel : ObservableObject, IDisposable
                                 GpuTempColor = smi.CoreTemp >= 85 ? "#FF453A" : "White";
                             }
 
-                            GpuNameText = smi.Name;
-                            GpuArchText = smi.Architecture;
-
-                            GpuLoadText = $"{smi.GpuLoad}%";
-                            GpuLoadColor = smi.GpuLoad >= 95 ? "#FF453A" : (smi.GpuLoad >= 80 ? "#FF9F0A" : "White");
-
-                            GpuVramText = $"{smi.VramUsedMb} / {smi.VramTotalMb} MB";
-
-                            GpuDeepTempText = $"{smi.CoreTemp} C";
-                            GpuDeepTempColor =
-                                smi.CoreTemp >= 85 ? "#FF453A" : (smi.CoreTemp >= 78 ? "#FF9F0A" : "White");
-
-                            GpuPStateText = smi.PState;
-                            GpuCoreClockText = $"{smi.CurrentCoreClock} MHz";
-                            GpuMemClockText = $"{smi.CurrentMemoryClock} MHz";
-
-                            if (smi.EnforcedPowerLimitW > 0 && smi.MaxPowerLimitW > 0)
+                            if (DeepGpuTelemetry)
                             {
-                                GpuPowerText =
-                                    $"{smi.PowerDrawW:0.0} / {smi.EnforcedPowerLimitW:0} / {smi.MaxPowerLimitW:0} W";
-                            }
-                            else if (smi.EnforcedPowerLimitW > 0)
-                            {
-                                GpuPowerText = $"{smi.PowerDrawW:0.0} / {smi.EnforcedPowerLimitW:0} W";
-                            }
-                            else
-                            {
-                                GpuPowerText = $"{smi.PowerDrawW:0.0} W";
+                                GpuNameText = smi.Name;
+                                GpuArchText = smi.Architecture;
+
+                                GpuLoadText = $"{smi.GpuLoad}%";
+                                GpuLoadColor = smi.GpuLoad >= 95 ? "#FF453A" : (smi.GpuLoad >= 80 ? "#FF9F0A" : "White");
+
+                                GpuVramText = $"{smi.VramUsedMb} / {smi.VramTotalMb} MB";
+
+                                GpuDeepTempText = $"{smi.CoreTemp} C";
+                                GpuDeepTempColor =
+                                    smi.CoreTemp >= 85 ? "#FF453A" : (smi.CoreTemp >= 78 ? "#FF9F0A" : "White");
+
+                                GpuPStateText = smi.PState;
+                                GpuCoreClockText = $"{smi.CurrentCoreClock} MHz";
+                                GpuMemClockText = $"{smi.CurrentMemoryClock} MHz";
+
+                                if (smi.EnforcedPowerLimitW > 0 && smi.MaxPowerLimitW > 0)
+                                {
+                                    GpuPowerText =
+                                        $"{smi.PowerDrawW:0.0} / {smi.EnforcedPowerLimitW:0} / {smi.MaxPowerLimitW:0} W";
+                                }
+                                else if (smi.EnforcedPowerLimitW > 0)
+                                {
+                                    GpuPowerText = $"{smi.PowerDrawW:0.0} / {smi.EnforcedPowerLimitW:0} W";
+                                }
+                                else
+                                {
+                                    GpuPowerText = $"{smi.PowerDrawW:0.0} W";
+                                }
                             }
                         }
 
@@ -1081,7 +1084,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
                         }
                         else if (gpuIsAwake)
                         {
-                            // GPU is awake (D0) but DeepGpuTelemetry is OFF
+                            // GPU is awake (D0) but NVML failed or is unavailable
                             GpuGraphOpacity = 1.0;
                             GpuUsageText = "--%";
                             _gpuHistory.Add(new TelemetryPoint
