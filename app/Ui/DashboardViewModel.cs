@@ -4,6 +4,8 @@ using Nitrous.Enums;
 using Nitrous.Helpers;
 using Nitrous.Managers;
 using Nitrous.Mvvm;
+using System.Windows;
+using System.Windows.Media;
 using PowerLineStatus = System.Windows.Forms.PowerLineStatus;
 using SystemInformation = System.Windows.Forms.SystemInformation;
 
@@ -14,6 +16,92 @@ public class DashboardViewModel : ObservableObject, IDisposable
     private readonly ActionDebouncer _fanDebouncer = new ActionDebouncer();
     private readonly NvidiaGpuManager _gpuManager = new();
     private CancellationTokenSource? _pollingCts;
+    private PerformanceCounter? _cpuUsageCounter;
+
+    public struct TelemetryPoint
+    {
+        public long Timestamp;
+        public double Temp;
+        public double Usage;
+    }
+
+    private List<TelemetryPoint> _cpuHistory = new();
+    private List<TelemetryPoint> _gpuHistory = new();
+
+    private PointCollection _cpuTempPoints = new PointCollection();
+
+    public PointCollection CpuTempPoints
+    {
+        get => _cpuTempPoints;
+        set => SetProperty(ref _cpuTempPoints, value);
+    }
+
+    private PointCollection _cpuTempFillPoints = new PointCollection();
+
+    public PointCollection CpuTempFillPoints
+    {
+        get => _cpuTempFillPoints;
+        set => SetProperty(ref _cpuTempFillPoints, value);
+    }
+
+    private PointCollection _cpuUsagePoints = new PointCollection();
+
+    public PointCollection CpuUsagePoints
+    {
+        get => _cpuUsagePoints;
+        set => SetProperty(ref _cpuUsagePoints, value);
+    }
+
+    private PointCollection _cpuUsageFillPoints = new PointCollection();
+
+    public PointCollection CpuUsageFillPoints
+    {
+        get => _cpuUsageFillPoints;
+        set => SetProperty(ref _cpuUsageFillPoints, value);
+    }
+
+    private PointCollection _gpuTempPoints = new PointCollection();
+
+    public PointCollection GpuTempPoints
+    {
+        get => _gpuTempPoints;
+        set => SetProperty(ref _gpuTempPoints, value);
+    }
+
+    private PointCollection _gpuTempFillPoints = new PointCollection();
+
+    public PointCollection GpuTempFillPoints
+    {
+        get => _gpuTempFillPoints;
+        set => SetProperty(ref _gpuTempFillPoints, value);
+    }
+
+    private PointCollection _gpuUsagePoints = new PointCollection();
+
+    public PointCollection GpuUsagePoints
+    {
+        get => _gpuUsagePoints;
+        set => SetProperty(ref _gpuUsagePoints, value);
+    }
+
+    private PointCollection _gpuUsageFillPoints = new PointCollection();
+
+    public PointCollection GpuUsageFillPoints
+    {
+        get => _gpuUsageFillPoints;
+        set => SetProperty(ref _gpuUsageFillPoints, value);
+    }
+
+    private double _gpuGraphOpacity = 1.0;
+
+    public double GpuGraphOpacity
+    {
+        get => _gpuGraphOpacity;
+        set => SetProperty(ref _gpuGraphOpacity, value);
+    }
+
+    public IReadOnlyList<TelemetryPoint> CpuHistory => _cpuHistory;
+    public IReadOnlyList<TelemetryPoint> GpuHistory => _gpuHistory;
 
     private string _cpuTempText = "--°C";
 
@@ -21,6 +109,22 @@ public class DashboardViewModel : ObservableObject, IDisposable
     {
         get => _cpuTempText;
         set => SetProperty(ref _cpuTempText, value);
+    }
+
+    private string _cpuUsageText = "--%";
+
+    public string CpuUsageText
+    {
+        get => _cpuUsageText;
+        set => SetProperty(ref _cpuUsageText, value);
+    }
+
+    private string _cpuMaxStatsText = "";
+
+    public string CpuMaxStatsText
+    {
+        get => _cpuMaxStatsText;
+        set => SetProperty(ref _cpuMaxStatsText, value);
     }
 
     private string _cpuTempColor = "White";
@@ -45,6 +149,22 @@ public class DashboardViewModel : ObservableObject, IDisposable
     {
         get => _gpuTempText;
         set => SetProperty(ref _gpuTempText, value);
+    }
+
+    private string _gpuUsageText = "--%";
+
+    public string GpuUsageText
+    {
+        get => _gpuUsageText;
+        set => SetProperty(ref _gpuUsageText, value);
+    }
+
+    private string _gpuMaxStatsText = "";
+
+    public string GpuMaxStatsText
+    {
+        get => _gpuMaxStatsText;
+        set => SetProperty(ref _gpuMaxStatsText, value);
     }
 
     private string _gpuRpmText = "-- RPM";
@@ -121,7 +241,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
             if (SetProperty(ref _manageCpuPower, value))
             {
                 SettingsManager.Save("ManageCpuPower", value ? 1 : 0);
-                bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Online;
+                bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
+                                System.Windows.Forms.PowerLineStatus.Online;
 
                 if (value)
                 {
@@ -259,8 +380,184 @@ public class DashboardViewModel : ObservableObject, IDisposable
         ? "Manual sliders are disabled while Fan Curve is active. Adjust your curve in CURVE EDITOR."
         : "Adjust fixed fan percentage";
 
+    // --- CPU HOVER ---
+    private Visibility _cpuHoverVisibility = Visibility.Collapsed;
+
+    public Visibility CpuHoverVisibility
+    {
+        get => _cpuHoverVisibility;
+        set => SetProperty(ref _cpuHoverVisibility, value);
+    }
+
+    private Thickness _cpuHoverMargin;
+
+    public Thickness CpuHoverMargin
+    {
+        get => _cpuHoverMargin;
+        set => SetProperty(ref _cpuHoverMargin, value);
+    }
+
+    private Thickness _cpuTooltipMargin;
+
+    public Thickness CpuTooltipMargin
+    {
+        get => _cpuTooltipMargin;
+        set => SetProperty(ref _cpuTooltipMargin, value);
+    }
+
+    private string _cpuHoverTime = "";
+
+    public string CpuHoverTime
+    {
+        get => _cpuHoverTime;
+        set => SetProperty(ref _cpuHoverTime, value);
+    }
+
+    private string _cpuHoverTempStr = "--";
+
+    public string CpuHoverTempStr
+    {
+        get => _cpuHoverTempStr;
+        set => SetProperty(ref _cpuHoverTempStr, value);
+    }
+
+    private string _cpuHoverUsageStr = "--";
+
+    public string CpuHoverUsageStr
+    {
+        get => _cpuHoverUsageStr;
+        set => SetProperty(ref _cpuHoverUsageStr, value);
+    }
+
+    // --- GPU HOVER ---
+    private Visibility _gpuHoverVisibility = Visibility.Collapsed;
+
+    public Visibility GpuHoverVisibility
+    {
+        get => _gpuHoverVisibility;
+        set => SetProperty(ref _gpuHoverVisibility, value);
+    }
+
+    private Visibility _gpuHoverStatsVisibility = Visibility.Visible;
+
+    public Visibility GpuHoverStatsVisibility
+    {
+        get => _gpuHoverStatsVisibility;
+        set => SetProperty(ref _gpuHoverStatsVisibility, value);
+    }
+
+    private Visibility _gpuHoverSleepVisibility = Visibility.Collapsed;
+
+    public Visibility GpuHoverSleepVisibility
+    {
+        get => _gpuHoverSleepVisibility;
+        set => SetProperty(ref _gpuHoverSleepVisibility, value);
+    }
+
+    private Thickness _gpuHoverMargin;
+
+    public Thickness GpuHoverMargin
+    {
+        get => _gpuHoverMargin;
+        set => SetProperty(ref _gpuHoverMargin, value);
+    }
+
+    private Thickness _gpuTooltipMargin;
+
+    public Thickness GpuTooltipMargin
+    {
+        get => _gpuTooltipMargin;
+        set => SetProperty(ref _gpuTooltipMargin, value);
+    }
+
+    private string _gpuHoverTime = "";
+
+    public string GpuHoverTime
+    {
+        get => _gpuHoverTime;
+        set => SetProperty(ref _gpuHoverTime, value);
+    }
+
+    private string _gpuHoverTempStr = "--";
+
+    public string GpuHoverTempStr
+    {
+        get => _gpuHoverTempStr;
+        set => SetProperty(ref _gpuHoverTempStr, value);
+    }
+
+    private string _gpuHoverUsageStr = "--";
+
+    public string GpuHoverUsageStr
+    {
+        get => _gpuHoverUsageStr;
+        set => SetProperty(ref _gpuHoverUsageStr, value);
+    }
+
+    public void UpdateCpuHover(double pixelX, double actualWidth)
+    {
+        long now = Environment.TickCount64;
+        long targetTime = now - 300000 + (long)((pixelX / actualWidth) * 300000);
+        var point = _cpuHistory.OrderBy(p => Math.Abs(p.Timestamp - targetTime)).FirstOrDefault();
+
+        if (point.Timestamp > 0 && Math.Abs(point.Timestamp - targetTime) < 10000)
+        {
+            CpuHoverVisibility = Visibility.Visible;
+            CpuHoverMargin = new Thickness(pixelX, 0, 0, 0);
+            CpuTooltipMargin = new Thickness(pixelX > (actualWidth / 2) ? pixelX - 85 : pixelX + 5, 5, 0, 0);
+            TimeSpan diff = TimeSpan.FromMilliseconds(now - point.Timestamp);
+            CpuHoverTime = $"-{(int)diff.TotalMinutes}m {(int)diff.Seconds}s";
+            CpuHoverTempStr = $"{point.Temp}°C";
+            CpuHoverUsageStr = $"{point.Usage:0}%";
+        }
+        else
+        {
+            CpuHoverVisibility = Visibility.Collapsed;
+        }
+    }
+
+    public void UpdateGpuHover(double pixelX, double actualWidth)
+    {
+        long now = Environment.TickCount64;
+        long targetTime = now - 300000 + (long)((pixelX / actualWidth) * 300000);
+        var point = _gpuHistory.OrderBy(p => Math.Abs(p.Timestamp - targetTime)).FirstOrDefault();
+
+        if (point.Timestamp > 0 && Math.Abs(point.Timestamp - targetTime) < 10000)
+        {
+            GpuHoverVisibility = Visibility.Visible;
+            GpuHoverMargin = new Thickness(pixelX, 0, 0, 0);
+            GpuTooltipMargin = new Thickness(pixelX > (actualWidth / 2) ? pixelX - 85 : pixelX + 5, 5, 0, 0);
+            TimeSpan diff = TimeSpan.FromMilliseconds(now - point.Timestamp);
+            GpuHoverTime = $"-{(int)diff.TotalMinutes}m {(int)diff.Seconds}s";
+            GpuHoverTempStr = $"{point.Temp}°C";
+            GpuHoverUsageStr = $"{point.Usage:0}%";
+            if (point.Temp == 0)
+            {
+                GpuHoverStatsVisibility = Visibility.Collapsed;
+                GpuHoverSleepVisibility = Visibility.Visible;
+            }
+            else
+            {
+                GpuHoverStatsVisibility = Visibility.Visible;
+                GpuHoverSleepVisibility = Visibility.Collapsed;
+            }
+        }
+        else
+        {
+            GpuHoverVisibility = Visibility.Collapsed;
+        }
+    }
+
     public DashboardViewModel()
     {
+        try
+        {
+            _cpuUsageCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total", true);
+        }
+        catch
+        {
+        }
+
         // Initialize Fan State
         _cpuFanSpeed = SettingsManager.Get("CustomFanSpeedCpu", 50);
         _gpuFanSpeed = SettingsManager.Get("CustomFanSpeedGpu", 50);
@@ -294,7 +591,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
             {
                 bool isTurbo = AcerWmiManager.IsTurboModeSupported();
                 bool isTaskEnabled = StartupManager.CheckStartupTask();
-                bool isNitroKeyEnabled = NitroKeyManager.IsIntegrationEnabled() || SettingsManager.Get("NitroKeyIntegrated", 0) == 1;
+                bool isNitroKeyEnabled = NitroKeyManager.IsIntegrationEnabled() ||
+                                         SettingsManager.Get("NitroKeyIntegrated", 0) == 1;
 
                 if (isNitroKeyEnabled)
                 {
@@ -324,7 +622,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
             });
         }
 
-        ActivePowerProfile = AcerWmiManager.GetActivePowerMode() ?? (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+        ActivePowerProfile = AcerWmiManager.GetActivePowerMode() ??
+                             (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
 
         // Setup Commands
         SetPowerCommand = new RelayCommand(async param =>
@@ -540,8 +839,10 @@ public class DashboardViewModel : ObservableObject, IDisposable
             try
             {
                 string pName = ActivePowerProfile.ToString();
-                var cpuCurve = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{pName}", FanCurveHelper.GetDefaultCpuCurve(ActivePowerProfile));
-                var gpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}", FanCurveHelper.GetDefaultGpuCurve(ActivePowerProfile));
+                var cpuCurve = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{pName}",
+                    FanCurveHelper.GetDefaultCpuCurve(ActivePowerProfile));
+                var gpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}",
+                    FanCurveHelper.GetDefaultGpuCurve(ActivePowerProfile));
 
                 var telemetry = AcerWmiManager.GetSystemTelemetry();
                 int currentCpuTemp = telemetry.CpuTemp > 0 ? telemetry.CpuTemp : 50;
@@ -767,6 +1068,64 @@ public class DashboardViewModel : ObservableObject, IDisposable
                                 GpuPowerText = $"{smi.PowerDrawW:0.0} W";
                             }
                         }
+
+                        // 3. Update Graphing Data
+                        float cpuUsage = 0;
+                        if (_cpuUsageCounter != null)
+                        {
+                            try
+                            {
+                                cpuUsage = _cpuUsageCounter.NextValue();
+                            }
+                            catch
+                            {
+                            }
+                        }
+
+                        CpuUsageText = $"{cpuUsage:0}%";
+
+                        long now = Environment.TickCount64;
+                        _cpuHistory.Add(new TelemetryPoint
+                        {
+                            Timestamp = now, Temp = telemetry.CpuTemp > 0 ? telemetry.CpuTemp : 0, Usage = cpuUsage
+                        });
+
+                        if (DeepGpuTelemetry && smi != null && !string.IsNullOrEmpty(smi.Name) &&
+                            smi.Name != "Unknown" && smi.CoreTemp > 0)
+                        {
+                            GpuGraphOpacity = 1.0;
+                            GpuUsageText = $"{smi.GpuLoad}%";
+                            _gpuHistory.Add(new TelemetryPoint
+                                { Timestamp = now, Temp = smi.CoreTemp, Usage = smi.GpuLoad });
+                        }
+                        else
+                        {
+                            GpuGraphOpacity = 0.3;
+                            GpuUsageText = "Sleep";
+                            // Add 0s when asleep
+                            _gpuHistory.Add(new TelemetryPoint { Timestamp = now, Temp = 0, Usage = 0 });
+                        }
+
+                        // Prune > 5 mins (300,000 ms)
+                        _cpuHistory.RemoveAll(p => now - p.Timestamp > 300000);
+                        _gpuHistory.RemoveAll(p => now - p.Timestamp > 300000);
+
+                        var maxCpuTemp = _cpuHistory.Count > 0 ? _cpuHistory.Max(p => p.Temp) : 0;
+                        var maxCpuUsage = _cpuHistory.Count > 0 ? _cpuHistory.Max(p => p.Usage) : 0;
+                        CpuMaxStatsText = $"Max: {maxCpuTemp}°C  {maxCpuUsage:0}%";
+
+                        var maxGpuTemp = _gpuHistory.Count > 0 ? _gpuHistory.Max(p => p.Temp) : 0;
+                        var maxGpuUsage = _gpuHistory.Count > 0 ? _gpuHistory.Max(p => p.Usage) : 0;
+                        GpuMaxStatsText = $"Max: {maxGpuTemp}°C  {maxGpuUsage:0}%";
+
+                        CpuTempPoints = GenerateGraphPoints(_cpuHistory, true, now);
+                        CpuTempFillPoints = GenerateGraphFillPoints(_cpuHistory, true, now);
+                        CpuUsagePoints = GenerateGraphPoints(_cpuHistory, false, now);
+                        CpuUsageFillPoints = GenerateGraphFillPoints(_cpuHistory, false, now);
+                        GpuTempPoints = GenerateGraphPoints(_gpuHistory, true, now);
+                        GpuTempFillPoints = GenerateGraphFillPoints(_gpuHistory, true, now);
+                        GpuUsagePoints = GenerateGraphPoints(_gpuHistory, false, now);
+                        GpuUsageFillPoints = GenerateGraphFillPoints(_gpuHistory, false, now);
                     }, System.Windows.Threading.DispatcherPriority.Background);
 
                     // Wait asynchronously for the next 2-second interval tick
@@ -796,6 +1155,52 @@ public class DashboardViewModel : ObservableObject, IDisposable
         StartTelemetryPolling();
     }
 
+    private PointCollection GenerateGraphPoints(List<TelemetryPoint> history, bool isTemp, long now)
+    {
+        var points = new PointCollection();
+        if (history.Count == 0) return points;
+
+        long windowStart = now - 300000;
+        for (int i = 0; i < history.Count; i++)
+        {
+            var p = history[i];
+            double x = ((p.Timestamp - windowStart) / 300000.0) *
+                       162.5; // Map time to 162.5 pixels wide (inner grid without margins)
+            double val = Math.Clamp(isTemp ? p.Temp : p.Usage, 0, 100);
+            double y = ((100 - val) / 100.0) * 50.0; // Map 0-100 to 50 pixels high
+            points.Add(new System.Windows.Point(x, y + 20)); // Add 15px top padding
+        }
+
+        return points;
+    }
+
+    private PointCollection GenerateGraphFillPoints(List<TelemetryPoint> history, bool isTemp, long now)
+    {
+        var points = new PointCollection();
+        if (history.Count == 0) return points;
+
+        long windowStart = now - 300000;
+
+        // Bottom left
+        double firstX = ((history[0].Timestamp - windowStart) / 300000.0) * 162.5;
+        points.Add(new System.Windows.Point(firstX, 70));
+
+        for (int i = 0; i < history.Count; i++)
+        {
+            var p = history[i];
+            double x = ((p.Timestamp - windowStart) / 300000.0) * 162.5;
+            double val = Math.Clamp(isTemp ? p.Temp : p.Usage, 0, 100);
+            double y = ((100 - val) / 100.0) * 55.0;
+            points.Add(new System.Windows.Point(x, y + 15));
+        }
+
+        // Bottom right
+        double lastX = ((history[^1].Timestamp - windowStart) / 300000.0) * 162.5;
+        points.Add(new System.Windows.Point(lastX, 70));
+
+        return points;
+    }
+
     public void SyncSettings()
     {
         var newPowerProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
@@ -805,7 +1210,9 @@ public class DashboardViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(ActivePowerProfile));
         }
 
-        var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f) ? f : FanProfile.Auto;
+        var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f)
+            ? f
+            : FanProfile.Auto;
         var newCustomFan = activeFan == FanProfile.Medium;
         if (_isCustomFanEnabled != newCustomFan)
         {
@@ -872,14 +1279,14 @@ public class DashboardViewModel : ObservableObject, IDisposable
             _autoSwitch = newAuto;
             OnPropertyChanged(nameof(AutoSwitch));
         }
-        
+
         var newRefAuto = SettingsManager.Get("RefreshAutoSwitch", 0) == 1;
         if (_refreshAutoSwitch != newRefAuto)
         {
             _refreshAutoSwitch = newRefAuto;
             OnPropertyChanged(nameof(RefreshAutoSwitch));
         }
-        
+
         var newDeepGpu = SettingsManager.Get("DeepGpuTelemetry", 1) == 1;
         if (_deepGpuTelemetry != newDeepGpu)
         {

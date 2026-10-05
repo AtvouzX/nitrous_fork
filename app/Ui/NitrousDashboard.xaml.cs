@@ -19,8 +19,7 @@ public partial class NitrousDashboard : Window
 
         DataContext = new DashboardViewModel();
 
-        DashVersionText.Text = GpuVersionText.Text = KeyboardVersionText.Text =
-            SettingsVersionText.Text = $"Nitrous {UpdateManager.CurrentVersion}";
+        SettingsVersionText.Text = $"Nitrous {UpdateManager.CurrentVersion}";
 
         if (IsTestHost())
         {
@@ -424,6 +423,25 @@ public partial class NitrousDashboard : Window
         catch
         {
             return "None";
+        }
+    }
+
+    private void Graph_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (DataContext is DashboardViewModel vm && sender is System.Windows.FrameworkElement fe)
+        {
+            var pos = e.GetPosition(fe);
+            if (fe.Name == "CpuGraphGrid") vm.UpdateCpuHover(pos.X, fe.ActualWidth);
+            else if (fe.Name == "GpuGraphGrid") vm.UpdateGpuHover(pos.X, fe.ActualWidth);
+        }
+    }
+
+    private void Graph_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
+    {
+        if (DataContext is DashboardViewModel vm && sender is System.Windows.FrameworkElement fe)
+        {
+            if (fe.Name == "CpuGraphGrid") vm.CpuHoverVisibility = Visibility.Collapsed;
+            else if (fe.Name == "GpuGraphGrid") vm.GpuHoverVisibility = Visibility.Collapsed;
         }
     }
 }
