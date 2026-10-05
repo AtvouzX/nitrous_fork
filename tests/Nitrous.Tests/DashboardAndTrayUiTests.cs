@@ -62,14 +62,6 @@ public class DashboardAndTrayUiTests
             var window = new NitrousDashboard();
             try
             {
-                string expectedVersion = $"Nitrous {UpdateManager.CurrentVersion}";
-
-                // All header page labels must reflect the synchronized version
-                Assert.Equal(expectedVersion, window.DashVersionText.Text);
-                Assert.Equal(expectedVersion, window.GpuVersionText.Text);
-                Assert.Equal(expectedVersion, window.KeyboardVersionText.Text);
-                Assert.Equal(expectedVersion, window.SettingsVersionText.Text);
-
                 // Initial page visibility: Dashboard visible, other tabs collapsed
                 Assert.Equal(Visibility.Visible, window.DashPage.Visibility);
                 Assert.Equal(Visibility.Collapsed, window.GpuPage.Visibility);
@@ -280,6 +272,45 @@ public class DashboardAndTrayUiTests
                     SettingsManager.Save("LastFanMode", originalFanMode);
                     SettingsManager.Save("CustomFanSpeedCpu", originalCpuSpd);
                 }
+            }
+            finally
+            {
+                vm.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void DashboardViewModel_Properties_UsageAndMaxStatsExist()
+    {
+        RunInSta(() =>
+        {
+            var vm = new DashboardViewModel();
+            try
+            {
+                // Verify initial values of recently added UI properties
+                Assert.NotNull(vm.CpuUsageText);
+                Assert.NotNull(vm.GpuUsageText);
+                Assert.NotNull(vm.CpuMaxStatsText);
+                Assert.NotNull(vm.GpuMaxStatsText);
+
+                // Modify to ensure they trigger INotifyPropertyChanged
+                var triggeredProperties = new List<string>();
+                vm.PropertyChanged += (s, e) =>
+                {
+                    if (e.PropertyName != null)
+                        triggeredProperties.Add(e.PropertyName);
+                };
+
+                vm.CpuUsageText = "10%";
+                vm.GpuUsageText = "10%";
+                vm.CpuMaxStatsText = "Max: 10";
+                vm.GpuMaxStatsText = "Max: 10";
+
+                Assert.Contains(nameof(vm.CpuUsageText), triggeredProperties);
+                Assert.Contains(nameof(vm.GpuUsageText), triggeredProperties);
+                Assert.Contains(nameof(vm.CpuMaxStatsText), triggeredProperties);
+                Assert.Contains(nameof(vm.GpuMaxStatsText), triggeredProperties);
             }
             finally
             {

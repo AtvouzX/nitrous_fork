@@ -552,7 +552,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
     {
         try
         {
-            _cpuUsageCounter = new PerformanceCounter("Processor", "% Processor Time", "_Total", true);
+            // Use 'Processor Information' and '% Processor Utility' to match Task Manager
+            _cpuUsageCounter = new PerformanceCounter("Processor Information", "% Processor Utility", "_Total", true);
         }
         catch
         {
@@ -974,53 +975,24 @@ public class DashboardViewModel : ObservableObject, IDisposable
         Task.Run(async () =>
         {
             using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
-            int sleepSkipTicks = 0;
-
             while (!token.IsCancellationRequested)
             {
                 try
                 {
-                    // Run Acer WMI and optionally Nvidia SMI concurrently in the background
-                    var wmiTask = Task.Run(() => AcerWmiManager.GetSystemTelemetry(), token);
+                    // Run Acer WMI telemetry first for CPU stats and fan RPMs
+                    var telemetry = await Task.Run(() => AcerWmiManager.GetSystemTelemetry(), token);
 
-                    // Conditionally fetch deep NVIDIA SMI stats with sleep back-off to protect battery
-                    Task<NvidiaGpuManager.GpuTelemetry>? smiTask = null;
-                    if (DeepGpuTelemetry)
-                    {
-                        if (sleepSkipTicks > 0)
-                        {
-                            sleepSkipTicks--;
-                        }
-                        else
-                        {
-                            smiTask = _gpuManager.GetNvmlTelemetryAsync(token);
-                        }
-                    }
+                    // Use the Windows CM API (DEVPKEY_Device_PowerData) to determine the actual
+                    // GPU device power state (D0 = awake, D3 = asleep). This is the same technique
+                    // used by the NVIDIA GPU Activity tray icon and OpenSense.
+                    // Unlike the Acer EC temperature (which returns stale/frozen values), the CM API
+                    // reads from Windows' own records and never touches the GPU driver.
+                    NvidiaGpuManager.GpuTelemetry? smi = null;
+                    bool gpuIsAwake = NvidiaGpuManager.IsGpuAwake();
 
-                    if (smiTask != null)
+                    if (DeepGpuTelemetry && gpuIsAwake)
                     {
-                        await Task.WhenAll(wmiTask, smiTask);
-                    }
-                    else
-                    {
-                        await wmiTask;
-                    }
-
-                    var telemetry = await wmiTask;
-                    var smi = smiTask != null ? await smiTask : null;
-
-                    if (DeepGpuTelemetry && smiTask != null)
-                    {
-                        // If dGPU is asleep (CoreTemp 0 or unknown name), back off polling for 3 intervals (6 seconds)
-                        // to prevent repeatedly waking up the discrete GPU into full power state
-                        if (smi == null || string.IsNullOrEmpty(smi.Name) || smi.Name == "Unknown" || smi.CoreTemp == 0)
-                        {
-                            sleepSkipTicks = 3;
-                        }
-                        else
-                        {
-                            sleepSkipTicks = 0;
-                        }
+                        smi = await _gpuManager.GetNvmlTelemetryAsync(token);
                     }
 
                     // Push property changes asynchronously to the WPF UI Thread (non-blocking)
@@ -1038,6 +1010,13 @@ public class DashboardViewModel : ObservableObject, IDisposable
                         // 2. Update NVIDIA SMI Deep Telemetry
                         if (smi != null && !string.IsNullOrEmpty(smi.Name) && smi.Name != "Unknown")
                         {
+                            // Override WMI GPU temp with highly-accurate NVML temp if awake
+                            if (smi.CoreTemp > 0)
+                            {
+                                GpuTempText = $"{smi.CoreTemp} C";
+                                GpuTempColor = smi.CoreTemp >= 85 ? "#FF453A" : "White";
+                            }
+
                             GpuNameText = smi.Name;
                             GpuArchText = smi.Architecture;
 
@@ -1090,19 +1069,29 @@ public class DashboardViewModel : ObservableObject, IDisposable
                             Timestamp = now, Temp = telemetry.CpuTemp > 0 ? telemetry.CpuTemp : 0, Usage = cpuUsage
                         });
 
-                        if (DeepGpuTelemetry && smi != null && !string.IsNullOrEmpty(smi.Name) &&
-                            smi.Name != "Unknown" && smi.CoreTemp > 0)
+                        bool isSmiValid = smi != null && smi.PState != "Sleep";
+
+                        if (isSmiValid)
                         {
                             GpuGraphOpacity = 1.0;
-                            GpuUsageText = $"{smi.GpuLoad}%";
+                            GpuUsageText = $"{smi!.GpuLoad}%";
+                            int gpuTemp = smi.CoreTemp > 0 ? smi.CoreTemp : telemetry.GpuTemp;
                             _gpuHistory.Add(new TelemetryPoint
-                                { Timestamp = now, Temp = smi.CoreTemp, Usage = smi.GpuLoad });
+                                { Timestamp = now, Temp = gpuTemp, Usage = smi.GpuLoad });
+                        }
+                        else if (gpuIsAwake)
+                        {
+                            // GPU is awake (D0) but DeepGpuTelemetry is OFF
+                            GpuGraphOpacity = 1.0;
+                            GpuUsageText = "--%";
+                            _gpuHistory.Add(new TelemetryPoint
+                                { Timestamp = now, Temp = telemetry.GpuTemp, Usage = 0 });
                         }
                         else
                         {
+                            // GPU is in D3/D3Cold sleep (confirmed by CM API)
                             GpuGraphOpacity = 0.3;
                             GpuUsageText = "Sleep";
-                            // Add 0s when asleep
                             _gpuHistory.Add(new TelemetryPoint { Timestamp = now, Temp = 0, Usage = 0 });
                         }
 

@@ -236,7 +236,7 @@ public class NvidiaGpuManager : IDisposable
 
     public class GpuTelemetry
     {
-        public string Name { get; set; } = "Unknown";
+        public string Name { get; set; } = "NVIDIA GPU";
         public int CoreTemp { get; set; }
         public int GpuLoad { get; set; }
         public int VramUsedMb { get; set; }
@@ -251,11 +251,137 @@ public class NvidiaGpuManager : IDisposable
         public string Architecture { get; set; } = "Unknown";
     }
 
+    // Cached PNP instance ID for the NVIDIA dGPU, resolved once on first call.
+    private static string? _nvidiaInstanceId;
+    private static bool _instanceIdResolved;
+
+    /// <summary>
+    /// Determines if the discrete NVIDIA GPU is powered on (D0) by reading its
+    /// device power state from the Windows Configuration Manager API.
+    /// This reads from Windows' own records — it never touches the GPU driver,
+    /// so it cannot wake the GPU from D3Cold sleep.
+    /// Matches the technique used by OpenSense (GpuPowerState.cs) and the
+    /// NVIDIA GPU Activity tray icon.
+    /// </summary>
+    public static bool IsGpuAwake()
+    {
+        try
+        {
+            // Resolve the PNP instance ID once
+            if (!_instanceIdResolved)
+            {
+                _nvidiaInstanceId = ResolveNvidiaInstanceId();
+                _instanceIdResolved = true;
+            }
+
+            if (_nvidiaInstanceId == null)
+                return false;
+
+            // Locate the device node by its PNP instance ID
+            int cr = NativeCM.CM_Locate_DevNode(out uint devInst, _nvidiaInstanceId, NativeCM.CM_LOCATE_DEVNODE_NORMAL);
+            if (cr != NativeCM.CR_SUCCESS)
+                return false;
+
+            // Read the CM_POWER_DATA structure from DEVPKEY_Device_PowerData
+            // The PD_MostRecentPowerState field tells us the actual D-state.
+            var powerData = new NativeCM.CM_POWER_DATA();
+            uint dataSize = (uint)Marshal.SizeOf<NativeCM.CM_POWER_DATA>();
+            uint propType = 0;
+
+            cr = NativeCM.CM_Get_DevNode_Property(
+                devInst,
+                ref NativeCM.DEVPKEY_Device_PowerData,
+                out propType,
+                ref powerData,
+                ref dataSize,
+                0);
+
+            if (cr != NativeCM.CR_SUCCESS)
+                return false;
+
+            // PowerDeviceD0 = 1 (fully powered / active)
+            // PowerDeviceD1/D2/D3 = 2/3/4 (various sleep states including D3Cold)
+            return powerData.PD_MostRecentPowerState == NativeCM.PowerDeviceD0;
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[NvidiaGpuManager] IsGpuAwake CM API failed: {ex.Message}");
+        }
+
+        // Ultimate fallback — assume awake so telemetry is never permanently blocked
+        return true;
+    }
+
+    /// <summary>
+    /// Finds the PNP instance ID of the first NVIDIA PCI display adapter.
+    /// Uses CM_Get_Device_ID_List filtered to the Display device class.
+    /// </summary>
+    private static string? ResolveNvidiaInstanceId()
+    {
+        try
+        {
+            // GUID_DEVCLASS_DISPLAY = {4D36E968-E325-11CE-BFC1-08002BE10318}
+            string filter = "{4D36E968-E325-11CE-BFC1-08002BE10318}";
+
+            int cr = NativeCM.CM_Get_Device_ID_List_Size(out uint listSize, filter,
+                NativeCM.CM_GETIDLIST_FILTER_CLASS | NativeCM.CM_GETIDLIST_FILTER_PRESENT);
+            if (cr != NativeCM.CR_SUCCESS || listSize == 0)
+                return null;
+
+            char[] buffer = new char[listSize];
+            cr = NativeCM.CM_Get_Device_ID_List(filter, buffer, listSize,
+                NativeCM.CM_GETIDLIST_FILTER_CLASS | NativeCM.CM_GETIDLIST_FILTER_PRESENT);
+            if (cr != NativeCM.CR_SUCCESS)
+                return null;
+
+            // The buffer is a multi-string (null-separated, double-null terminated)
+            string allIds = new string(buffer);
+            string[] ids = allIds.Split('\0', StringSplitOptions.RemoveEmptyEntries);
+
+            // Find the NVIDIA GPU by its PCI vendor ID (VEN_10DE)
+            return ids.FirstOrDefault(id =>
+                id.Contains("VEN_10DE", StringComparison.OrdinalIgnoreCase));
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[NvidiaGpuManager] ResolveNvidiaInstanceId failed: {ex.Message}");
+            return null;
+        }
+    }
+
     public async Task<GpuTelemetry> GetNvmlTelemetryAsync(CancellationToken cancellationToken = default)
     {
         return await Task.Run(() =>
         {
             var t = new GpuTelemetry { Architecture = _cachedArchName };
+
+            // Phase 1: Native Sleep Check wrapper
+            // If the GPU is asleep, bypass NVML completely to preserve D3Cold power state.
+            if (!IsGpuAwake())
+            {
+                t.PState = "Sleep";
+                t.CoreTemp = 0;
+                t.GpuLoad = 0;
+                t.Name = "NVIDIA (Asleep)";
+                return t;
+            }
+
+            // If the application started while the GPU was asleep, the NVML handle might be zero.
+            // Now that we know it is awake, initialize the handle if it's missing.
+            if (_nvmlDeviceHandle == IntPtr.Zero)
+            {
+                if (NativeNvml.Init() == NvmlReturn.Success)
+                {
+                    NativeNvml.DeviceGetHandleByIndex(0, out _nvmlDeviceHandle);
+                    if (NativeNvml.DeviceGetArchitecture(_nvmlDeviceHandle, out NvmlDeviceArchitecture arch) == NvmlReturn.Success)
+                    {
+                        _memoryClockDivisor = ((int)arch >= 10) ? 8.0 : 4.0;
+                        _cachedArchName = arch.ToString();
+                        t.Architecture = _cachedArchName;
+                    }
+                }
+            }
+
             if (_nvmlDeviceHandle == IntPtr.Zero) return t;
 
             try
@@ -415,6 +541,80 @@ public class NvidiaGpuManager : IDisposable
         [DllImport(NvmlDll, EntryPoint = "nvmlDeviceGetArchitecture")]
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         public static extern NvmlReturn DeviceGetArchitecture(IntPtr device, out NvmlDeviceArchitecture arch);
+    }
+    #endregion
+
+    #region Windows Configuration Manager (CM) Native Bindings
+
+    /// <summary>
+    /// P/Invoke bindings for the Windows Configuration Manager API (cfgmgr32.dll).
+    /// Used to read the GPU's actual device power state (D0/D3) without touching the GPU driver.
+    /// </summary>
+    private static class NativeCM
+    {
+        public const int CR_SUCCESS = 0;
+        public const uint CM_LOCATE_DEVNODE_NORMAL = 0;
+        public const uint CM_GETIDLIST_FILTER_CLASS = 0x00000200;
+        public const uint CM_GETIDLIST_FILTER_PRESENT = 0x00000100;
+
+        // DEVICE_POWER_STATE values
+        public const int PowerDeviceD0 = 1; // Fully powered
+        // PowerDeviceD1 = 2, PowerDeviceD2 = 3, PowerDeviceD3 = 4 (all sleep states)
+
+        // DEVPKEY_Device_PowerData: {a45c254e-df1c-4efd-8020-67d146a850e0}, 32
+        public static NativeCM.DEVPROPKEY DEVPKEY_Device_PowerData = new NativeCM.DEVPROPKEY
+        {
+            fmtid = new Guid("a45c254e-df1c-4efd-8020-67d146a850e0"),
+            pid = 32
+        };
+
+        [StructLayout(LayoutKind.Sequential)]
+        public struct DEVPROPKEY
+        {
+            public Guid fmtid;
+            public uint pid;
+        }
+
+        /// <summary>
+        /// Matches the native CM_POWER_DATA structure.
+        /// We only need PD_MostRecentPowerState (offset 4).
+        /// https://learn.microsoft.com/en-us/windows/win32/power/cm-power-data
+        /// </summary>
+        [StructLayout(LayoutKind.Sequential)]
+        public struct CM_POWER_DATA
+        {
+            public uint PD_Size;
+            public int PD_MostRecentPowerState; // DEVICE_POWER_STATE enum
+            public uint PD_Capabilities;
+            public uint PD_D1Latency;
+            public uint PD_D2Latency;
+            public uint PD_D3Latency;
+            [MarshalAs(UnmanagedType.ByValArray, SizeConst = 7)]
+            public int[] PD_PowerStateMapping; // DEVICE_POWER_STATE[POWER_SYSTEM_MAXIMUM]
+            public int PD_DeepestSystemWake; // SYSTEM_POWER_STATE
+        }
+
+        [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        public static extern int CM_Locate_DevNode(out uint pdnDevInst, string pDeviceID, uint ulFlags);
+
+        [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        public static extern int CM_Get_Device_ID_List_Size(out uint pulLen, string pszFilter, uint ulFlags);
+
+        [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        public static extern int CM_Get_Device_ID_List(string pszFilter, [Out] char[] Buffer, uint BufferLen, uint ulFlags);
+
+        [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        public static extern int CM_Get_DevNode_Property(
+            uint devInst,
+            ref DEVPROPKEY propertyKey,
+            out uint propertyType,
+            ref CM_POWER_DATA propertyBuffer,
+            ref uint propertyBufferSize,
+            uint ulFlags);
     }
     #endregion
 }
