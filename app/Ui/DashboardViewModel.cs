@@ -1190,8 +1190,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
             var p = history[i];
             double x = ((p.Timestamp - windowStart) / 300000.0) * 162.5;
             double val = Math.Clamp(isTemp ? p.Temp : p.Usage, 0, 100);
-            double y = ((100 - val) / 100.0) * 55.0;
-            points.Add(new System.Windows.Point(x, y + 15));
+            double y = ((100 - val) / 100.0) * 50.0;
+            points.Add(new System.Windows.Point(x, y + 20));
         }
 
         // Bottom right
