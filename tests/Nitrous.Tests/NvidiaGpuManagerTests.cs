@@ -28,4 +28,47 @@ public class NvidiaGpuManagerTests
         // If it's asleep or not Nvidia, it returns an object with PState = "Sleep" or handles the fallback.
         Assert.NotNull(telemetry);
     }
+
+    [Fact]
+    public void IsOnlyNitrousRunningOnGpu_ReturnsTrue_WhenOnlyNitrousIsRunning()
+    {
+        int nitrousPid = 1234;
+        var graphicsInfos = new NvidiaGpuManager.NvmlProcessInfo[] { new() { Pid = 1234 } };
+        var computeInfos = Array.Empty<NvidiaGpuManager.NvmlProcessInfo>();
+
+        bool result = NvidiaGpuManager.IsOnlyNitrousRunningOnGpu(
+            graphicsInfos, 1,
+            computeInfos, 0,
+            nitrousPid);
+
+        Assert.True(result);
+    }
+
+    [Fact]
+    public void IsOnlyNitrousRunningOnGpu_ReturnsFalse_WhenOtherAppsAreRunning()
+    {
+        int nitrousPid = 1234;
+        var graphicsInfos = new NvidiaGpuManager.NvmlProcessInfo[] { new() { Pid = 1234 }, new() { Pid = 9999 } };
+        
+        bool result = NvidiaGpuManager.IsOnlyNitrousRunningOnGpu(
+            graphicsInfos, 2,
+            null, 0,
+            nitrousPid);
+
+        Assert.False(result);
+    }
+
+    [Fact]
+    public void IsOnlyNitrousRunningOnGpu_ReturnsFalse_WhenNoAppsAreRunning()
+    {
+        int nitrousPid = 1234;
+        var graphicsInfos = Array.Empty<NvidiaGpuManager.NvmlProcessInfo>();
+        
+        bool result = NvidiaGpuManager.IsOnlyNitrousRunningOnGpu(
+            graphicsInfos, 0,
+            null, 0,
+            nitrousPid);
+
+        Assert.False(result);
+    }
 }

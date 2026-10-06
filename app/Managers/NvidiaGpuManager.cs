@@ -398,37 +398,12 @@ public class NvidiaGpuManager : IDisposable
 
                 if (hasGraphics || hasCompute)
                 {
-                    int currentPid = Environment.ProcessId;
-                    bool onlyNitrous = true;
-                    bool hasAnyProcess = false;
+                    bool shouldSleep = IsOnlyNitrousRunningOnGpu(
+                        hasGraphics ? graphicsInfos : null, hasGraphics ? graphicsCount : 0,
+                        hasCompute ? computeInfos : null, hasCompute ? computeCount : 0,
+                        Environment.ProcessId);
 
-                    if (hasGraphics)
-                    {
-                        for (int i = 0; i < graphicsCount; i++)
-                        {
-                            hasAnyProcess = true;
-                            if (graphicsInfos[i].Pid != currentPid)
-                            {
-                                onlyNitrous = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (hasCompute && onlyNitrous)
-                    {
-                        for (int i = 0; i < computeCount; i++)
-                        {
-                            hasAnyProcess = true;
-                            if (computeInfos[i].Pid != currentPid)
-                            {
-                                onlyNitrous = false;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (hasAnyProcess && onlyNitrous)
+                    if (shouldSleep)
                     {
                         Debug.WriteLine("[NvidiaGpuManager] Only Nitrous is running on the GPU. Unloading NVML to allow sleep.");
                         try { NVIDIA.Unload(); } catch { }
@@ -504,6 +479,47 @@ public class NvidiaGpuManager : IDisposable
 
             return t;
         }, cancellationToken);
+    }
+
+    /// <summary>
+    /// Pure function to evaluate if Nitrous is the solitary process keeping the GPU awake.
+    /// Extracted for unit testability without relying on NVML bindings.
+    /// </summary>
+    public static bool IsOnlyNitrousRunningOnGpu(
+        NvmlProcessInfo[]? graphicsInfos, uint graphicsCount,
+        NvmlProcessInfo[]? computeInfos, uint computeCount, 
+        int currentPid)
+    {
+        bool onlyNitrous = true;
+        bool hasAnyProcess = false;
+
+        if (graphicsInfos != null && graphicsCount > 0)
+        {
+            for (int i = 0; i < graphicsCount; i++)
+            {
+                hasAnyProcess = true;
+                if (graphicsInfos[i].Pid != currentPid)
+                {
+                    onlyNitrous = false;
+                    break;
+                }
+            }
+        }
+
+        if (computeInfos != null && computeCount > 0 && onlyNitrous)
+        {
+            for (int i = 0; i < computeCount; i++)
+            {
+                hasAnyProcess = true;
+                if (computeInfos[i].Pid != currentPid)
+                {
+                    onlyNitrous = false;
+                    break;
+                }
+            }
+        }
+
+        return hasAnyProcess && onlyNitrous;
     }
 
     #region NVML Native Bindings
