@@ -958,6 +958,14 @@ public class DashboardViewModel : ObservableObject, IDisposable
         }
     }
 
+    private System.Windows.Visibility _gpuSleepOverlayVisibility = System.Windows.Visibility.Collapsed;
+
+    public System.Windows.Visibility GpuSleepOverlayVisibility
+    {
+        get => _gpuSleepOverlayVisibility;
+        set => SetProperty(ref _gpuSleepOverlayVisibility, value);
+    }
+
     // --- COMMANDS ---
     public ICommand SetPowerCommand { get; }
     public ICommand SetFanCommand { get; }
@@ -1097,6 +1105,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
                             GpuUsageText = "Sleep";
                             _gpuHistory.Add(new TelemetryPoint { Timestamp = now, Temp = 0, Usage = 0 });
                         }
+
+                        GpuSleepOverlayVisibility = gpuIsAwake ? System.Windows.Visibility.Collapsed : System.Windows.Visibility.Visible;
 
                         // Prune > 5 mins (300,000 ms)
                         _cpuHistory.RemoveAll(p => now - p.Timestamp > 300000);

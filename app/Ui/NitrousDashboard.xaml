@@ -412,7 +412,7 @@
 						<!-- CPU Telemetry -->
 						<Border Grid.Column="0" Background="#1C1C1F" CornerRadius="8" BorderBrush="#2A2A30" BorderThickness="1"
 						        Padding="10,8"
-						        ToolTip="Real-time CPU temperature and fan speed read directly from the Acer Embedded Controller (EC).">
+						        ToolTip="Real-time CPU temperature, usage, and fan speed read directly from the Acer Embedded Controller (EC) and Windows.">
 							<Grid>
 								<Grid.ColumnDefinitions>
 									<ColumnDefinition Width="*" />
@@ -442,7 +442,7 @@
 						<!-- GPU Telemetry -->
 						<Border Grid.Column="2" Background="#1C1C1F" CornerRadius="8" BorderBrush="#2A2A30" BorderThickness="1"
 						        Padding="10,8"
-						        ToolTip="Discrete GPU thermals. When the dGPU enters D3Cold sleep on battery, polling pauses to maximize battery life.">
+						        ToolTip="Discrete GPU thermals and usage. When the dGPU enters D3Cold sleep on battery, polling pauses to maximize battery life.">
 							<Grid>
 								<Grid.ColumnDefinitions>
 									<ColumnDefinition Width="*" />
@@ -496,7 +496,8 @@
 								<Polyline Points="{Binding CpuTempPoints}" Stroke="#FF4081" StrokeThickness="1.5" />
 								<Polyline Points="{Binding CpuUsagePoints}" Stroke="#40C4FF" StrokeThickness="1.5" Opacity="0.7" />
 								<!-- Max Stats -->
-								<TextBlock Text="{Binding CpuMaxStatsText}" Foreground="#888890" FontSize="9" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,4,0,0" />
+								<TextBlock Text="{Binding CpuMaxStatsText}" Foreground="#888890" FontSize="9" FontWeight="Bold"
+								           HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,4,0,0" />
 								<!-- Hover Line -->
 								<Border Width="1" Background="#888890" HorizontalAlignment="Left" Margin="{Binding CpuHoverMargin}"
 								        Visibility="{Binding CpuHoverVisibility}" />
@@ -537,7 +538,15 @@
 								<Polyline Points="{Binding GpuTempPoints}" Stroke="#FF4081" StrokeThickness="1.5" />
 								<Polyline Points="{Binding GpuUsagePoints}" Stroke="#B388FF" StrokeThickness="1.5" Opacity="0.7" />
 								<!-- Max Stats -->
-								<TextBlock Text="{Binding GpuMaxStatsText}" Foreground="#888890" FontSize="9" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,4,0,0" />
+								<TextBlock Text="{Binding GpuMaxStatsText}" Foreground="#888890" FontSize="9" FontWeight="Bold"
+								           HorizontalAlignment="Left" VerticalAlignment="Top" Margin="8,4,0,0" />
+								<!-- Sleep Overlay -->
+								<StackPanel HorizontalAlignment="Center" VerticalAlignment="Center" Orientation="Horizontal" Opacity="1"
+								            Visibility="{Binding GpuSleepOverlayVisibility}">
+									<Path Fill="#888890" Stretch="Uniform" Width="14" Height="14" Margin="0,0,6,0"
+									      Data="M12,2A9.91,9.91 0 0,0 9,2.46A10,10 0 0,1 9,21.54A10,10 0 1,0 12,2Z" />
+									<TextBlock Text="GPU INACTIVE" Foreground="#888890" FontSize="11" FontWeight="Bold" />
+								</StackPanel>
 								<!-- Hover Line -->
 								<Border Width="1" Background="#888890" HorizontalAlignment="Left" Margin="{Binding GpuHoverMargin}"
 								        Visibility="{Binding GpuHoverVisibility}" />
@@ -557,8 +566,11 @@
 												<TextBlock Text="{Binding GpuHoverUsageStr}" FontSize="11" Foreground="White" />
 											</StackPanel>
 										</StackPanel>
-										<TextBlock Text="GPU Sleeping (D3Cold)" FontSize="11" Foreground="White"
-										           Visibility="{Binding GpuHoverSleepVisibility}" />
+										<StackPanel Orientation="Horizontal" Visibility="{Binding GpuHoverSleepVisibility}">
+											<Path Fill="#B388FF" Stretch="Uniform" Width="10" Height="10" Margin="0,0,4,0"
+											      Data="M12,2A9.91,9.91 0 0,0 9,2.46A10,10 0 0,1 9,21.54A10,10 0 1,0 12,2Z" />
+											<TextBlock Text="GPU Sleeping (D3Cold)" FontSize="11" Foreground="White" />
+										</StackPanel>
 									</StackPanel>
 								</Border>
 							</Grid>

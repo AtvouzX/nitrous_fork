@@ -319,6 +319,62 @@ public class DashboardAndTrayUiTests
         });
     }
 
+    [Fact]
+    public void DashboardViewModel_UpdateGpuHover_WhenGpuIsAsleep_ShowsSleepIconAndHidesStats()
+    {
+        RunInSta(() =>
+        {
+            var vm = new DashboardViewModel();
+            try
+            {
+                var gpuHistoryField = typeof(DashboardViewModel).GetField("_gpuHistory", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var historyList = (List<DashboardViewModel.TelemetryPoint>)gpuHistoryField!.GetValue(vm)!;
+                
+                long now = Environment.TickCount64;
+                historyList.Add(new DashboardViewModel.TelemetryPoint { Timestamp = now, Temp = 0, Usage = 0 });
+
+                vm.UpdateGpuHover(pixelX: 162.5, actualWidth: 162.5);
+
+                Assert.Equal(Visibility.Visible, vm.GpuHoverVisibility);
+                Assert.Equal(Visibility.Visible, vm.GpuHoverSleepVisibility);
+                Assert.Equal(Visibility.Collapsed, vm.GpuHoverStatsVisibility);
+            }
+            finally
+            {
+                vm.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void DashboardViewModel_UpdateGpuHover_WhenGpuIsAwake_ShowsStatsAndHidesSleepIcon()
+    {
+        RunInSta(() =>
+        {
+            var vm = new DashboardViewModel();
+            try
+            {
+                var gpuHistoryField = typeof(DashboardViewModel).GetField("_gpuHistory", System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+                var historyList = (List<DashboardViewModel.TelemetryPoint>)gpuHistoryField!.GetValue(vm)!;
+                
+                long now = Environment.TickCount64;
+                historyList.Add(new DashboardViewModel.TelemetryPoint { Timestamp = now, Temp = 50, Usage = 30 });
+
+                vm.UpdateGpuHover(pixelX: 162.5, actualWidth: 162.5);
+
+                Assert.Equal(Visibility.Visible, vm.GpuHoverVisibility);
+                Assert.Equal(Visibility.Collapsed, vm.GpuHoverSleepVisibility);
+                Assert.Equal(Visibility.Visible, vm.GpuHoverStatsVisibility);
+                Assert.Equal("50°C", vm.GpuHoverTempStr);
+                Assert.Equal("30%", vm.GpuHoverUsageStr);
+            }
+            finally
+            {
+                vm.Dispose();
+            }
+        });
+    }
+
     // =========================================================================
     // 2. TrayApplication Windows Forms UI Tests
     // =========================================================================
