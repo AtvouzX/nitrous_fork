@@ -386,6 +386,72 @@ public class NvidiaGpuManager : IDisposable
 
             try
             {
+                // Phase 2: Check if Nitrous itself is the only process keeping the GPU awake.
+                // If so, shut down NVML and NvAPI to allow the GPU to go back to D3Cold sleep.
+                uint graphicsCount = 32;
+                var graphicsInfos = new NvmlProcessInfo[graphicsCount];
+                bool hasGraphics = NativeNvml.DeviceGetGraphicsRunningProcesses(_nvmlDeviceHandle, ref graphicsCount, graphicsInfos) == NvmlReturn.Success;
+
+                uint computeCount = 32;
+                var computeInfos = new NvmlProcessInfo[computeCount];
+                bool hasCompute = NativeNvml.DeviceGetComputeRunningProcesses(_nvmlDeviceHandle, ref computeCount, computeInfos) == NvmlReturn.Success;
+
+                if (hasGraphics || hasCompute)
+                {
+                    int currentPid = Environment.ProcessId;
+                    bool onlyNitrous = true;
+                    bool hasAnyProcess = false;
+
+                    if (hasGraphics)
+                    {
+                        for (int i = 0; i < graphicsCount; i++)
+                        {
+                            hasAnyProcess = true;
+                            if (graphicsInfos[i].Pid != currentPid)
+                            {
+                                onlyNitrous = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (hasCompute && onlyNitrous)
+                    {
+                        for (int i = 0; i < computeCount; i++)
+                        {
+                            hasAnyProcess = true;
+                            if (computeInfos[i].Pid != currentPid)
+                            {
+                                onlyNitrous = false;
+                                break;
+                            }
+                        }
+                    }
+
+                    if (hasAnyProcess && onlyNitrous)
+                    {
+                        Debug.WriteLine("[NvidiaGpuManager] Only Nitrous is running on the GPU. Unloading NVML to allow sleep.");
+                        try { NVIDIA.Unload(); } catch { }
+                        try { NativeNvml.Shutdown(); } catch { }
+                        
+                        _nvmlDeviceHandle = IntPtr.Zero;
+                        _internalGpu = null;
+
+                        t.PState = "Sleep";
+                        t.CoreTemp = 0;
+                        t.GpuLoad = 0;
+                        t.Name = "NVIDIA (Asleep)";
+                        return t;
+                    }
+                }
+            }
+            catch
+            {
+                // Ignore process check errors on older drivers
+            }
+
+            try
+            {
                 // Name
                 var nameBuilder = new StringBuilder(64);
                 if (NativeNvml.DeviceGetName(_nvmlDeviceHandle, nameBuilder, (uint)nameBuilder.Capacity) == NvmlReturn.Success)
@@ -450,7 +516,25 @@ public class NvidiaGpuManager : IDisposable
         NotSupported = 3,
         NoPermission = 4,
         AlreadyInitialized = 5,
-        NotFound = 6
+        NotFound = 6,
+        InsufficientSize = 7,
+        InsufficientPower = 8,
+        DriverNotLoaded = 9,
+        Timeout = 10,
+        IrqIssue = 11,
+        LibraryNotFound = 12,
+        FunctionNotFound = 13,
+        CorruptedInforom = 14,
+        GpuIsLost = 15,
+        ResetRequired = 16,
+        OperatingSystem = 17,
+        LibRmVersionMismatch = 18,
+        InUse = 19,
+        Memory = 20,
+        NoData = 21,
+        VgpuEccNotSupported = 22,
+        InsufficientResources = 23,
+        Unknown = 999
     }
 
     public enum NvmlDeviceArchitecture
@@ -484,6 +568,13 @@ public class NvidiaGpuManager : IDisposable
         public ulong Total;
         public ulong Free;
         public ulong Used;
+    }
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct NvmlProcessInfo
+    {
+        public uint Pid;
+        public ulong UsedGpuMemory;
     }
 
     private static class NativeNvml
@@ -541,6 +632,14 @@ public class NvidiaGpuManager : IDisposable
         [DllImport(NvmlDll, EntryPoint = "nvmlDeviceGetArchitecture")]
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         public static extern NvmlReturn DeviceGetArchitecture(IntPtr device, out NvmlDeviceArchitecture arch);
+
+        [DllImport(NvmlDll, EntryPoint = "nvmlDeviceGetGraphicsRunningProcesses")]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        public static extern NvmlReturn DeviceGetGraphicsRunningProcesses(IntPtr device, ref uint infoCount, [Out] NvmlProcessInfo[] infos);
+
+        [DllImport(NvmlDll, EntryPoint = "nvmlDeviceGetComputeRunningProcesses")]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        public static extern NvmlReturn DeviceGetComputeRunningProcesses(IntPtr device, ref uint infoCount, [Out] NvmlProcessInfo[] infos);
     }
     #endregion
 
