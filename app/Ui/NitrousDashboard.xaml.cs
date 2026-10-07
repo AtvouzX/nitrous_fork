@@ -189,17 +189,6 @@ public partial class NitrousDashboard : Window
 
     public void RefreshDashboardState()
     {
-        bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
-                        System.Windows.Forms.PowerLineStatus.Online;
-        var powerColor = isOnline ? AcColorBrush : BattColorBrush;
-        string powerText = isOnline ? "AC POWER" : "BATTERY";
-
-        DashPowerPillBorder.BorderBrush = powerColor;
-        DashPowerPillIcon.Fill = powerColor;
-        DashPowerPillText.Foreground = powerColor;
-        DashPowerPillText.Text = powerText;
-        DashPowerPillIcon.Data = isOnline ? AcGeom : BattGeom;
-
         var activeMode = AcerWmiManager.GetActivePowerMode() ??
                          (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
         var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f)

@@ -70,9 +70,9 @@ public class CpuPowerManagerTests
         await CpuPowerManager.ApplyProfileLimitsAsync(PowerProfile.Balanced);
         
         // Assert cache is updated
-        var fieldInfo = typeof(CpuPowerManager).GetField("_lastAcMin", BindingFlags.Static | BindingFlags.NonPublic);
-        Assert.NotNull(fieldInfo);
-        var lastAcMin = (int)(fieldInfo.GetValue(null) ?? -1);
+        var acMinField = typeof(CpuPowerManager).GetField("_lastAcMin", BindingFlags.Static | BindingFlags.NonPublic);
+        Assert.NotNull(acMinField);
+        var lastAcMin = (int)(acMinField.GetValue(null) ?? -1);
         Assert.NotEqual(-1, lastAcMin);
 
         // Applying it twice should just return quickly due to cache guard.

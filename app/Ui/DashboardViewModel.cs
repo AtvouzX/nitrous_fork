@@ -183,6 +183,55 @@ public class DashboardViewModel : ObservableObject, IDisposable
         set => SetProperty(ref _gpuTempColor, value);
     }
 
+    private string _batteryBadgeText = "AC POWER";
+    public string BatteryBadgeText
+    {
+        get => _batteryBadgeText;
+        set => SetProperty(ref _batteryBadgeText, value);
+    }
+
+    private string _batteryBadgeBorder = "#B388FF";
+    public string BatteryBadgeBorder
+    {
+        get => _batteryBadgeBorder;
+        set => SetProperty(ref _batteryBadgeBorder, value);
+    }
+
+    private string _batteryBadgeForeground = "White";
+    public string BatteryBadgeForeground
+    {
+        get => _batteryBadgeForeground;
+        set => SetProperty(ref _batteryBadgeForeground, value);
+    }
+
+    private string _batteryBadgeIcon = "M16,7V3H14V7H10V3H8V7C8,10 9.79,11.4 11,11.83V16H13V11.83C14.21,11.4 16,10 16,7M10,18H14V22H10V18Z";
+    public string BatteryBadgeIcon
+    {
+        get => _batteryBadgeIcon;
+        set => SetProperty(ref _batteryBadgeIcon, value);
+    }
+
+    private string _batteryHealthText = "Evaluating...";
+    public string BatteryHealthText
+    {
+        get => _batteryHealthText;
+        set => SetProperty(ref _batteryHealthText, value);
+    }
+
+    private string _batteryHealthPercentText = "--%";
+    public string BatteryHealthPercentText
+    {
+        get => _batteryHealthPercentText;
+        set => SetProperty(ref _batteryHealthPercentText, value);
+    }
+
+    private string _batteryCycleText = "-- cycles";
+    public string BatteryCycleText
+    {
+        get => _batteryCycleText;
+        set => SetProperty(ref _batteryCycleText, value);
+    }
+
     private string _applyBtnText = "APPLY";
 
     public string ApplyBtnText
@@ -751,7 +800,29 @@ public class DashboardViewModel : ObservableObject, IDisposable
             }
         });
 
+        _ = RefreshBatteryHealthAsync();
         StartTelemetryPolling();
+    }
+
+    private async Task RefreshBatteryHealthAsync()
+    {
+        var health = await Task.Run(() => BatteryManager.GetBatteryHealth());
+        _ = System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
+        {
+            if (health != null && health.Value.DesignedCapacity > 0)
+            {
+                var val = health.Value;
+                BatteryHealthText = $"{val.FullChargedCapacity:N0} / {val.DesignedCapacity:N0} mWh";
+                BatteryHealthPercentText = $"{val.HealthPercent:0.0}%";
+                BatteryCycleText = $"{val.CycleCount} cycles";
+            }
+            else
+            {
+                BatteryHealthText = "ACPI Data Missing";
+                BatteryHealthPercentText = "Unknown Health";
+                BatteryCycleText = "Unknown Cycles";
+            }
+        });
     }
 
     public string MaxRefreshText { get; }
@@ -982,11 +1053,14 @@ public class DashboardViewModel : ObservableObject, IDisposable
         // Offload the loop entirely to a background ThreadPool thread
         Task.Run(async () =>
         {
-            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(2));
+            using var timer = new PeriodicTimer(TimeSpan.FromSeconds(1.5));
             while (!token.IsCancellationRequested)
             {
                 try
                 {
+                    // Run Battery Telemetry
+                    var batteryState = BatteryManager.GetBatteryState();
+
                     // Run Acer WMI telemetry first for CPU stats and fan RPMs
                     var telemetry = await Task.Run(() => AcerWmiManager.GetSystemTelemetry(), token);
 
@@ -1006,6 +1080,37 @@ public class DashboardViewModel : ObservableObject, IDisposable
                     // Push property changes asynchronously to the WPF UI Thread (non-blocking)
                     _ = System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
                     {
+                        // 0. Update Battery Telemetry
+                        string acIcon = "M16,7V3H14V7H10V3H8V7C8,10 9.79,11.4 11,11.83V16H13V11.83C14.21,11.4 16,10 16,7M10,18H14V22H10V18Z";
+                        string battIcon = "M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z";
+
+                        double watts = Math.Abs(batteryState.Rate) / 1000.0;
+
+                        if (batteryState.AcOnLine)
+                        {
+                            if (batteryState.Charging && watts > 0.5)
+                            {
+                                BatteryBadgeText = $"CHARGING • {watts:0.0}W";
+                                BatteryBadgeBorder = "#34C759";
+                                BatteryBadgeForeground = "#34C759"; // Green text
+                                BatteryBadgeIcon = acIcon;
+                            }
+                            else
+                            {
+                                BatteryBadgeText = "AC POWER";
+                                BatteryBadgeBorder = "#FF453A"; // Red/Accent border as requested
+                                BatteryBadgeForeground = "White";
+                                BatteryBadgeIcon = acIcon;
+                            }
+                        }
+                        else
+                        {
+                            BatteryBadgeText = $"BATTERY • {watts:0.0}W";
+                            BatteryBadgeBorder = "#32D74B";
+                            BatteryBadgeForeground = "#64D2FF"; // Cyan text as requested
+                            BatteryBadgeIcon = battIcon;
+                        }
+
                         // 1. Update WMI CPU/GPU Telemetry
                         CpuTempText = telemetry.CpuTemp > 0 ? $"{telemetry.CpuTemp} C" : "-- C";
                         CpuRpmText = telemetry.CpuRpm > 0 ? $"{telemetry.CpuRpm} RPM" : "-- RPM";
