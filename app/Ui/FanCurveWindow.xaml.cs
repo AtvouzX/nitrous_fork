@@ -103,9 +103,9 @@ public partial class FanCurveWindow : Window
 
     private async void SaveBtn_Click(object sender, RoutedEventArgs e)
     {
-        // 1. Activate Curve Override & Custom Fan Mode on the ViewModel
-        _viewModel.IsCurveModeEnabled = true;
-        _viewModel.IsCustomFanEnabled = true;
+        // 1. Respect the Curve Override state from the ViewModel
+        if (_viewModel.IsCurveModeEnabled)
+            _viewModel.IsCustomFanEnabled = true;
 
         // 2. Save curves to registry for the active power profile
         string suffix = _viewModel.ActivePowerProfile.ToString();
@@ -113,7 +113,7 @@ public partial class FanCurveWindow : Window
         FanCurveHelper.SaveCurveToRegistry($"GpuCurve_{suffix}", _gpuPoints);
 
         // 3. Persist settings and bump version so background engine immediately reloads
-        SettingsManager.Save("IsCurveModeEnabled", 1);
+        SettingsManager.Save("IsCurveModeEnabled", _viewModel.IsCurveModeEnabled ? 1 : 0);
         SettingsManager.Save("LastFanMode", "Medium");
         bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
                         System.Windows.Forms.PowerLineStatus.Online;

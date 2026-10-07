@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -61,8 +61,8 @@ public partial class NitrousDashboard : Window
         if (e.ChangedButton == MouseButton.Left) DragMove();
     }
 
-    private static readonly SolidColorBrush ActiveBrush = CreateFrozenBrush("#B388FF");
-    private static readonly SolidColorBrush InactiveBrush = CreateFrozenBrush("#888890");
+    private static readonly SolidColorBrush ActiveBrush = CreateFrozenBrush("#FF4500");
+    private static readonly SolidColorBrush InactiveBrush = CreateFrozenBrush("#A1A1AA");
     private static readonly SolidColorBrush AcColorBrush = CreateFrozenBrush("#FF453A");
     private static readonly SolidColorBrush BattColorBrush = CreateFrozenBrush("#34C759");
 

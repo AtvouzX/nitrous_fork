@@ -184,13 +184,15 @@ public class DashboardViewModel : ObservableObject, IDisposable
     }
 
     private string _batteryBadgeText = "AC POWER";
+
     public string BatteryBadgeText
     {
         get => _batteryBadgeText;
         set => SetProperty(ref _batteryBadgeText, value);
     }
 
-    private string _batteryBadgeBorder = "#B388FF";
+    private string _batteryBadgeBorder = "#FF4500";
+
     public string BatteryBadgeBorder
     {
         get => _batteryBadgeBorder;
@@ -198,13 +200,16 @@ public class DashboardViewModel : ObservableObject, IDisposable
     }
 
     private string _batteryBadgeForeground = "White";
+
     public string BatteryBadgeForeground
     {
         get => _batteryBadgeForeground;
         set => SetProperty(ref _batteryBadgeForeground, value);
     }
 
-    private string _batteryBadgeIcon = "M16,7V3H14V7H10V3H8V7C8,10 9.79,11.4 11,11.83V16H13V11.83C14.21,11.4 16,10 16,7M10,18H14V22H10V18Z";
+    private string _batteryBadgeIcon =
+        "M16,7V3H14V7H10V3H8V7C8,10 9.79,11.4 11,11.83V16H13V11.83C14.21,11.4 16,10 16,7M10,18H14V22H10V18Z";
+
     public string BatteryBadgeIcon
     {
         get => _batteryBadgeIcon;
@@ -212,6 +217,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
     }
 
     private string _batteryHealthText = "Evaluating...";
+
     public string BatteryHealthText
     {
         get => _batteryHealthText;
@@ -219,6 +225,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
     }
 
     private string _batteryHealthPercentText = "--%";
+
     public string BatteryHealthPercentText
     {
         get => _batteryHealthPercentText;
@@ -226,6 +233,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
     }
 
     private string _batteryCycleText = "-- cycles";
+
     public string BatteryCycleText
     {
         get => _batteryCycleText;
@@ -240,7 +248,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
         set => SetProperty(ref _applyBtnText, value);
     }
 
-    private string _applyBtnColor = "#B388FF";
+    private string _applyBtnColor = "#FF4500";
 
     public string ApplyBtnColor
     {
@@ -337,7 +345,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
         set => SetProperty(ref _gpuPStateText, value);
     }
 
-    private string _gpuLoadColor = "#B388FF";
+    private string _gpuLoadColor = "#FF4500";
 
     public string GpuLoadColor
     {
@@ -345,7 +353,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
         set => SetProperty(ref _gpuLoadColor, value);
     }
 
-    private string _gpuDeepTempColor = "#B388FF";
+    private string _gpuDeepTempColor = "#FF4500";
 
     public string GpuDeepTempColor
     {
@@ -421,9 +429,9 @@ public class DashboardViewModel : ObservableObject, IDisposable
 
     public bool IsManualSliderEnabled => IsCustomFanEnabled && !IsCurveModeEnabled;
     public string CustomFanHeaderText => IsCurveModeEnabled ? "CUSTOM FANS · CURVE" : "CUSTOM FANS · FIXED";
-    public string CustomFanHeaderColor => IsCurveModeEnabled ? "#34C759" : "#888890";
+    public string CustomFanHeaderColor => IsCurveModeEnabled ? "#FFFFFF" : "#FFFFFF";
     public string FanModeSubtext => IsCurveModeEnabled ? "CURVE ACTIVE" : "MANUAL (FIXED)";
-    public string FanModeSubtextColor => IsCurveModeEnabled ? "#34C759" : "#B388FF";
+    public string FanModeSubtextColor => IsCurveModeEnabled ? "#FFFFFF" : "#FF4500";
 
     public string SliderDisabledTooltip => IsCurveModeEnabled
         ? "Manual sliders are disabled while Fan Curve is active. Adjust your curve in CURVE EDITOR."
@@ -771,7 +779,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
 
                 await Task.Delay(2000);
                 ApplyBtnText = "APPLY";
-                ApplyBtnColor = "#B388FF";
+                ApplyBtnColor = "#FF4500";
             }
             catch (Exception ex)
             {
@@ -1081,8 +1089,10 @@ public class DashboardViewModel : ObservableObject, IDisposable
                     _ = System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
                     {
                         // 0. Update Battery Telemetry
-                        string acIcon = "M16,7V3H14V7H10V3H8V7C8,10 9.79,11.4 11,11.83V16H13V11.83C14.21,11.4 16,10 16,7M10,18H14V22H10V18Z";
-                        string battIcon = "M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z";
+                        string acIcon =
+                            "M7,2V13H10V22L17,10H13L17,2H7Z";
+                        string battIcon =
+                            "M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z";
 
                         double watts = Math.Abs(batteryState.Rate) / 1000.0;
 
@@ -1091,14 +1101,14 @@ public class DashboardViewModel : ObservableObject, IDisposable
                             if (batteryState.Charging && watts > 0.5)
                             {
                                 BatteryBadgeText = $"CHARGING • {watts:0.0}W";
-                                BatteryBadgeBorder = "#34C759";
-                                BatteryBadgeForeground = "#34C759"; // Green text
+                                BatteryBadgeBorder = "#FF4500";
+                                BatteryBadgeForeground = "#FF4500"; // Orange accent
                                 BatteryBadgeIcon = acIcon;
                             }
                             else
                             {
                                 BatteryBadgeText = "AC POWER";
-                                BatteryBadgeBorder = "#FF453A"; // Red/Accent border as requested
+                                BatteryBadgeBorder = "#222226"; // Subdued border
                                 BatteryBadgeForeground = "White";
                                 BatteryBadgeIcon = acIcon;
                             }
@@ -1106,8 +1116,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
                         else
                         {
                             BatteryBadgeText = $"BATTERY • {watts:0.0}W";
-                            BatteryBadgeBorder = "#32D74B";
-                            BatteryBadgeForeground = "#64D2FF"; // Cyan text as requested
+                            BatteryBadgeBorder = "#222226"; // Subdued border
+                            BatteryBadgeForeground = "White";
                             BatteryBadgeIcon = battIcon;
                         }
 
@@ -1136,7 +1146,9 @@ public class DashboardViewModel : ObservableObject, IDisposable
                                 GpuArchText = smi.Architecture;
 
                                 GpuLoadText = $"{smi.GpuLoad}%";
-                                GpuLoadColor = smi.GpuLoad >= 95 ? "#FF453A" : (smi.GpuLoad >= 80 ? "#FF9F0A" : "White");
+                                GpuLoadColor = smi.GpuLoad >= 95
+                                    ? "#FF453A"
+                                    : (smi.GpuLoad >= 80 ? "#FF9F0A" : "White");
 
                                 GpuVramText = $"{smi.VramUsedMb} / {smi.VramTotalMb} MB";
 
@@ -1211,7 +1223,9 @@ public class DashboardViewModel : ObservableObject, IDisposable
                             _gpuHistory.Add(new TelemetryPoint { Timestamp = now, Temp = 0, Usage = 0 });
                         }
 
-                        GpuSleepOverlayVisibility = gpuIsAwake ? System.Windows.Visibility.Collapsed : System.Windows.Visibility.Visible;
+                        GpuSleepOverlayVisibility = gpuIsAwake
+                            ? System.Windows.Visibility.Collapsed
+                            : System.Windows.Visibility.Visible;
 
                         // Prune > 5 mins (300,000 ms)
                         _cpuHistory.RemoveAll(p => now - p.Timestamp > 300000);
@@ -1268,14 +1282,16 @@ public class DashboardViewModel : ObservableObject, IDisposable
         if (history.Count == 0) return points;
 
         long windowStart = now - 300000;
+        double graphWidth = 140.5;
+        double graphHeight = 74.0;
+        
         for (int i = 0; i < history.Count; i++)
         {
             var p = history[i];
-            double x = ((p.Timestamp - windowStart) / 300000.0) *
-                       162.5; // Map time to 162.5 pixels wide (inner grid without margins)
+            double x = ((p.Timestamp - windowStart) / 300000.0) * graphWidth;
             double val = Math.Clamp(isTemp ? p.Temp : p.Usage, 0, 100);
-            double y = ((100 - val) / 100.0) * 50.0; // Map 0-100 to 50 pixels high
-            points.Add(new System.Windows.Point(x, y + 20)); // Add 15px top padding
+            double y = ((100 - val) / 100.0) * graphHeight;
+            points.Add(new System.Windows.Point(x, y));
         }
 
         return points;
@@ -1287,23 +1303,25 @@ public class DashboardViewModel : ObservableObject, IDisposable
         if (history.Count == 0) return points;
 
         long windowStart = now - 300000;
+        double graphWidth = 140.5;
+        double graphHeight = 74.0;
 
         // Bottom left
-        double firstX = ((history[0].Timestamp - windowStart) / 300000.0) * 162.5;
-        points.Add(new System.Windows.Point(firstX, 70));
+        double firstX = ((history[0].Timestamp - windowStart) / 300000.0) * graphWidth;
+        points.Add(new System.Windows.Point(firstX, graphHeight));
 
         for (int i = 0; i < history.Count; i++)
         {
             var p = history[i];
-            double x = ((p.Timestamp - windowStart) / 300000.0) * 162.5;
+            double x = ((p.Timestamp - windowStart) / 300000.0) * graphWidth;
             double val = Math.Clamp(isTemp ? p.Temp : p.Usage, 0, 100);
-            double y = ((100 - val) / 100.0) * 50.0;
-            points.Add(new System.Windows.Point(x, y + 20));
+            double y = ((100 - val) / 100.0) * graphHeight;
+            points.Add(new System.Windows.Point(x, y));
         }
 
         // Bottom right
-        double lastX = ((history[^1].Timestamp - windowStart) / 300000.0) * 162.5;
-        points.Add(new System.Windows.Point(lastX, 70));
+        double lastX = ((history[^1].Timestamp - windowStart) / 300000.0) * graphWidth;
+        points.Add(new System.Windows.Point(lastX, graphHeight));
 
         return points;
     }
