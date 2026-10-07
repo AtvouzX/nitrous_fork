@@ -1,3 +1,6 @@
+using System;
+using System.Linq;
+using System.Collections.ObjectModel;
 using System.Diagnostics;
 using System.Windows.Input;
 using Nitrous.Enums;
@@ -254,6 +257,32 @@ public class DashboardViewModel : ObservableObject, IDisposable
     {
         get => _applyBtnColor;
         set => SetProperty(ref _applyBtnColor, value);
+    }
+
+    private string _acerServicesStatusText = "Scanning...";
+
+    public string AcerServicesStatusText
+    {
+        get => _acerServicesStatusText;
+        set => SetProperty(ref _acerServicesStatusText, value);
+    }
+
+    private string _acerServicesActionText = "STOP & DISABLE";
+
+    public string AcerServicesActionText
+    {
+        get => _acerServicesActionText;
+        set => SetProperty(ref _acerServicesActionText, value);
+    }
+
+    public ObservableCollection<AcerServiceInfo> AcerServicesList { get; } = new();
+
+    private System.Windows.Visibility _acerServicesListVisibility = System.Windows.Visibility.Collapsed;
+
+    public System.Windows.Visibility AcerServicesListVisibility
+    {
+        get => _acerServicesListVisibility;
+        set => SetProperty(ref _acerServicesListVisibility, value);
     }
 
     private int _gpuCoreOffset;
@@ -808,8 +837,77 @@ public class DashboardViewModel : ObservableObject, IDisposable
             }
         });
 
+        ToggleAcerServicesCommand = new RelayCommand(async _ =>
+        {
+            AcerServicesActionText = "PLEASE WAIT...";
+            var summary = AcerServiceManager.GetServiceSummary();
+            if (summary.RunningCount > 0)
+            {
+                await AcerServiceManager.StopAndDisableAllAsync();
+            }
+            else
+            {
+                await AcerServiceManager.RestoreAndStartAllAsync();
+            }
+            _ = RefreshAcerServicesAsync();
+        });
+
+        KillAcerServiceCommand = new RelayCommand(async param =>
+        {
+            if (param is string serviceName)
+            {
+                await AcerServiceManager.StopAndDisableSingleAsync(serviceName);
+                _ = RefreshAcerServicesAsync();
+            }
+        });
+
         _ = RefreshBatteryHealthAsync();
+        _ = RefreshAcerServicesAsync();
         StartTelemetryPolling();
+    }
+
+    public async Task RefreshAcerServicesAsync()
+    {
+        var summary = await Task.Run(() => AcerServiceManager.GetServiceSummary());
+        _ = System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
+        {
+            if (summary.TotalFound == 0)
+            {
+                AcerServicesStatusText = "No Acer services found.";
+                AcerServicesActionText = "N/A";
+                AcerServicesList.Clear();
+                AcerServicesListVisibility = System.Windows.Visibility.Collapsed;
+            }
+            else
+            {
+                if (summary.RunningCount > 0)
+                {
+                    AcerServicesStatusText = $"{summary.RunningCount} OEM services running";
+                    AcerServicesActionText = "STOP & DISABLE";
+                }
+                else
+                {
+                    AcerServicesStatusText = "All Acer services stopped & disabled";
+                    AcerServicesActionText = "RESTORE";
+                }
+
+                var runningServices = summary.Services.Where(s => s.Status == System.ServiceProcess.ServiceControllerStatus.Running || s.Status == System.ServiceProcess.ServiceControllerStatus.StartPending).ToList();
+                if (runningServices.Any())
+                {
+                    AcerServicesList.Clear();
+                    foreach (var s in runningServices)
+                    {
+                        AcerServicesList.Add(s);
+                    }
+                    AcerServicesListVisibility = System.Windows.Visibility.Visible;
+                }
+                else
+                {
+                    AcerServicesList.Clear();
+                    AcerServicesListVisibility = System.Windows.Visibility.Collapsed;
+                }
+            }
+        });
     }
 
     private async Task RefreshBatteryHealthAsync()
@@ -1051,6 +1149,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
     public ICommand SetRefreshCommand { get; }
     public ICommand ApplyGpuClocksCommand { get; }
     public ICommand ResetGpuClocksCommand { get; }
+    public ICommand ToggleAcerServicesCommand { get; }
+    public ICommand KillAcerServiceCommand { get; }
 
     private void StartTelemetryPolling()
     {

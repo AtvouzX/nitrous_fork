@@ -1,4 +1,4 @@
-﻿<Window x:Class="Nitrous.Ui.NitrousDashboard"
+<Window x:Class="Nitrous.Ui.NitrousDashboard"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         Title="Nitrous Dashboard" Height="660" Width="375"
@@ -331,10 +331,14 @@
 			<!-- Title Bar -->
 			<Grid Grid.Row="0" MouseLeftButtonDown="TitleBar_MouseDown" Background="Transparent">
 				<StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0,0,0">
-					<TextBlock x:Name="SystemModelText" Text="NITROUS ON SYSTEM" Foreground="White" FontSize="13" FontWeight="Bold" Margin="0,0,8,0" />
+					<TextBlock x:Name="SystemModelText" Text="NITROUS ON SYSTEM" Foreground="White" FontSize="13" FontWeight="Bold"
+					           Margin="0,0,8,0" />
 					<TextBlock Text="•" Foreground="#55555C" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center" />
-					<Path x:Name="DashPowerPillIcon" Fill="{Binding BatteryBadgeForeground}" Stretch="Uniform" Width="10" Height="10" VerticalAlignment="Center" Margin="0,0,4,0" Data="{Binding BatteryBadgeIcon}" />
-					<TextBlock x:Name="DashPowerPillText" Text="{Binding BatteryBadgeText}" Foreground="{Binding BatteryBadgeForeground}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" />
+					<Path x:Name="DashPowerPillIcon" Fill="{Binding BatteryBadgeForeground}" Stretch="Uniform" Width="10" Height="10"
+					      VerticalAlignment="Center" Margin="0,0,4,0" Data="{Binding BatteryBadgeIcon}" />
+					<TextBlock x:Name="DashPowerPillText" Text="{Binding BatteryBadgeText}"
+					           Foreground="{Binding BatteryBadgeForeground}" FontSize="10" FontWeight="Bold"
+					           VerticalAlignment="Center" />
 				</StackPanel>
 				<!-- Right Side: Pin to Top & Close -->
 				<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0">
@@ -394,7 +398,9 @@
 						</Grid.ColumnDefinitions>
 
 						<!-- CPU Graph & Telemetry -->
-						<Border Grid.Column="0" Background="#151518" CornerRadius="12" BorderBrush="#222226" BorderThickness="1" ClipToBounds="False" ToolTip="Real-time CPU temperature, usage, and fan speed read directly from the Acer Embedded Controller (EC) and Windows.">
+						<Border Grid.Column="0" Background="#151518" CornerRadius="12" BorderBrush="#222226" BorderThickness="1"
+						        ClipToBounds="False"
+						        ToolTip="Real-time CPU temperature, usage, and fan speed read directly from the Acer Embedded Controller (EC) and Windows.">
 							<Grid Margin="10,8,10,8">
 								<Grid.RowDefinitions>
 									<RowDefinition Height="Auto" />
@@ -409,19 +415,25 @@
 											<Run Text="{Binding CpuUsageText}" />
 										</TextBlock>
 										<StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-											<Path Fill="#FF4500" Opacity="0.8" Stretch="Uniform" Width="9" Height="9" Margin="0,0,4,0" Data="M9,2V4H15V2H17V4H19A2,2 0 0,1 21,6V8H23V10H21V16H23V18H21V20A2,2 0 0,1 19,22H17V24H15V22H9V24H7V22H5A2,2 0 0,1 3,20V18H1V16H3V10H1V8H3V6A2,2 0 0,1 5,4H7V2H9M5,6V20H19V6H5M7,8H17V18H7V8M9,10H15V16H9V10Z" />
+											<Path Fill="#FF4500" Opacity="0.8" Stretch="Uniform" Width="9" Height="9" Margin="0,0,4,0"
+											      Data="M9,2V4H15V2H17V4H19A2,2 0 0,1 21,6V8H23V10H21V16H23V18H21V20A2,2 0 0,1 19,22H17V24H15V22H9V24H7V22H5A2,2 0 0,1 3,20V18H1V16H3V10H1V8H3V6A2,2 0 0,1 5,4H7V2H9M5,6V20H19V6H5M7,8H17V18H7V8M9,10H15V16H9V10Z" />
 											<TextBlock Text="{Binding CpuRpmText}" Foreground="#A1A1AA" FontSize="10" FontWeight="SemiBold" />
 										</StackPanel>
 									</StackPanel>
-									<TextBlock Text="{Binding CpuTempText}" Foreground="{Binding CpuTempColor}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" />
+									<TextBlock Text="{Binding CpuTempText}" Foreground="{Binding CpuTempColor}" FontSize="18" FontWeight="Bold"
+									           HorizontalAlignment="Right" VerticalAlignment="Center" />
 								</Grid>
-								<Grid Grid.Row="1" x:Name="CpuGraphGrid" Background="Transparent" MouseMove="Graph_MouseMove" MouseLeave="Graph_MouseLeave">
+								<Grid Grid.Row="1" x:Name="CpuGraphGrid" Background="Transparent" MouseMove="Graph_MouseMove"
+								      MouseLeave="Graph_MouseLeave">
 									<Polygon Points="{Binding CpuTempFillPoints}" Fill="#FF4500" Opacity="0.15" />
 									<Polygon Points="{Binding CpuUsageFillPoints}" Fill="#FFFFFF" Opacity="0.10" />
 									<Polyline Points="{Binding CpuTempPoints}" Stroke="#FF4500" StrokeThickness="1.5" />
 									<Polyline Points="{Binding CpuUsagePoints}" Stroke="#FFFFFF" StrokeThickness="1.5" Opacity="0.7" />
-									<Border Width="1" Background="#A1A1AA" HorizontalAlignment="Left" Margin="{Binding CpuHoverMargin}" Visibility="{Binding CpuHoverVisibility}" />
-									<Border Background="#151518" BorderBrush="#222226" BorderThickness="1" CornerRadius="4" Padding="6" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding CpuTooltipMargin}" Visibility="{Binding CpuHoverVisibility}">
+									<Border Width="1" Background="#A1A1AA" HorizontalAlignment="Left" Margin="{Binding CpuHoverMargin}"
+									        Visibility="{Binding CpuHoverVisibility}" />
+									<Border Background="#151518" BorderBrush="#222226" BorderThickness="1" CornerRadius="4" Padding="6"
+									        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding CpuTooltipMargin}"
+									        Visibility="{Binding CpuHoverVisibility}">
 										<StackPanel>
 											<TextBlock Text="{Binding CpuHoverTime}" Foreground="#A1A1AA" FontSize="10" Margin="0,0,0,4" />
 											<StackPanel Orientation="Horizontal" Margin="0,2">
@@ -435,12 +447,14 @@
 										</StackPanel>
 									</Border>
 								</Grid>
-								<TextBlock Grid.Row="2" Text="{Binding CpuMaxStatsText}" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,6,0,0" />
+								<TextBlock Grid.Row="2" Text="{Binding CpuMaxStatsText}" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold"
+								           HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,6,0,0" />
 							</Grid>
 						</Border>
 
 						<!-- GPU Graph & Telemetry -->
-						<Border Grid.Column="2" Background="#151518" CornerRadius="12" BorderBrush="#222226" BorderThickness="1" ClipToBounds="False" ToolTip="Discrete GPU thermals and usage.">
+						<Border Grid.Column="2" Background="#151518" CornerRadius="12" BorderBrush="#222226" BorderThickness="1"
+						        ClipToBounds="False" ToolTip="Discrete GPU thermals and usage.">
 							<Grid Margin="10,8,10,8">
 								<Grid.RowDefinitions>
 									<RowDefinition Height="Auto" />
@@ -455,19 +469,25 @@
 											<Run Text="{Binding GpuUsageText}" />
 										</TextBlock>
 										<StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-											<Path Fill="#FF4500" Opacity="0.8" Stretch="Uniform" Width="9" Height="9" Margin="0,0,4,0" Data="M22,9V7H20V5A2,2 0 0,0 18,3H4A2,2 0 0,0 2,5V19A2,2 0 0,0 4,21H18A2,2 0 0,0 20,19V17H22V15H20V13H22V11H20V9H22M18,19H4V5H18V19M6,13H11V17H6V13M12,7H16V10H12V7M6,7H11V12H6V7M12,11H16V17H12V11Z" />
+											<Path Fill="#FF4500" Opacity="0.8" Stretch="Uniform" Width="9" Height="9" Margin="0,0,4,0"
+											      Data="M22,9V7H20V5A2,2 0 0,0 18,3H4A2,2 0 0,0 2,5V19A2,2 0 0,0 4,21H18A2,2 0 0,0 20,19V17H22V15H20V13H22V11H20V9H22M18,19H4V5H18V19M6,13H11V17H6V13M12,7H16V10H12V7M6,7H11V12H6V7M12,11H16V17H12V11Z" />
 											<TextBlock Text="{Binding GpuRpmText}" Foreground="#A1A1AA" FontSize="10" FontWeight="SemiBold" />
 										</StackPanel>
 									</StackPanel>
-									<TextBlock Text="{Binding GpuTempText}" Foreground="{Binding GpuTempColor}" FontSize="18" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" />
+									<TextBlock Text="{Binding GpuTempText}" Foreground="{Binding GpuTempColor}" FontSize="18" FontWeight="Bold"
+									           HorizontalAlignment="Right" VerticalAlignment="Center" />
 								</Grid>
-								<Grid Grid.Row="1" x:Name="GpuGraphGrid" Background="Transparent" MouseMove="Graph_MouseMove" MouseLeave="Graph_MouseLeave">
+								<Grid Grid.Row="1" x:Name="GpuGraphGrid" Background="Transparent" MouseMove="Graph_MouseMove"
+								      MouseLeave="Graph_MouseLeave">
 									<Polygon Points="{Binding GpuTempFillPoints}" Fill="#FF4500" Opacity="0.15" />
 									<Polygon Points="{Binding GpuUsageFillPoints}" Fill="#FFFFFF" Opacity="0.10" />
 									<Polyline Points="{Binding GpuTempPoints}" Stroke="#FF4500" StrokeThickness="1.5" />
 									<Polyline Points="{Binding GpuUsagePoints}" Stroke="#FFFFFF" StrokeThickness="1.5" Opacity="0.7" />
-									<Border Width="1" Background="#A1A1AA" HorizontalAlignment="Left" Margin="{Binding GpuHoverMargin}" Visibility="{Binding GpuHoverVisibility}" />
-									<Border Background="#151518" BorderBrush="#222226" BorderThickness="1" CornerRadius="4" Padding="6" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding GpuTooltipMargin}" Visibility="{Binding GpuHoverVisibility}">
+									<Border Width="1" Background="#A1A1AA" HorizontalAlignment="Left" Margin="{Binding GpuHoverMargin}"
+									        Visibility="{Binding GpuHoverVisibility}" />
+									<Border Background="#151518" BorderBrush="#222226" BorderThickness="1" CornerRadius="4" Padding="6"
+									        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding GpuTooltipMargin}"
+									        Visibility="{Binding GpuHoverVisibility}">
 										<StackPanel>
 											<TextBlock Text="{Binding GpuHoverTime}" Foreground="#A1A1AA" FontSize="10" Margin="0,0,0,4" />
 											<StackPanel Visibility="{Binding GpuHoverStatsVisibility}">
@@ -481,13 +501,15 @@
 												</StackPanel>
 											</StackPanel>
 											<StackPanel Orientation="Horizontal" Visibility="{Binding GpuHoverSleepVisibility}">
-												<Path Fill="#FF4500" Stretch="Uniform" Width="10" Height="10" Margin="0,0,4,0" Data="M12,2A9.91,9.91 0 0,0 9,2.46A10,10 0 0,1 9,21.54A10,10 0 1,0 12,2Z" />
+												<Path Fill="#FF4500" Stretch="Uniform" Width="10" Height="10" Margin="0,0,4,0"
+												      Data="M12,2A9.91,9.91 0 0,0 9,2.46A10,10 0 0,1 9,21.54A10,10 0 1,0 12,2Z" />
 												<TextBlock Text="GPU Sleeping (D3Cold)" FontSize="11" Foreground="White" />
 											</StackPanel>
 										</StackPanel>
 									</Border>
 								</Grid>
-								<TextBlock Grid.Row="2" Text="{Binding GpuMaxStatsText}" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,6,0,0" />
+								<TextBlock Grid.Row="2" Text="{Binding GpuMaxStatsText}" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold"
+								           HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,6,0,0" />
 							</Grid>
 						</Border>
 					</Grid>
@@ -543,30 +565,50 @@
 					</Border>
 					<!-- Fans -->
 					<TextBlock Text="FANS" Foreground="#A1A1AA" FontSize="10" FontWeight="Bold" Margin="0,0,0,8" />
-					<Border Background="#151518" BorderBrush="#222226" BorderThickness="1" CornerRadius="8" Padding="3" Margin="0,0,0,16">
+					<Border Background="#151518" BorderBrush="#222226" BorderThickness="1" CornerRadius="8" Padding="3"
+					        Margin="0,0,0,16">
 						<StackPanel>
 							<UniformGrid Rows="1" Height="34">
-								<RadioButton x:Name="BtnFanAuto" TabIndex="0" GroupName="Fans" Uid="Auto" Tag="M12,4V1L7,5L12,9V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6.34,14H4.27A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z" Content="Auto" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetFanCommand}" CommandParameter="Auto" ToolTip="Restores factory Acer Embedded Controller automatic fan management." />
-								<RadioButton x:Name="BtnFanMax" TabIndex="1" GroupName="Fans" Uid="Max" Tag="M19.78,20.78 L12.78,15.9 A3,3 0 1,1 14.9,13.78 Z M4.93,20.06 A10,10 0 1,1 19.07,20.06 C18.68,20.45 18.05,20.45 17.66,20.06 C17.27,19.67 17.27,19.04 17.66,18.65 A8,8 0 1,0 6.34,18.65 C6.74,19.04 6.74,19.67 6.35,20.06 C5.96,20.45 5.32,20.45 4.93,20.06 Z" Content="Max" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetFanCommand}" CommandParameter="Max" ToolTip="Forces all cooling fans to 100% maximum RPM." />
-								<RadioButton x:Name="BtnFanCustom" TabIndex="1" GroupName="Fans" Uid="Medium" Tag="M3,7V9H13V7H3M15,11H17V9H21V7H17V5H15V11ZM3,15V17H9V15H3M13,19V17H21V15H13V13H11V19H13Z" Content="Custom" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetFanCommand}" CommandParameter="Medium" ToolTip="Enables custom fan speed controls and waypoint temperature curves." />
+								<RadioButton x:Name="BtnFanAuto" TabIndex="0" GroupName="Fans" Uid="Auto"
+								             Tag="M12,4V1L7,5L12,9V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6.34,14H4.27A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z"
+								             Content="Auto" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetFanCommand}"
+								             CommandParameter="Auto"
+								             ToolTip="Restores factory Acer Embedded Controller automatic fan management." />
+								<RadioButton x:Name="BtnFanMax" TabIndex="1" GroupName="Fans" Uid="Max"
+								             Tag="M19.78,20.78 L12.78,15.9 A3,3 0 1,1 14.9,13.78 Z M4.93,20.06 A10,10 0 1,1 19.07,20.06 C18.68,20.45 18.05,20.45 17.66,20.06 C17.27,19.67 17.27,19.04 17.66,18.65 A8,8 0 1,0 6.34,18.65 C6.74,19.04 6.74,19.67 6.35,20.06 C5.96,20.45 5.32,20.45 4.93,20.06 Z"
+								             Content="Max" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetFanCommand}"
+								             CommandParameter="Max" ToolTip="Forces all cooling fans to 100% maximum RPM." />
+								<RadioButton x:Name="BtnFanCustom" TabIndex="1" GroupName="Fans" Uid="Medium"
+								             Tag="M3,7V9H13V7H3M15,11H17V9H21V7H17V5H15V11ZM3,15V17H9V15H3M13,19V17H21V15H13V13H11V19H13Z"
+								             Content="Custom" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetFanCommand}"
+								             CommandParameter="Medium"
+								             ToolTip="Enables custom fan speed controls and waypoint temperature curves." />
 							</UniformGrid>
 							<StackPanel Visibility="{Binding IsCustomFanEnabled, Converter={StaticResource BoolToVis}}" Margin="9,12,9,9">
 								<Grid Margin="0,0,0,12">
-									<TextBlock Text="{Binding CustomFanHeaderText}" Foreground="{Binding CustomFanHeaderColor}" FontSize="10" FontWeight="Bold" VerticalAlignment="Center" />
+									<TextBlock Text="{Binding CustomFanHeaderText}" Foreground="{Binding CustomFanHeaderColor}" FontSize="10"
+									           FontWeight="Bold" VerticalAlignment="Center" />
 									<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-										<ToggleButton IsChecked="{Binding IsCurveModeEnabled, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsCustomFanEnabled}" Margin="0,0,6,0" Cursor="Hand" ToolTip="Enables active temperature-based fan curve control.">
+										<ToggleButton IsChecked="{Binding IsCurveModeEnabled, UpdateSourceTrigger=PropertyChanged}"
+										              IsEnabled="{Binding IsCustomFanEnabled}" Margin="0,0,6,0" Cursor="Hand"
+										              ToolTip="Enables active temperature-based fan curve control.">
 											<ToggleButton.Template>
 												<ControlTemplate TargetType="ToggleButton">
-													<Border x:Name="BgBorder" Background="#151518" BorderBrush="#222226" BorderThickness="1" CornerRadius="4" Padding="6,2">
+													<Border x:Name="BgBorder" Background="#151518" BorderBrush="#222226" BorderThickness="1" CornerRadius="4"
+													        Padding="6,2">
 														<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-															<Path x:Name="Indicator" Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6Z" Fill="#A1A1AA" Stretch="Uniform" Width="10" Height="10" Margin="0,0,4,0"/>
-															<TextBlock x:Name="Txt" Text="USE CURVE" FontSize="9" FontWeight="Bold" Foreground="#A1A1AA" VerticalAlignment="Center" />
+															<Path x:Name="Indicator"
+															      Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6Z"
+															      Fill="#A1A1AA" Stretch="Uniform" Width="10" Height="10" Margin="0,0,4,0" />
+															<TextBlock x:Name="Txt" Text="USE CURVE" FontSize="9" FontWeight="Bold" Foreground="#A1A1AA"
+															           VerticalAlignment="Center" />
 														</StackPanel>
 													</Border>
 													<ControlTemplate.Triggers>
 														<Trigger Property="IsChecked" Value="True">
 															<Setter TargetName="Indicator" Property="Fill" Value="#FF4500" />
-															<Setter TargetName="Indicator" Property="Data" Value="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" />
+															<Setter TargetName="Indicator" Property="Data"
+															        Value="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" />
 															<Setter TargetName="BgBorder" Property="BorderBrush" Value="#FF4500" />
 															<Setter TargetName="Txt" Property="Foreground" Value="White" />
 														</Trigger>
@@ -580,29 +622,43 @@
 												</ControlTemplate>
 											</ToggleButton.Template>
 										</ToggleButton>
-										
-										<Button Click="OpenCurveEditor_Click" Style="{StaticResource GhostBtn}" Padding="6,2" BorderBrush="White" IsEnabled="{Binding IsCustomFanEnabled}" ToolTip="Opens the interactive fan curve editor.">
+
+										<Button Click="OpenCurveEditor_Click" Style="{StaticResource GhostBtn}" Padding="6,2" BorderBrush="White"
+										        IsEnabled="{Binding IsCustomFanEnabled}" ToolTip="Opens the interactive fan curve editor.">
 											<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-												<Path Data="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04M3,17.25V21H6.75L17.81,9.94L14.06,6.19L3,17.25Z" Fill="White" Stretch="Uniform" Width="9" Height="9" Margin="0,0,4,0"/>
+												<Path
+													Data="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04M3,17.25V21H6.75L17.81,9.94L14.06,6.19L3,17.25Z"
+													Fill="White" Stretch="Uniform" Width="9" Height="9" Margin="0,0,4,0" />
 												<TextBlock Text="EDIT" FontSize="9" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" />
 											</StackPanel>
 										</Button>
 									</StackPanel>
 								</Grid>
 								<Grid Margin="0,0,0,4">
-									<TextBlock Text="CPU Fan Speed" Foreground="White" FontSize="11" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center" />
+									<TextBlock Text="CPU Fan Speed" Foreground="White" FontSize="11" FontWeight="Bold" HorizontalAlignment="Left"
+									           VerticalAlignment="Center" />
 									<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-										<TextBox x:Name="CpuFanInput" Text="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" Foreground="#FF4500" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0" MaxLength="3" Width="26" TextAlignment="Right" VerticalContentAlignment="Center" CaretBrush="#FF4500" IsEnabled="{Binding IsManualSliderEnabled}" />
+										<TextBox x:Name="CpuFanInput" Text="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}"
+										         Foreground="#FF4500" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0"
+										         MaxLength="3" Width="26" TextAlignment="Right" VerticalContentAlignment="Center"
+										         CaretBrush="#FF4500" IsEnabled="{Binding IsManualSliderEnabled}" />
 										<TextBlock Text="%" Foreground="#FF4500" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
 									</StackPanel>
 								</Grid>
-								<Slider x:Name="CpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100" Value="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1" Margin="0,0,0,0" />
-								
-								<ToggleButton x:Name="TogUnifiedFans" IsChecked="{Binding IsUnifiedFans, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsManualSliderEnabled}" HorizontalAlignment="Center" Margin="0,4,0,0" Cursor="Hand" ToolTip="Locks CPU and GPU fan speeds together to adjust both fans simultaneously.">
+								<Slider x:Name="CpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100"
+								        Value="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}"
+								        IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1"
+								        Margin="0,0,0,0" />
+
+								<ToggleButton x:Name="TogUnifiedFans" IsChecked="{Binding IsUnifiedFans, UpdateSourceTrigger=PropertyChanged}"
+								              IsEnabled="{Binding IsManualSliderEnabled}" HorizontalAlignment="Center" Margin="0,4,0,0"
+								              Cursor="Hand" ToolTip="Locks CPU and GPU fan speeds together to adjust both fans simultaneously.">
 									<ToggleButton.Template>
 										<ControlTemplate TargetType="ToggleButton">
 											<Border Background="Transparent" Padding="4">
-												<Path x:Name="LinkIcon" Data="M16,6H13V7.9H16C18.26,7.9 20.1,9.73 20.1,12C20.1,14.26 18.26,16.1 16,16.1H13V18H16C19.31,18 22,15.31 22,12C22,8.68 19.31,6 16,6M3.9,12C3.9,9.73 5.74,7.9 8,7.9H11V6H8C4.69,6 2,8.68 2,12C2,15.31 4.69,18 8,18H11V16.1H8C5.74,16.1 3.9,14.26 3.9,12M8,11H16V12.9H8V11Z" Fill="#A1A1AA" Stretch="Uniform" Width="14" Height="14" />
+												<Path x:Name="LinkIcon"
+												      Data="M16,6H13V7.9H16C18.26,7.9 20.1,9.73 20.1,12C20.1,14.26 18.26,16.1 16,16.1H13V18H16C19.31,18 22,15.31 22,12C22,8.68 19.31,6 16,6M3.9,12C3.9,9.73 5.74,7.9 8,7.9H11V6H8C4.69,6 2,8.68 2,12C2,15.31 4.69,18 8,18H11V16.1H8C5.74,16.1 3.9,14.26 3.9,12M8,11H16V12.9H8V11Z"
+												      Fill="#A1A1AA" Stretch="Uniform" Width="14" Height="14" />
 											</Border>
 											<ControlTemplate.Triggers>
 												<Trigger Property="IsChecked" Value="True">
@@ -619,184 +675,252 @@
 									</ToggleButton.Template>
 								</ToggleButton>
 								<Grid Margin="0,0,0,4">
-									<TextBlock Text="GPU Fan Speed" Foreground="White" FontSize="11" FontWeight="Bold" HorizontalAlignment="Left" VerticalAlignment="Center" />
+									<TextBlock Text="GPU Fan Speed" Foreground="White" FontSize="11" FontWeight="Bold" HorizontalAlignment="Left"
+									           VerticalAlignment="Center" />
 									<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-										<TextBox x:Name="GpuFanInput" Text="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" Foreground="#FF4500" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0" MaxLength="3" Width="26" TextAlignment="Right" VerticalContentAlignment="Center" CaretBrush="#FF4500" IsEnabled="{Binding IsManualSliderEnabled}" />
+										<TextBox x:Name="GpuFanInput" Text="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}"
+										         Foreground="#FF4500" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0"
+										         MaxLength="3" Width="26" TextAlignment="Right" VerticalContentAlignment="Center"
+										         CaretBrush="#FF4500" IsEnabled="{Binding IsManualSliderEnabled}" />
 										<TextBlock Text="%" Foreground="#FF4500" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
 									</StackPanel>
 								</Grid>
-								<Slider x:Name="GpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100" Value="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}" IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1" />
+								<Slider x:Name="GpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100"
+								        Value="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}"
+								        IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1" />
 							</StackPanel>
 						</StackPanel>
 					</Border>
 				</StackPanel>
 				<!-- 2. SETTINGS PAGE (Bound to Properties) -->
-				<ScrollViewer x:Name="SettingsPage" Visibility="Collapsed" Margin="20,10,20,0" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Disabled" BorderThickness="0" Padding="0,0,4,20">
+				<ScrollViewer x:Name="SettingsPage" Visibility="Collapsed" Margin="20,10,20,0" VerticalScrollBarVisibility="Hidden"
+				              HorizontalScrollBarVisibility="Disabled" BorderThickness="0" Padding="0,0,4,20">
 					<StackPanel>
-					<Border Background="#151518" CornerRadius="12" Margin="0,0,0,12" Padding="12">
-						<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-							<Border Width="44" Height="44" CornerRadius="10" Background="#26262A" Margin="0,0,12,0">
-								<Image Source="{StaticResource CachedAppLogo}" RenderOptions.BitmapScalingMode="HighQuality" Margin="8"
-								       Stretch="Uniform" />
-							</Border>
-							<StackPanel VerticalAlignment="Center">
-								<TextBlock x:Name="SettingsVersionText" Text="Nitrous" Foreground="White" FontWeight="Bold" FontSize="14" />
-								<TextBlock Text="Pure hardware control for Acer Nitro laptops." Foreground="#A1A1AA" FontSize="11"
-								           Margin="0,2,0,0" />
-							</StackPanel>
-						</StackPanel>
-					</Border>
-					<TextBlock Text="POWER &amp; PERFORMANCE RULES" Foreground="#A1A1AA" FontSize="10" FontWeight="Bold"
-					           Margin="0,0,0,8" />
-					<!-- Manage CPU Power Toggle -->
-					<Border Background="#151518" CornerRadius="10" Height="70" BorderBrush="#222226" BorderThickness="1"
-					        Margin="0,0,0,10"
-					        ToolTip="Synchronizes Windows processor limits per profile: Quiet (85% max, Boost Off), Balanced (99% max, Boost Off), Performance (100% max, Boost On), and Turbo (100% min/max, Boost On). Eliminates thermal throttling and fan revving.">
-						<Grid>
-							<Grid.ColumnDefinitions>
-								<ColumnDefinition Width="*" />
-								<ColumnDefinition Width="Auto" />
-							</Grid.ColumnDefinitions>
-							<StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="15,0,10,0">
-								<StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-									<!-- CPU Icon Path -->
-									<Path
-										Data="M7,4V6H5C3.89,6 3,6.89 3,8V10H1V12H3V14H1V16H3V18C3,19.1 3.89,20 5,20H7V22H9V20H11V22H13V20H15V22H17V20H19C20.1,20 21,19.1 21,18V16H23V14H21V12H23V10H21V8C21,6.89 20.1,6 19,6H17V4H15V6H13V4H11V6H9V4H7M5,8H19V18H5V8M7,10V16H17V10H7M9,12H15V14H9V12Z"
-										Fill="White" Stretch="Uniform" Width="14" Height="14" Margin="0,0,6,0" VerticalAlignment="Center" />
-									<TextBlock Text="Manage CPU Power Limits" Foreground="White" FontWeight="Bold" FontSize="12"
-									           VerticalAlignment="Center" />
+						<Border Background="#151518" CornerRadius="12" Margin="0,0,0,12" Padding="12">
+							<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+								<Border Width="44" Height="44" CornerRadius="10" Background="#26262A" Margin="0,0,12,0">
+									<Image Source="{StaticResource CachedAppLogo}" RenderOptions.BitmapScalingMode="HighQuality" Margin="8"
+									       Stretch="Uniform" />
+								</Border>
+								<StackPanel VerticalAlignment="Center">
+									<TextBlock x:Name="SettingsVersionText" Text="Nitrous" Foreground="White" FontWeight="Bold" FontSize="14" />
+									<TextBlock Text="Pure hardware control for Acer Nitro laptops." Foreground="#A1A1AA" FontSize="11"
+									           Margin="0,2,0,0" />
 								</StackPanel>
-								<TextBlock Text="Automatically adjust Windows CPU power limits based on the active profile."
-								           Foreground="#A1A1AA" FontSize="11" TextWrapping="Wrap" />
 							</StackPanel>
-							<CheckBox Grid.Column="1" x:Name="TogManageCpu" Style="{StaticResource ModernToggleStyle}"
-							          HorizontalAlignment="Right" Margin="0,0,15,0"
-							          IsChecked="{Binding ManageCpuPower, UpdateSourceTrigger=PropertyChanged}"
-							          ToolTip="Synchronizes Windows processor limits per profile: Quiet (85% max, Boost Off), Balanced (99% max, Boost Off), Performance (100% max, Boost On), and Turbo (100% min/max, Boost On). Eliminates thermal throttling and fan revving." />
-						</Grid>
-					</Border>
-					<!-- Battery Health Diagnostics & Limit -->
-					<Border Background="#151518" CornerRadius="10" Margin="0,0,0,10" BorderBrush="#222226" BorderThickness="1"
-					        Padding="15"
-					        ToolTip="Displays native battery health, maximum charge capacity, total charge cycles, and charge limit controls.">
-						<StackPanel>
-							<!-- Header -->
-							<StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-								<Path
-									Data="M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z"
-									Fill="White" Stretch="Uniform" Width="10" Height="14" Margin="0,0,8,0" VerticalAlignment="Center" />
-								<TextBlock Text="Battery Management" Foreground="White" FontWeight="Bold" FontSize="12"
-								           VerticalAlignment="Center" />
-							</StackPanel>
-							<!-- Health -->
-							<Grid Margin="0,0,0,8">
-								<TextBlock Text="Battery Health" Foreground="#A1A1AA" FontSize="11" VerticalAlignment="Center" />
-								<TextBlock Text="{Binding BatteryHealthPercentText}" Foreground="White" FontSize="11" FontWeight="SemiBold"
-								           HorizontalAlignment="Right" VerticalAlignment="Center" />
-							</Grid>
-							<!-- Capacity -->
-							<Grid Margin="0,0,0,8">
-								<TextBlock Text="Charge Capacity" Foreground="#A1A1AA" FontSize="11" VerticalAlignment="Center" />
-								<TextBlock Text="{Binding BatteryHealthText}" Foreground="White" FontSize="11" FontWeight="SemiBold"
-								           HorizontalAlignment="Right" VerticalAlignment="Center" />
-							</Grid>
-							<!-- Cycles -->
-							<Grid Margin="0,0,0,15">
-								<TextBlock Text="Charge Cycles" Foreground="#A1A1AA" FontSize="11" VerticalAlignment="Center" />
-								<TextBlock Text="{Binding BatteryCycleText}" Foreground="White" FontSize="11" FontWeight="SemiBold"
-								           HorizontalAlignment="Right" VerticalAlignment="Center" />
-							</Grid>
-
-							<!-- Divider -->
-							<Border Height="1" Background="#222226" Margin="-15,0,-15,12" />
-
-							<!-- 80% Limit Toggle -->
-							<Grid Margin="0,0,0,15">
-								<Grid.ColumnDefinitions>
-									<ColumnDefinition Width="*" />
-									<ColumnDefinition Width="Auto" />
-								</Grid.ColumnDefinitions>
-								<StackPanel Grid.Column="0" VerticalAlignment="Center">
-									<TextBlock Text="80% Battery Limit" Foreground="White" FontWeight="SemiBold" FontSize="11" Margin="0,0,0,2" />
-									<TextBlock Text="Extends lifespan by capping max charge." Foreground="#A1A1AA" FontSize="10"
-									           TextWrapping="Wrap" />
-								</StackPanel>
-								<CheckBox Grid.Column="1" x:Name="TogCharge" Style="{StaticResource ModernToggleStyle}"
-								          HorizontalAlignment="Right"
-								          IsChecked="{Binding ChargeLimit, UpdateSourceTrigger=PropertyChanged}"
-								          ToolTip="Signals the Acer EC to cap battery charging at 80%, reducing chemical stress and extending battery longevity." />
-							</Grid>
-
-							<!-- Divider -->
-							<Border Height="1" Background="#222226" Margin="-15,0,-15,12" />
-
-							<!-- Auto-Switch Power Toggle -->
+						</Border>
+						<TextBlock Text="POWER &amp; PERFORMANCE RULES" Foreground="#A1A1AA" FontSize="10" FontWeight="Bold"
+						           Margin="0,0,0,8" />
+						<!-- Manage CPU Power Toggle -->
+						<Border Background="#151518" CornerRadius="10" Height="70" BorderBrush="#222226" BorderThickness="1"
+						        Margin="0,0,0,10"
+						        ToolTip="Synchronizes Windows processor limits per profile: Quiet (85% max, Boost Off), Balanced (99% max, Boost Off), Performance (100% max, Boost On), and Turbo (100% min/max, Boost On). Eliminates thermal throttling and fan revving.">
 							<Grid>
 								<Grid.ColumnDefinitions>
 									<ColumnDefinition Width="*" />
 									<ColumnDefinition Width="Auto" />
 								</Grid.ColumnDefinitions>
-								<StackPanel Grid.Column="0" VerticalAlignment="Center">
-									<TextBlock Text="Auto-Switch Power" Foreground="White" FontWeight="SemiBold" FontSize="11" Margin="0,0,0,2" />
-									<TextBlock Text="Adapts performance plan based on AC/DC state." Foreground="#A1A1AA" FontSize="10"
-									           TextWrapping="Wrap" />
+								<StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="15,0,10,0">
+									<StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+										<!-- CPU Icon Path -->
+										<Path
+											Data="M7,4V6H5C3.89,6 3,6.89 3,8V10H1V12H3V14H1V16H3V18C3,19.1 3.89,20 5,20H7V22H9V20H11V22H13V20H15V22H17V20H19C20.1,20 21,19.1 21,18V16H23V14H21V12H23V10H21V8C21,6.89 20.1,6 19,6H17V4H15V6H13V4H11V6H9V4H7M5,8H19V18H5V8M7,10V16H17V10H7M9,12H15V14H9V12Z"
+											Fill="White" Stretch="Uniform" Width="14" Height="14" Margin="0,0,6,0" VerticalAlignment="Center" />
+										<TextBlock Text="Manage CPU Power Limits" Foreground="White" FontWeight="Bold" FontSize="12"
+										           VerticalAlignment="Center" />
+									</StackPanel>
+									<TextBlock Text="Automatically adjust Windows CPU power limits based on the active profile."
+									           Foreground="#A1A1AA" FontSize="11" TextWrapping="Wrap" />
 								</StackPanel>
-								<CheckBox Grid.Column="1" x:Name="TogAutoSwitch" Style="{StaticResource ModernToggleStyle}"
-								          HorizontalAlignment="Right"
-								          IsChecked="{Binding AutoSwitch, UpdateSourceTrigger=PropertyChanged}"
-								          ToolTip="Automatically activates your preferred AC profile when plugged in and DC profile when running on battery." />
+								<CheckBox Grid.Column="1" x:Name="TogManageCpu" Style="{StaticResource ModernToggleStyle}"
+								          HorizontalAlignment="Right" Margin="0,0,15,0"
+								          IsChecked="{Binding ManageCpuPower, UpdateSourceTrigger=PropertyChanged}"
+								          ToolTip="Synchronizes Windows processor limits per profile: Quiet (85% max, Boost Off), Balanced (99% max, Boost Off), Performance (100% max, Boost On), and Turbo (100% min/max, Boost On). Eliminates thermal throttling and fan revving." />
 							</Grid>
-						</StackPanel>
-					</Border>
-					<Border Background="#151518" CornerRadius="10" Height="70" Margin="0,0,0,10" BorderBrush="#222226"
-					        BorderThickness="1"
-					        ToolTip="Enables detailed NVML queries (clocks, load, VRAM, wattage). Automatically pauses on battery to preserve D3Cold sleep.">
-						<Grid>
-							<Grid.ColumnDefinitions>
-								<ColumnDefinition Width="*" />
-								<ColumnDefinition Width="Auto" />
-							</Grid.ColumnDefinitions>
-							<StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="15,0,10,0">
-								<StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-									<!-- Eye / Monitoring Icon -->
+						</Border>
+						<!-- Battery Health Diagnostics & Limit -->
+						<Border Background="#151518" CornerRadius="10" Margin="0,0,0,10" BorderBrush="#222226" BorderThickness="1"
+						        Padding="15"
+						        ToolTip="Displays native battery health, maximum charge capacity, total charge cycles, and charge limit controls.">
+							<StackPanel>
+								<!-- Header -->
+								<StackPanel Orientation="Horizontal" Margin="0,0,0,12">
 									<Path
-										Data="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z"
-										Fill="White" Stretch="Uniform" Width="14" Height="10" Margin="0,0,6,0" VerticalAlignment="Center" />
-									<TextBlock Text="Deep GPU Telemetry" Foreground="White" FontWeight="Bold" FontSize="12"
+										Data="M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z"
+										Fill="White" Stretch="Uniform" Width="10" Height="14" Margin="0,0,8,0" VerticalAlignment="Center" />
+									<TextBlock Text="Battery Management" Foreground="White" FontWeight="Bold" FontSize="12"
 									           VerticalAlignment="Center" />
 								</StackPanel>
-								<TextBlock Text="Live NVIDIA statistics." Foreground="#A1A1AA" FontSize="11" TextWrapping="Wrap" />
+								<!-- Health -->
+								<Grid Margin="0,0,0,8">
+									<TextBlock Text="Battery Health" Foreground="#A1A1AA" FontSize="11" VerticalAlignment="Center" />
+									<TextBlock Text="{Binding BatteryHealthPercentText}" Foreground="White" FontSize="11" FontWeight="SemiBold"
+									           HorizontalAlignment="Right" VerticalAlignment="Center" />
+								</Grid>
+								<!-- Capacity -->
+								<Grid Margin="0,0,0,8">
+									<TextBlock Text="Charge Capacity" Foreground="#A1A1AA" FontSize="11" VerticalAlignment="Center" />
+									<TextBlock Text="{Binding BatteryHealthText}" Foreground="White" FontSize="11" FontWeight="SemiBold"
+									           HorizontalAlignment="Right" VerticalAlignment="Center" />
+								</Grid>
+								<!-- Cycles -->
+								<Grid Margin="0,0,0,15">
+									<TextBlock Text="Charge Cycles" Foreground="#A1A1AA" FontSize="11" VerticalAlignment="Center" />
+									<TextBlock Text="{Binding BatteryCycleText}" Foreground="White" FontSize="11" FontWeight="SemiBold"
+									           HorizontalAlignment="Right" VerticalAlignment="Center" />
+								</Grid>
+
+								<!-- Divider -->
+								<Border Height="1" Background="#222226" Margin="-15,0,-15,12" />
+
+								<!-- 80% Limit Toggle -->
+								<Grid Margin="0,0,0,15">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="*" />
+										<ColumnDefinition Width="Auto" />
+									</Grid.ColumnDefinitions>
+									<StackPanel Grid.Column="0" VerticalAlignment="Center">
+										<TextBlock Text="80% Battery Limit" Foreground="White" FontWeight="SemiBold" FontSize="11" Margin="0,0,0,2" />
+										<TextBlock Text="Extends lifespan by capping max charge." Foreground="#A1A1AA" FontSize="10"
+										           TextWrapping="Wrap" />
+									</StackPanel>
+									<CheckBox Grid.Column="1" x:Name="TogCharge" Style="{StaticResource ModernToggleStyle}"
+									          HorizontalAlignment="Right"
+									          IsChecked="{Binding ChargeLimit, UpdateSourceTrigger=PropertyChanged}"
+									          ToolTip="Signals the Acer EC to cap battery charging at 80%, reducing chemical stress and extending battery longevity." />
+								</Grid>
+
+								<!-- Divider -->
+								<Border Height="1" Background="#222226" Margin="-15,0,-15,12" />
+
+								<!-- Acer Background Services -->
+								<Grid Margin="0,0,0,15">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="*" />
+										<ColumnDefinition Width="Auto" />
+									</Grid.ColumnDefinitions>
+									<ToggleButton x:Name="BtnAcerServicesDetails" Grid.Column="0" HorizontalAlignment="Left"
+									              Background="Transparent" BorderThickness="0">
+										<ToggleButton.Template>
+											<ControlTemplate TargetType="ToggleButton">
+												<Border Background="Transparent" Cursor="Hand">
+													<ContentPresenter />
+												</Border>
+											</ControlTemplate>
+										</ToggleButton.Template>
+										<StackPanel VerticalAlignment="Center">
+											<TextBlock Text="Acer Background Services" Foreground="White" FontWeight="SemiBold" FontSize="11"
+											           Margin="0,0,0,2" />
+											<StackPanel Orientation="Horizontal">
+												<TextBlock Text="{Binding AcerServicesStatusText}" Foreground="#A1A1AA" FontSize="10" TextWrapping="Wrap" />
+											</StackPanel>
+										</StackPanel>
+									</ToggleButton>
+
+									<Popup IsOpen="{Binding IsChecked, ElementName=BtnAcerServicesDetails, Mode=TwoWay}" StaysOpen="False"
+									       PlacementTarget="{Binding ElementName=BtnAcerServicesDetails}" Placement="Bottom">
+										<Border Background="#151518" BorderBrush="#2A2A2E" BorderThickness="1" CornerRadius="4" Padding="10"
+										        Margin="0,4,0,0">
+											<ItemsControl ItemsSource="{Binding AcerServicesList}">
+												<ItemsControl.ItemTemplate>
+													<DataTemplate>
+														<Grid Margin="0,2" ToolTip="{Binding DisplayName}">
+															<Grid.ColumnDefinitions>
+																<ColumnDefinition Width="Auto" />
+																<ColumnDefinition Width="*" />
+															</Grid.ColumnDefinitions>
+															<Button Grid.Column="0" Style="{StaticResource GhostBtn}" Padding="2" Margin="0,0,6,0"
+															        Command="{Binding DataContext.KillAcerServiceCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" 
+															        CommandParameter="{Binding ServiceName}"
+															        ToolTip="Stop and disable this specific service.">
+																<Path Data="M19.36,2.72L20.78,4.14L15.06,9.85C16.13,11.39 16.28,13.24 15.38,14.44L9.06,8.12C10.26,7.22 12.11,7.37 13.65,8.44L19.36,2.72M5.93,17.57C3.92,15.56 2.69,13.16 2.35,10.92L7.23,8.83L14.67,16.27L12.58,21.15C10.34,20.81 7.94,19.58 5.93,17.57Z" Fill="#FF4500" Stretch="Uniform" Width="10" Height="10" VerticalAlignment="Center"/>
+															</Button>
+															<TextBlock Grid.Column="1" Text="{Binding ServiceName}" Foreground="#A1A1AA" FontSize="10" VerticalAlignment="Center" />
+														</Grid>
+													</DataTemplate>
+												</ItemsControl.ItemTemplate>
+											</ItemsControl>
+										</Border>
+									</Popup>
+									<Button Grid.Column="1" Style="{StaticResource AccentBtn}" HorizontalAlignment="Right" Background="#FF4500"
+									        Padding="12,6"
+									        Command="{Binding ToggleAcerServicesCommand}"
+									        ToolTip="Stops NitroSense and Acer Care Center services to free system RAM, reduce background CPU, and prevent OEM software from overriding Nitrous fan curves.">
+										<TextBlock Text="{Binding AcerServicesActionText}" FontSize="10" FontWeight="Bold" />
+									</Button>
+								</Grid>
+
+								<!-- Divider -->
+								<Border Height="1" Background="#222226" Margin="-15,0,-15,12" />
+
+								<!-- Auto-Switch Power Toggle -->
+								<Grid>
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="*" />
+										<ColumnDefinition Width="Auto" />
+									</Grid.ColumnDefinitions>
+									<StackPanel Grid.Column="0" VerticalAlignment="Center">
+										<TextBlock Text="Auto-Switch Power" Foreground="White" FontWeight="SemiBold" FontSize="11" Margin="0,0,0,2" />
+										<TextBlock Text="Adapts performance plan based on AC/DC state." Foreground="#A1A1AA" FontSize="10"
+										           TextWrapping="Wrap" />
+									</StackPanel>
+									<CheckBox Grid.Column="1" x:Name="TogAutoSwitch" Style="{StaticResource ModernToggleStyle}"
+									          HorizontalAlignment="Right"
+									          IsChecked="{Binding AutoSwitch, UpdateSourceTrigger=PropertyChanged}"
+									          ToolTip="Automatically activates your preferred AC profile when plugged in and DC profile when running on battery." />
+								</Grid>
 							</StackPanel>
-							<!-- Bound to the new DeepGpuTelemetry property -->
-							<CheckBox Grid.Column="1" x:Name="TogGpuTelemetry" Style="{StaticResource ModernToggleStyle}"
-							          HorizontalAlignment="Right" Margin="0,0,15,0"
-							          IsChecked="{Binding DeepGpuTelemetry, UpdateSourceTrigger=PropertyChanged}"
-							          ToolTip="Enables detailed NVML queries (clocks, load, VRAM, wattage). Automatically pauses on battery to preserve D3Cold sleep." />
-						</Grid>
-					</Border>
-					<Border Background="#151518" CornerRadius="10" Height="70" BorderBrush="#222226" BorderThickness="1"
-					        ToolTip="Registers an elevated Task Scheduler task to start Nitrous silently in the system tray at Windows logon without UAC prompts.">
-						<Grid>
-							<Grid.ColumnDefinitions>
-								<ColumnDefinition Width="*" />
-								<ColumnDefinition Width="Auto" />
-							</Grid.ColumnDefinitions>
-							<StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="15,0,10,0">
-								<StackPanel Orientation="Horizontal" Margin="0,0,0,2">
-									<Path
-										Data="M14,2L12.6,3.4C11.6,4.4 10.9,5.7 10.6,7.1L9.6,12L4.5,13.7C3.5,14 2.8,14.8 2.5,15.8L2.2,16.8L6.8,15.2C7.3,15 7.8,15 8.3,15.1L12.5,16.4C12.4,16.7 12.3,17 12.1,17.2L10.7,18.6L12.1,20L15.6,16.5C16.8,15.3 17.5,13.8 17.8,12.1L18.7,6.8L22,5.7C23,5.4 23.7,4.6 24,3.6L24.3,2.6L19.7,4.2C19.2,4.4 18.7,4.4 18.2,4.3L14,3C14.1,2.7 14.2,2.4 14.4,2.2L15.8,0.8L14,2Z"
-										Fill="White" Stretch="Uniform" Width="14" Height="14" Margin="0,0,6,0" VerticalAlignment="Center" />
-									<TextBlock Text="Run on Startup" Foreground="White" FontWeight="Bold" FontSize="12" VerticalAlignment="Center" />
+						</Border>
+						<Border Background="#151518" CornerRadius="10" Height="70" Margin="0,0,0,10" BorderBrush="#222226"
+						        BorderThickness="1"
+						        ToolTip="Enables detailed NVML queries (clocks, load, VRAM, wattage). Automatically pauses on battery to preserve D3Cold sleep.">
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*" />
+									<ColumnDefinition Width="Auto" />
+								</Grid.ColumnDefinitions>
+								<StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="15,0,10,0">
+									<StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+										<!-- Eye / Monitoring Icon -->
+										<Path
+											Data="M12,9A3,3 0 0,0 9,12A3,3 0 0,0 12,15A3,3 0 0,0 15,12A3,3 0 0,0 12,9M12,17A5,5 0 0,1 7,12A5,5 0 0,1 12,7A5,5 0 0,1 17,12A5,5 0 0,1 12,17M12,4.5C7,4.5 2.73,7.61 1,12C2.73,16.39 7,19.5 12,19.5C17,19.5 21.27,16.39 23,12C21.27,7.61 17,4.5 12,4.5Z"
+											Fill="White" Stretch="Uniform" Width="14" Height="10" Margin="0,0,6,0" VerticalAlignment="Center" />
+										<TextBlock Text="Deep GPU Telemetry" Foreground="White" FontWeight="Bold" FontSize="12"
+										           VerticalAlignment="Center" />
+									</StackPanel>
+									<TextBlock Text="Live NVIDIA statistics." Foreground="#A1A1AA" FontSize="11" TextWrapping="Wrap" />
 								</StackPanel>
-								<TextBlock Text="Launch nitrous engine silently at boot." Foreground="#A1A1AA" FontSize="11"
-								           TextWrapping="Wrap" />
-							</StackPanel>
-							<CheckBox Grid.Column="1" x:Name="TogStartup" Style="{StaticResource ModernToggleStyle}"
-							          HorizontalAlignment="Right" Margin="0,0,15,0"
-							          IsChecked="{Binding RunOnStartup, UpdateSourceTrigger=PropertyChanged}"
-							          ToolTip="Registers an elevated Task Scheduler task to start Nitrous silently in the system tray at Windows logon without UAC prompts." />
-						</Grid>
-					</Border>
+								<!-- Bound to the new DeepGpuTelemetry property -->
+								<CheckBox Grid.Column="1" x:Name="TogGpuTelemetry" Style="{StaticResource ModernToggleStyle}"
+								          HorizontalAlignment="Right" Margin="0,0,15,0"
+								          IsChecked="{Binding DeepGpuTelemetry, UpdateSourceTrigger=PropertyChanged}"
+								          ToolTip="Enables detailed NVML queries (clocks, load, VRAM, wattage). Automatically pauses on battery to preserve D3Cold sleep." />
+							</Grid>
+						</Border>
+						<Border Background="#151518" CornerRadius="10" Height="70" BorderBrush="#222226" BorderThickness="1"
+						        ToolTip="Registers an elevated Task Scheduler task to start Nitrous silently in the system tray at Windows logon without UAC prompts.">
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*" />
+									<ColumnDefinition Width="Auto" />
+								</Grid.ColumnDefinitions>
+								<StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="15,0,10,0">
+									<StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+										<Path
+											Data="M14,2L12.6,3.4C11.6,4.4 10.9,5.7 10.6,7.1L9.6,12L4.5,13.7C3.5,14 2.8,14.8 2.5,15.8L2.2,16.8L6.8,15.2C7.3,15 7.8,15 8.3,15.1L12.5,16.4C12.4,16.7 12.3,17 12.1,17.2L10.7,18.6L12.1,20L15.6,16.5C16.8,15.3 17.5,13.8 17.8,12.1L18.7,6.8L22,5.7C23,5.4 23.7,4.6 24,3.6L24.3,2.6L19.7,4.2C19.2,4.4 18.7,4.4 18.2,4.3L14,3C14.1,2.7 14.2,2.4 14.4,2.2L15.8,0.8L14,2Z"
+											Fill="White" Stretch="Uniform" Width="14" Height="14" Margin="0,0,6,0" VerticalAlignment="Center" />
+										<TextBlock Text="Run on Startup" Foreground="White" FontWeight="Bold" FontSize="12"
+										           VerticalAlignment="Center" />
+									</StackPanel>
+									<TextBlock Text="Launch nitrous engine silently at boot." Foreground="#A1A1AA" FontSize="11"
+									           TextWrapping="Wrap" />
+								</StackPanel>
+								<CheckBox Grid.Column="1" x:Name="TogStartup" Style="{StaticResource ModernToggleStyle}"
+								          HorizontalAlignment="Right" Margin="0,0,15,0"
+								          IsChecked="{Binding RunOnStartup, UpdateSourceTrigger=PropertyChanged}"
+								          ToolTip="Registers an elevated Task Scheduler task to start Nitrous silently in the system tray at Windows logon without UAC prompts." />
+							</Grid>
+						</Border>
 					</StackPanel>
 				</ScrollViewer>
 				<!-- 3. GPU PAGE -->
