@@ -7,9 +7,9 @@
 **Lightweight, zero-bloat hardware control utility for Acer Nitro laptops.**
 
 <p align="center">
-  <img src="assets/dashboard.png" alt="Main Dashboard" width="30%" />
-  <img src="assets/gpu.png" alt="GPU" width="30%" />
-  <img src="assets/settings.png" alt="App Settings" width="30%" />
+  <img src="assets/dashboard-v0.9.png" alt="Main Dashboard" width="30%" />
+  <img src="assets/gpu-v0.9.png" alt="GPU" width="30%" />
+  <img src="assets/settings-v0.9.png" alt="App Settings" width="30%" />
 </p>
 
 ---
