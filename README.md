@@ -20,17 +20,12 @@ Nitrous interacts directly with your laptop's Embedded Controller (EC) via Windo
 
 ### Features
 
-- **Interactive Fan Curve Editor:** Create custom CPU and GPU fan curves per power profile with waypoint grid snapping, hysteresis anti-revving delays, and direct hardware EC application.
-- **Manual and Preset Fan Modes:** Instantly toggle between Auto, Max, Fixed Manual Percentage, or Dynamic Curve modes.
-- **Quick-Access Tray Menu:** Control power profiles and fan modes, check for updates, or monitor temperatures directly from the Windows taskbar tray without opening the full dashboard.
-- **Dynamic Power Modes:** Fast switching between Quiet, Balanced, Performance, and Turbo TDP modes.
-- **GPU Overclocking and Underclocking:** Tune core and memory clock offsets with auto-apply profile support and hardware safety bounds.
-- **Display Refresh Rate Automation:** Automatically switch to 60Hz on DC battery power and restore maximum panel refresh rate on AC power, with manual overrides.
-- **Battery Health Control:** Hardware-level 80% charge threshold to prolong battery longevity.
-- **Ultra-Low Resource Footprint:** Split-process transient UI architecture and optimized WMI polling keep idle background memory around 8-15 MB RAM.
-- **dGPU Sleep Preservation:** Back-off polling logic prevents NVIDIA discrete graphics from waking up unnecessarily on battery.
-- **Silent Windows Startup:** Starts automatically at boot without Windows UAC prompts using Windows Task Scheduler.
-- **Built-in GitHub Auto-Updater:** Checks and applies new releases seamlessly.
+- **Fan Curve Editor & Controls**: Custom waypoint fan curves per power profile with anti-revving hysteresis, plus Auto, Max, and Custom modes.
+- **Power Modes**: Fast EC switching across Quiet, Balanced, Performance, and Turbo profiles.
+- **Acer Service Debloater**: One-click disable and restore for background OEM telemetry and updater services.
+- **Battery & Display Automation**: Hardware 80% charge limit and automatic refresh rate switching on AC/DC.
+- **GPU Tuning**: Core and memory clock offset controls with hardware safety limits.
+- **Zero-Bloat Footprint**: ~8–15 MB idle RAM with dGPU sleep preservation on battery.
 
 ### Quick Start
 
