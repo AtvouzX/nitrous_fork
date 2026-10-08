@@ -31,6 +31,34 @@ public class NvidiaGpuManager : IDisposable
     private IntPtr _nvmlDeviceHandle = IntPtr.Zero;
     private double _memoryClockDivisor = 4.0; // Default to GDDR5/6/6X
     private string _cachedArchName = "Unknown";
+    private string? _cachedGpuName;
+    private int _cachedVramTotal;
+    private NvmlProcessInfo[]? _cachedGraphicsInfos;
+    private NvmlProcessInfo[]? _cachedComputeInfos;
+
+    private static string FormatPState(NvmlPstates pState)
+    {
+        return pState switch
+        {
+            NvmlPstates.Pstate0 => "P0",
+            NvmlPstates.Pstate1 => "P1",
+            NvmlPstates.Pstate2 => "P2",
+            NvmlPstates.Pstate3 => "P3",
+            NvmlPstates.Pstate4 => "P4",
+            NvmlPstates.Pstate5 => "P5",
+            NvmlPstates.Pstate6 => "P6",
+            NvmlPstates.Pstate7 => "P7",
+            NvmlPstates.Pstate8 => "P8",
+            NvmlPstates.Pstate9 => "P9",
+            NvmlPstates.Pstate10 => "P10",
+            NvmlPstates.Pstate11 => "P11",
+            NvmlPstates.Pstate12 => "P12",
+            NvmlPstates.Pstate13 => "P13",
+            NvmlPstates.Pstate14 => "P14",
+            NvmlPstates.Pstate15 => "P15",
+            _ => "Unknown"
+        };
+    }
 
     public NvidiaGpuManager()
     {
@@ -389,18 +417,18 @@ public class NvidiaGpuManager : IDisposable
                 // Phase 2: Check if Nitrous itself is the only process keeping the GPU awake.
                 // If so, shut down NVML and NvAPI to allow the GPU to go back to D3Cold sleep.
                 uint graphicsCount = 32;
-                var graphicsInfos = new NvmlProcessInfo[graphicsCount];
-                bool hasGraphics = NativeNvml.DeviceGetGraphicsRunningProcesses(_nvmlDeviceHandle, ref graphicsCount, graphicsInfos) == NvmlReturn.Success;
+                _cachedGraphicsInfos ??= new NvmlProcessInfo[32];
+                bool hasGraphics = NativeNvml.DeviceGetGraphicsRunningProcesses(_nvmlDeviceHandle, ref graphicsCount, _cachedGraphicsInfos) == NvmlReturn.Success;
 
                 uint computeCount = 32;
-                var computeInfos = new NvmlProcessInfo[computeCount];
-                bool hasCompute = NativeNvml.DeviceGetComputeRunningProcesses(_nvmlDeviceHandle, ref computeCount, computeInfos) == NvmlReturn.Success;
+                _cachedComputeInfos ??= new NvmlProcessInfo[32];
+                bool hasCompute = NativeNvml.DeviceGetComputeRunningProcesses(_nvmlDeviceHandle, ref computeCount, _cachedComputeInfos) == NvmlReturn.Success;
 
                 if (hasGraphics || hasCompute)
                 {
                     bool shouldSleep = IsOnlyNitrousRunningOnGpu(
-                        hasGraphics ? graphicsInfos : null, hasGraphics ? graphicsCount : 0,
-                        hasCompute ? computeInfos : null, hasCompute ? computeCount : 0,
+                        hasGraphics ? _cachedGraphicsInfos : null, hasGraphics ? graphicsCount : 0,
+                        hasCompute ? _cachedComputeInfos : null, hasCompute ? computeCount : 0,
                         Environment.ProcessId);
 
                     if (shouldSleep)
@@ -428,9 +456,13 @@ public class NvidiaGpuManager : IDisposable
             try
             {
                 // Name
-                var nameBuilder = new StringBuilder(64);
-                if (NativeNvml.DeviceGetName(_nvmlDeviceHandle, nameBuilder, (uint)nameBuilder.Capacity) == NvmlReturn.Success)
-                    t.Name = nameBuilder.ToString();
+                if (_cachedGpuName == null)
+                {
+                    var nameBuilder = new StringBuilder(64);
+                    if (NativeNvml.DeviceGetName(_nvmlDeviceHandle, nameBuilder, (uint)nameBuilder.Capacity) == NvmlReturn.Success)
+                        _cachedGpuName = nameBuilder.ToString();
+                }
+                t.Name = _cachedGpuName ?? "NVIDIA GPU";
 
                 // Load
                 if (NativeNvml.DeviceGetUtilizationRates(_nvmlDeviceHandle, out NvmlUtilization util) == NvmlReturn.Success)
@@ -445,12 +477,14 @@ public class NvidiaGpuManager : IDisposable
                 {
                     // Convert bytes to Megabytes
                     t.VramUsedMb = (int)(mem.Used / (1024 * 1024));
-                    t.VramTotalMb = (int)(mem.Total / (1024 * 1024));
+                    if (_cachedVramTotal == 0)
+                        _cachedVramTotal = (int)(mem.Total / (1024 * 1024));
+                    t.VramTotalMb = _cachedVramTotal;
                 }
 
                 // P-State (Format string to match SMI output like "P0", "P8")
                 if (NativeNvml.DeviceGetPerformanceState(_nvmlDeviceHandle, out NvmlPstates pState) == NvmlReturn.Success)
-                    t.PState = pState.ToString().Replace("Pstate", "P");
+                    t.PState = FormatPState(pState);
 
                 // Clocks
                 if (NativeNvml.DeviceGetClockInfo(_nvmlDeviceHandle, NvmlClockType.Graphics, out uint coreClock) == NvmlReturn.Success)

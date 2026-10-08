@@ -636,15 +636,6 @@ public class DashboardViewModel : ObservableObject, IDisposable
 
     public DashboardViewModel()
     {
-        try
-        {
-            // Use 'Processor Information' and '% Processor Utility' to match Task Manager
-            _cpuUsageCounter = new PerformanceCounter("Processor Information", "% Processor Utility", "_Total", true);
-        }
-        catch
-        {
-        }
-
         // Initialize Fan State
         _cpuFanSpeed = SettingsManager.Get("CustomFanSpeedCpu", 50);
         _gpuFanSpeed = SettingsManager.Get("CustomFanSpeedGpu", 50);
@@ -672,10 +663,25 @@ public class DashboardViewModel : ObservableObject, IDisposable
         _autoSwitch = SettingsManager.Get("AutoSwitch", 0) == 1;
         _refreshAutoSwitch = SettingsManager.Get("RefreshAutoSwitch", 0) == 1;
 
+        // Fast load cached profile to prevent UI blocking
+        ActivePowerProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+
         if (!IsTestHost())
         {
             System.Threading.Tasks.Task.Run(() =>
             {
+                try
+                {
+                    // Use 'Processor Information' and '% Processor Utility' to match Task Manager.
+                    // This is notoriously slow on first access and must NOT be on the UI thread!
+                    _cpuUsageCounter = new PerformanceCounter("Processor Information", "% Processor Utility", "_Total", true);
+                }
+                catch
+                {
+                }
+
+                var actualMode = AcerWmiManager.GetActivePowerMode();
+
                 bool isTurbo = AcerWmiManager.IsTurboModeSupported();
                 bool isTaskEnabled = StartupManager.CheckStartupTask();
                 bool isNitroKeyEnabled = NitroKeyManager.IsIntegrationEnabled() ||
@@ -692,6 +698,11 @@ public class DashboardViewModel : ObservableObject, IDisposable
                 // Push results back to the UI thread asynchronously
                 System.Windows.Application.Current?.Dispatcher.InvokeAsync(() =>
                 {
+                    if (actualMode.HasValue)
+                    {
+                        ActivePowerProfile = actualMode.Value;
+                    }
+
                     IsTurboSupported = isTurbo;
 
                     _runOnStartup = isTaskEnabled;
@@ -708,9 +719,6 @@ public class DashboardViewModel : ObservableObject, IDisposable
                 });
             });
         }
-
-        ActivePowerProfile = AcerWmiManager.GetActivePowerMode() ??
-                             (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
 
         // Setup Commands
         SetPowerCommand = new RelayCommand(async param =>
@@ -1381,7 +1389,11 @@ public class DashboardViewModel : ObservableObject, IDisposable
     private PointCollection GenerateGraphPoints(List<TelemetryPoint> history, bool isTemp, long now)
     {
         var points = new PointCollection();
-        if (history.Count == 0) return points;
+        if (history.Count == 0)
+        {
+            points.Freeze();
+            return points;
+        }
 
         long windowStart = now - 300000;
         double graphWidth = 140.5;
@@ -1396,13 +1408,18 @@ public class DashboardViewModel : ObservableObject, IDisposable
             points.Add(new System.Windows.Point(x, y));
         }
 
+        points.Freeze();
         return points;
     }
 
     private PointCollection GenerateGraphFillPoints(List<TelemetryPoint> history, bool isTemp, long now)
     {
         var points = new PointCollection();
-        if (history.Count == 0) return points;
+        if (history.Count == 0)
+        {
+            points.Freeze();
+            return points;
+        }
 
         long windowStart = now - 300000;
         double graphWidth = 140.5;
@@ -1425,6 +1442,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
         double lastX = ((history[^1].Timestamp - windowStart) / 300000.0) * graphWidth;
         points.Add(new System.Windows.Point(lastX, graphHeight));
 
+        points.Freeze();
         return points;
     }
 
