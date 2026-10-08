@@ -301,10 +301,15 @@ public partial class FanCurveWindow : Window
         RenameTextBox.SelectAll();
     }
 
-    private void CancelRenameBtn_Click(object sender, RoutedEventArgs e)
+    private void CancelRename()
     {
         PresetRenamePanel.Visibility = Visibility.Collapsed;
         PresetViewPanel.Visibility = Visibility.Visible;
+    }
+
+    private void CancelRenameBtn_Click(object sender, RoutedEventArgs e)
+    {
+        CancelRename();
     }
 
     private void ConfirmRenameBtn_Click(object sender, RoutedEventArgs e)
@@ -320,7 +325,7 @@ public partial class FanCurveWindow : Window
         }
         else if (e.Key == Key.Escape)
         {
-            CancelRenameBtn_Click(null, null);
+            CancelRename();
         }
     }
 
@@ -329,7 +334,7 @@ public partial class FanCurveWindow : Window
         string newName = RenameTextBox.Text.Trim();
         if (string.IsNullOrWhiteSpace(newName) || newName == _editingPreset)
         {
-            CancelRenameBtn_Click(null, null);
+            CancelRename();
             return;
         }
 
