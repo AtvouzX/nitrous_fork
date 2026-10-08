@@ -123,6 +123,7 @@ public class NvidiaGpuManager : IDisposable
     public bool GetClocks(out int core, out int memory)
     {
         core = memory = 0;
+        if (_internalGpu == null) InitializeNvAPI();
         if (!IsValid) return false;
 
         try
@@ -148,6 +149,7 @@ public class NvidiaGpuManager : IDisposable
 
     private int SetClocksInternal(int core, int memory)
     {
+        if (_internalGpu == null) InitializeNvAPI();
         if (!IsValid) return 0;
 
         if (core < MinCoreOffset || core > MaxCoreOffset) return 0;
