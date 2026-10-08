@@ -1016,7 +1016,9 @@ public class DashboardViewModel : ObservableObject, IDisposable
         {
             try
             {
-                string pName = ActivePowerProfile.ToString();
+                string pName = SettingsManager.Get("ActiveFanCurvePreset", "Auto");
+                if (pName == "Auto") pName = ActivePowerProfile.ToString();
+
                 var cpuCurve = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{pName}",
                     FanCurveHelper.GetDefaultCpuCurve(ActivePowerProfile));
                 var gpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}",

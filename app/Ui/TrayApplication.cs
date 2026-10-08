@@ -156,7 +156,9 @@ public class TrayApplication : ApplicationContext
                         if (isCurveEnabled)
                         {
                             var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-                            string pName = activeMode.ToString();
+                            string pName = SettingsManager.Get("ActiveFanCurvePreset", "Auto");
+                            if (pName == "Auto") pName = activeMode.ToString();
+                            
                             var cpuCurve = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{pName}", FanCurveHelper.GetDefaultCpuCurve(activeMode));
                             var gpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}", FanCurveHelper.GetDefaultGpuCurve(activeMode));
                             var telem = AcerWmiManager.GetSystemTelemetry();
@@ -401,6 +403,7 @@ public class TrayApplication : ApplicationContext
     private System.Collections.Generic.List<System.Windows.Point>? _cachedGpuCurve;
     private long _cachedCurveVersion = -1;
     private string _lastObservedFanMode = "";
+    private string _lastObservedFanPreset = "";
     private bool _lastObservedCurveEnabled = false;
     private int _cpuDownstepHoldTicks;
     private int _gpuDownstepHoldTicks;
@@ -459,11 +462,14 @@ public class TrayApplication : ApplicationContext
                         {
                             // 3. Load curves from cache or Registry if profile changed or curve updated
                             var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-                            if (_cachedCpuCurve == null || _cachedGpuCurve == null || _cachedProfile != activeMode || _cachedCurveVersion != currentCurveVersion)
+                            string pName = SettingsManager.Get("ActiveFanCurvePreset", "Auto");
+                            if (pName == "Auto") pName = activeMode.ToString();
+
+                            if (_cachedCpuCurve == null || _cachedGpuCurve == null || _cachedProfile != activeMode || _lastObservedFanPreset != pName || _cachedCurveVersion != currentCurveVersion)
                             {
                                 _cachedProfile = activeMode;
+                                _lastObservedFanPreset = pName;
                                 _cachedCurveVersion = currentCurveVersion;
-                                string pName = activeMode.ToString();
                                 _cachedCpuCurve = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{pName}", FanCurveHelper.GetDefaultCpuCurve(activeMode));
                                 _cachedGpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}", FanCurveHelper.GetDefaultGpuCurve(activeMode));
                                 _lastAppliedCpuSpeed = -1;

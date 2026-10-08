@@ -32,6 +32,30 @@ public static class SettingsManager
         catch (Exception) { }
     }
 
+    public static void Delete(string key)
+    {
+        try
+        {
+            using RegistryKey? regKey = Registry.CurrentUser.OpenSubKey(RegPath, writable: true);
+            regKey?.DeleteValue(key, throwOnMissingValue: false);
+
+            try
+            {
+                if (System.Threading.EventWaitHandle.TryOpenExisting(Program.SettingsChangedEventName, out var syncEvent))
+                {
+                    using (syncEvent)
+                    {
+                        syncEvent.Set();
+                    }
+                }
+            }
+            catch { }
+        }
+        catch (UnauthorizedAccessException) { }
+        catch (SecurityException) { }
+        catch (Exception) { }
+    }
+
     public static T Get<T>(string key, T defaultValue)
     {
         try

@@ -590,7 +590,7 @@
 									           FontWeight="Bold" VerticalAlignment="Center" />
 									<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
 										<ToggleButton IsChecked="{Binding IsCurveModeEnabled, UpdateSourceTrigger=PropertyChanged}"
-										              IsEnabled="{Binding IsCustomFanEnabled}" Margin="0,0,6,0" Cursor="Hand"
+										              IsEnabled="{Binding IsCustomFanEnabled}" Margin="0" Cursor="Hand"
 										              ToolTip="Enables active temperature-based fan curve control.">
 											<ToggleButton.Template>
 												<ControlTemplate TargetType="ToggleButton">
@@ -598,10 +598,25 @@
 													        Padding="6,2">
 														<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 															<Path x:Name="Indicator"
-															      Data="M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2M12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4M12,6A6,6 0 0,0 6,12A6,6 0 0,0 12,18A6,6 0 0,0 18,12A6,6 0 0,0 12,6Z"
+															      Data="M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"
 															      Fill="#A1A1AA" Stretch="Uniform" Width="10" Height="10" Margin="0,0,4,0" />
 															<TextBlock x:Name="Txt" Text="USE CURVE" FontSize="9" FontWeight="Bold" Foreground="#A1A1AA"
-															           VerticalAlignment="Center" />
+															           VerticalAlignment="Center" Margin="0,0,4,0" />
+															<Rectangle Width="1" Height="10" Fill="#333338" Margin="2,0,4,0" VerticalAlignment="Center" />
+															<Button Click="OpenCurveEditor_Click" Background="Transparent" BorderThickness="0" Padding="2" Cursor="Hand" ToolTip="Opens the interactive fan curve editor.">
+																<Button.Template>
+																	<ControlTemplate TargetType="Button">
+																		<Border Background="Transparent">
+																			<Path x:Name="EditIcon" Data="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04M3,17.25V21H6.75L17.81,9.94L14.06,6.19L3,17.25Z" Fill="#A1A1AA" Stretch="Uniform" Width="9" Height="9" />
+																		</Border>
+																		<ControlTemplate.Triggers>
+																			<Trigger Property="IsMouseOver" Value="True">
+																				<Setter TargetName="EditIcon" Property="Fill" Value="#FFFFFF" />
+																			</Trigger>
+																		</ControlTemplate.Triggers>
+																	</ControlTemplate>
+																</Button.Template>
+															</Button>
 														</StackPanel>
 													</Border>
 													<ControlTemplate.Triggers>
@@ -622,16 +637,6 @@
 												</ControlTemplate>
 											</ToggleButton.Template>
 										</ToggleButton>
-
-										<Button Click="OpenCurveEditor_Click" Style="{StaticResource GhostBtn}" Padding="6,2" BorderBrush="White"
-										        IsEnabled="{Binding IsCustomFanEnabled}" ToolTip="Opens the interactive fan curve editor.">
-											<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-												<Path
-													Data="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04M3,17.25V21H6.75L17.81,9.94L14.06,6.19L3,17.25Z"
-													Fill="White" Stretch="Uniform" Width="9" Height="9" Margin="0,0,4,0" />
-												<TextBlock Text="EDIT" FontSize="9" FontWeight="Bold" Foreground="White" VerticalAlignment="Center" />
-											</StackPanel>
-										</Button>
 									</StackPanel>
 								</Grid>
 								<Grid Margin="0,0,0,4">
