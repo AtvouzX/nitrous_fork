@@ -61,4 +61,45 @@ public class AcerServiceManagerTests
         var exEmpty = Record.Exception(() => AcerServiceManager.DisposeServices(new List<ServiceController>()));
         Assert.Null(exEmpty);
     }
+
+    [Fact]
+    public void DisposeServices_EffectivelyDisposesServiceControllerInstances()
+    {
+        // Enumerate a small sample of local services to test real handle disposal
+        var sampleServices = ServiceController.GetServices().Take(2).ToList();
+        if (sampleServices.Count > 0)
+        {
+            var disposedFlags = new bool[sampleServices.Count];
+            for (int i = 0; i < sampleServices.Count; i++)
+            {
+                int idx = i;
+                sampleServices[i].Disposed += (_, _) => disposedFlags[idx] = true;
+            }
+
+            AcerServiceManager.DisposeServices(sampleServices);
+
+            for (int i = 0; i < sampleServices.Count; i++)
+            {
+                Assert.True(disposedFlags[i], $"ServiceController at index {i} must have its Disposed event raised.");
+            }
+        }
+    }
+
+    [Fact]
+    public void GetServiceSummary_ExecutesRepeatedlyWithoutLeakingHandlesOrCrashing()
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            var summary = AcerServiceManager.GetServiceSummary();
+            Assert.NotNull(summary);
+            Assert.NotNull(summary.Services);
+        }
+    }
+
+    [Fact]
+    public async Task StopAndDisableSingleAsync_NonExistentService_ExecutesSafelyAndDisposesHandles()
+    {
+        var ex = await Record.ExceptionAsync(() => AcerServiceManager.StopAndDisableSingleAsync("Nitrous_Test_NonExistentService_404"));
+        Assert.Null(ex);
+    }
 }

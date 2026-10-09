@@ -9,6 +9,7 @@ public static class UpdateManager
 {
     public const string CurrentVersion = "0.9.1";
     private const string GithubRepo = "AtvouzX/nitrous_fork";
+    public static readonly string CachedCmdPath = Path.Combine(Environment.SystemDirectory, "cmd.exe");
 
     private static HttpClient CreateHttpClient()
     {
@@ -87,8 +88,7 @@ public static class UpdateManager
             string cmd =
                 $"/c timeout /t 2 /nobreak & move /y \"{sanitizedTemp}\" \"{sanitizedCurrent}\" & start \"\" \"{sanitizedCurrent}\"";
 
-            string cmdExe = Path.Combine(Environment.SystemDirectory, "cmd.exe");
-            using var p = Process.Start(new ProcessStartInfo(cmdExe, cmd)
+            using var p = Process.Start(new ProcessStartInfo(CachedCmdPath, cmd)
                 { CreateNoWindow = true, UseShellExecute = false });
 
             exitCallback.Invoke();

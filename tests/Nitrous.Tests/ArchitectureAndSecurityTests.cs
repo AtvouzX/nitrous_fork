@@ -64,5 +64,48 @@ public class ArchitectureAndSecurityTests
         Assert.True(Path.IsPathRooted(path), "schtasks path must be absolute and rooted.");
         Assert.StartsWith(Environment.SystemDirectory, path, StringComparison.OrdinalIgnoreCase);
         Assert.EndsWith("schtasks.exe", path, StringComparison.OrdinalIgnoreCase);
+        Assert.True(File.Exists(path), $"schtasks.exe must exist at {path}.");
+    }
+
+    [Fact]
+    public void UpdateManager_CmdPath_IsAbsoluteAndPointsToSystemDirectory()
+    {
+        string path = UpdateManager.CachedCmdPath;
+
+        Assert.True(Path.IsPathRooted(path), "cmd.exe path must be absolute and rooted.");
+        Assert.StartsWith(Environment.SystemDirectory, path, StringComparison.OrdinalIgnoreCase);
+        Assert.EndsWith("cmd.exe", path, StringComparison.OrdinalIgnoreCase);
+        Assert.True(File.Exists(path), $"cmd.exe must exist at {path}.");
+    }
+
+    [Fact]
+    public void CpuPowerManager_PowerCfgPath_IsAbsoluteAndPointsToSystemDirectory()
+    {
+        string path = CpuPowerManager.CachedPowerCfgPath;
+
+        Assert.True(Path.IsPathRooted(path), "powercfg.exe path must be absolute and rooted.");
+        Assert.StartsWith(Environment.SystemDirectory, path, StringComparison.OrdinalIgnoreCase);
+        Assert.EndsWith("powercfg.exe", path, StringComparison.OrdinalIgnoreCase);
+        Assert.True(File.Exists(path), $"powercfg.exe must exist at {path}.");
+    }
+
+    [Theory]
+    [InlineData("schtasks.exe")]
+    [InlineData("powercfg.exe")]
+    [InlineData("cmd.exe")]
+    public void AllExternalBinaryPaths_MustBeRootedInSystemDirectory(string binaryName)
+    {
+        string path = binaryName switch
+        {
+            "schtasks.exe" => StartupManager.CachedSchtasksPath,
+            "powercfg.exe" => CpuPowerManager.CachedPowerCfgPath,
+            "cmd.exe" => UpdateManager.CachedCmdPath,
+            _ => throw new ArgumentException($"Unknown binary: {binaryName}")
+        };
+
+        Assert.True(Path.IsPathRooted(path), $"{binaryName} path must be absolute and rooted.");
+        Assert.StartsWith(Environment.SystemDirectory, path, StringComparison.OrdinalIgnoreCase);
+        Assert.EndsWith(binaryName, path, StringComparison.OrdinalIgnoreCase);
+        Assert.True(File.Exists(path), $"{binaryName} must exist at {path}.");
     }
 }

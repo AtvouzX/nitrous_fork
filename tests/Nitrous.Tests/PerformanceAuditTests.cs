@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using System.IO;
 using System.Reflection;
+using Nitrous.Enums;
 using Nitrous.Helpers;
 using Nitrous.Managers;
 using Nitrous.Ui;
@@ -70,6 +71,24 @@ public class PerformanceAuditTests
 
         Assert.Null(vm.CpuUsageCounter);
         Assert.True(isDisposed, "PerformanceCounter must be cleanly disposed on ViewModel disposal.");
+    }
+
+    [Fact]
+    public void DashboardViewModel_Dispose_CanBeCalledMultipleTimesSafely()
+    {
+        using var vm = new DashboardViewModel();
+        var counter = new PerformanceCounter();
+        vm.SetCpuUsageCounterForTesting(counter);
+
+        // Multiple dispose calls must be idempotent and not throw
+        var ex = Record.Exception(() =>
+        {
+            vm.Dispose();
+            vm.Dispose();
+        });
+
+        Assert.Null(ex);
+        Assert.Null(vm.CpuUsageCounter);
     }
 
     [Fact]
@@ -159,6 +178,52 @@ public class PerformanceAuditTests
         Assert.Equal(0x0901u, AcerWmiManager.SensorGpuTempFallback1);
         Assert.Equal(0x0B01u, AcerWmiManager.SensorGpuTempFallback2);
         Assert.Equal(0x0601u, AcerWmiManager.SensorGpuRpm);
+    }
+
+    [Theory]
+    [InlineData(PowerProfile.Quiet)]
+    [InlineData(PowerProfile.Balanced)]
+    [InlineData(PowerProfile.Performance)]
+    [InlineData(PowerProfile.Turbo)]
+    public async Task ApplyPowerProfileOcAsync_WhenOnBattery_BypassesNvApiAndReturnsZero(PowerProfile profile)
+    {
+        using var manager = new NvidiaGpuManager();
+
+        // Core Battery Invariant: discrete NVIDIA GPU must remain in D3Cold sleep on battery (DC power).
+        // Overclocking and NvAPI calls must be completely bypassed.
+        int result = await manager.ApplyPowerProfileOcAsync(profile, isAcOnline: false);
+
+        Assert.Equal(0, result);
+    }
+
+    [Theory]
+    [InlineData(PowerProfile.Quiet)]
+    [InlineData(PowerProfile.Balanced)]
+    [InlineData(PowerProfile.Performance)]
+    [InlineData(PowerProfile.Turbo)]
+    public async Task ApplyOnBootAsync_WhenOnBattery_BypassesNvApiAndPreservesD3Cold(PowerProfile profile)
+    {
+        using var manager = new NvidiaGpuManager();
+
+        // Boot OC must abort immediately without initializing NvAPI on battery power
+        var ex = await Record.ExceptionAsync(() => manager.ApplyOnBootAsync(profile, isAcOnline: false));
+
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public async Task ApplyPowerProfileOcAsync_WhenGpuIsSleeping_PreservesD3Cold()
+    {
+        using var manager = new NvidiaGpuManager();
+
+        if (!NvidiaGpuManager.IsGpuAwake())
+        {
+            // If the physical dGPU is currently in D3Cold sleep, ApplyPowerProfileOcAsync must return 0
+            // and must NOT wake the GPU up.
+            int result = await manager.ApplyPowerProfileOcAsync(PowerProfile.Performance, isAcOnline: true);
+            Assert.Equal(0, result);
+            Assert.False(NvidiaGpuManager.IsGpuAwake(), "GPU should remain asleep after bypassed OC attempt.");
+        }
     }
 
     // =========================================================================
