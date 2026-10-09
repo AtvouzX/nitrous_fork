@@ -21,15 +21,22 @@ public static class NitroKeyManager
         "PredatorSenseV4.exe"
     ];
 
-    public static bool IsIntegrationEnabled()
+    public static string FormatSafePath(string path)
+    {
+        return $"\"{path.Trim('\"', ' ')}\"";
+    }
+
+    /// <summary>
+    /// Checks if any legacy IFEO debugger integration exists in HKLM.
+    /// </summary>
+    public static bool IsLegacyIfeoPresent()
     {
         try
         {
             using var baseKey = Registry.LocalMachine.OpenSubKey(IfeoBasePath);
             if (baseKey == null) return false;
 
-            // Check primary targets
-            foreach (var exe in new[] { "PSLauncher.exe", "NSLauncher.exe", "NitroSense.exe", "PredatorSense.exe" })
+            foreach (var exe in AcerSenseExecutables)
             {
                 using var sub = baseKey.OpenSubKey(exe);
                 if (sub?.GetValue("Debugger") is string val && !string.IsNullOrWhiteSpace(val))
@@ -40,40 +47,43 @@ public static class NitroKeyManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[NitroKeyManager] Failed to check integration: {ex.Message}");
+            Debug.WriteLine($"[NitroKeyManager] Failed checking legacy IFEO: {ex.Message}");
         }
 
         return false;
     }
 
+    /// <summary>
+    /// Legacy compatibility check: returns false since IFEO is retired in favor of native NitroKeyHook.
+    /// </summary>
+    public static bool IsIntegrationEnabled() => false;
+
+    /// <summary>
+    /// Compatibility stub: ensuring IFEO is permanently purged and physical button handling is native.
+    /// </summary>
     public static bool SetIntegration(bool enable, string exePath)
     {
+        PurgeLegacyIfeoIntegration();
+        return true;
+    }
+
+    public static void SyncExecutablePath(string currentPath)
+    {
+        // No-op: IFEO is retired; NitroKeyHook handles physical key presses directly.
+    }
+
+    /// <summary>
+    /// Completely removes legacy IFEO registry hooks, deletes zero-byte dummy files from System32,
+    /// and removes legacy Launcher.vbs scripts from user AppData.
+    /// Physical button presses are handled natively in-process by NitroKeyHook (WH_KEYBOARD_LL).
+    /// </summary>
+    public static void PurgeLegacyIfeoIntegration()
+    {
+        // 1. Clean up HKLM Image File Execution Options registry keys
         try
         {
             using var baseKey = Registry.LocalMachine.OpenSubKey(IfeoBasePath, true);
-            if (baseKey == null) return false;
-
-            if (enable)
-            {
-                if (string.IsNullOrWhiteSpace(exePath)) return false;
-
-                string vbsDir = System.IO.Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Nitrous");
-                System.IO.Directory.CreateDirectory(vbsDir);
-                string vbsPath = System.IO.Path.Combine(vbsDir, "Launcher.vbs");
-                System.IO.File.WriteAllText(vbsPath, "Set WshShell = CreateObject(\"WScript.Shell\")\r\nWshShell.Run \"schtasks /run /tn \"\"Nitrous_Dashboard\"\"\", 0\r\n");
-
-                string safePath = $"wscript.exe \"{vbsPath}\" //B";
-
-                foreach (var exeName in AcerSenseExecutables)
-                {
-                    using var subKey = baseKey.CreateSubKey(exeName);
-                    subKey.SetValue("Debugger", safePath, RegistryValueKind.String);
-                }
-                
-                // Deploy dummy executables to ensure IFEO triggers even if NitroSense is uninstalled
-                EnsureDummyExecutables();
-            }
-            else
+            if (baseKey != null)
             {
                 foreach (var exeName in AcerSenseExecutables)
                 {
@@ -81,66 +91,20 @@ public static class NitroKeyManager
                     if (subKey != null)
                     {
                         subKey.DeleteValue("Debugger", false);
-                        // If the subkey has no other values or subkeys, remove it cleanly
                         if (subKey.ValueCount == 0 && subKey.SubKeyCount == 0)
                         {
                             baseKey.DeleteSubKey(exeName, false);
                         }
                     }
                 }
-                
-                RemoveDummyExecutables();
-            }
-
-            return true;
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[NitroKeyManager] Failed to set integration ({enable}): {ex.Message}");
-            return false;
-        }
-    }
-
-    public static void SyncExecutablePath(string currentPath)
-    {
-        if (string.IsNullOrWhiteSpace(currentPath)) return;
-
-        try
-        {
-            if (IsIntegrationEnabled())
-            {
-                SetIntegration(true, currentPath);
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[NitroKeyManager] Failed to sync executable path: {ex.Message}");
+            Debug.WriteLine($"[NitroKeyManager] Failed purging legacy IFEO registry entries: {ex.Message}");
         }
-    }
 
-    private static void EnsureDummyExecutables()
-    {
-        try
-        {
-            string sysDir = Environment.SystemDirectory;
-            foreach (var exeName in AcerSenseExecutables)
-            {
-                string dummyPath = Path.Combine(sysDir, exeName);
-                if (!File.Exists(dummyPath))
-                {
-                    // Create a zero-byte file so CreateProcess succeeds and triggers IFEO
-                    File.WriteAllBytes(dummyPath, Array.Empty<byte>());
-                }
-            }
-        }
-        catch (Exception ex)
-        {
-            Debug.WriteLine($"[NitroKeyManager] Failed to create dummy executables: {ex.Message}");
-        }
-    }
-
-    private static void RemoveDummyExecutables()
-    {
+        // 2. Remove any legacy zero-byte dummy files previously placed in System32
         try
         {
             string sysDir = Environment.SystemDirectory;
@@ -149,8 +113,7 @@ public static class NitroKeyManager
                 string dummyPath = Path.Combine(sysDir, exeName);
                 if (File.Exists(dummyPath))
                 {
-                    FileInfo fi = new FileInfo(dummyPath);
-                    // Only delete if it's our zero-byte dummy file to avoid breaking real installations
+                    var fi = new FileInfo(dummyPath);
                     if (fi.Length == 0)
                     {
                         File.Delete(dummyPath);
@@ -160,7 +123,24 @@ public static class NitroKeyManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[NitroKeyManager] Failed to remove dummy executables: {ex.Message}");
+            Debug.WriteLine($"[NitroKeyManager] Failed removing legacy dummy files from System32: {ex.Message}");
         }
+
+        // 3. Remove legacy Launcher.vbs script from user AppData
+        try
+        {
+            string vbsDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "Nitrous");
+            string vbsPath = Path.Combine(vbsDir, "Launcher.vbs");
+            if (File.Exists(vbsPath))
+            {
+                File.Delete(vbsPath);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"[NitroKeyManager] Failed removing legacy Launcher.vbs: {ex.Message}");
+        }
+
+        SettingsManager.Delete("NitroKeyIntegrated");
     }
 }
