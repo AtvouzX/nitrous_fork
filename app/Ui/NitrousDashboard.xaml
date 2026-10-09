@@ -603,11 +603,14 @@
 															<TextBlock x:Name="Txt" Text="USE CURVE" FontSize="9" FontWeight="Bold" Foreground="#A1A1AA"
 															           VerticalAlignment="Center" Margin="0,0,4,0" />
 															<Rectangle Width="1" Height="10" Fill="#333338" Margin="2,0,4,0" VerticalAlignment="Center" />
-															<Button Click="OpenCurveEditor_Click" Background="Transparent" BorderThickness="0" Padding="2" Cursor="Hand" ToolTip="Opens the interactive fan curve editor.">
+															<Button Click="OpenCurveEditor_Click" Background="Transparent" BorderThickness="0" Padding="2"
+															        Cursor="Hand" ToolTip="Opens the interactive fan curve editor.">
 																<Button.Template>
 																	<ControlTemplate TargetType="Button">
 																		<Border Background="Transparent">
-																			<Path x:Name="EditIcon" Data="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04M3,17.25V21H6.75L17.81,9.94L14.06,6.19L3,17.25Z" Fill="#A1A1AA" Stretch="Uniform" Width="9" Height="9" />
+																			<Path x:Name="EditIcon"
+																					Data="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04M3,17.25V21H6.75L17.81,9.94L14.06,6.19L3,17.25Z"
+																					Fill="#A1A1AA" Stretch="Uniform" Width="9" Height="9" />
 																		</Border>
 																		<ControlTemplate.Triggers>
 																			<Trigger Property="IsMouseOver" Value="True">
@@ -835,19 +838,22 @@
 																<ColumnDefinition Width="*" />
 															</Grid.ColumnDefinitions>
 															<Button Grid.Column="0" Style="{StaticResource GhostBtn}" Padding="2" Margin="0,0,6,0"
-															        Command="{Binding DataContext.KillAcerServiceCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}" 
+															        Command="{Binding DataContext.KillAcerServiceCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
 															        CommandParameter="{Binding ServiceName}"
 															        ToolTip="Stop and disable this specific service.">
-																<Path Data="M19.36,2.72L20.78,4.14L15.06,9.85C16.13,11.39 16.28,13.24 15.38,14.44L9.06,8.12C10.26,7.22 12.11,7.37 13.65,8.44L19.36,2.72M5.93,17.57C3.92,15.56 2.69,13.16 2.35,10.92L7.23,8.83L14.67,16.27L12.58,21.15C10.34,20.81 7.94,19.58 5.93,17.57Z" Fill="#FF4500" Stretch="Uniform" Width="10" Height="10" VerticalAlignment="Center"/>
+																<Path
+																	Data="M19.36,2.72L20.78,4.14L15.06,9.85C16.13,11.39 16.28,13.24 15.38,14.44L9.06,8.12C10.26,7.22 12.11,7.37 13.65,8.44L19.36,2.72M5.93,17.57C3.92,15.56 2.69,13.16 2.35,10.92L7.23,8.83L14.67,16.27L12.58,21.15C10.34,20.81 7.94,19.58 5.93,17.57Z"
+																	Fill="#FF4500" Stretch="Uniform" Width="10" Height="10" VerticalAlignment="Center" />
 															</Button>
-															<TextBlock Grid.Column="1" Text="{Binding ServiceName}" Foreground="#A1A1AA" FontSize="10" VerticalAlignment="Center" />
+															<TextBlock Grid.Column="1" Text="{Binding ServiceName}" Foreground="#A1A1AA" FontSize="10"
+															           VerticalAlignment="Center" />
 														</Grid>
 													</DataTemplate>
 												</ItemsControl.ItemTemplate>
 											</ItemsControl>
 										</Border>
 									</Popup>
-									<Button Grid.Column="1" Style="{StaticResource AccentBtn}" HorizontalAlignment="Right" Background="#FF4500"
+									<Button x:Name="BtnAcerServices" Grid.Column="1" Style="{StaticResource AccentBtn}" HorizontalAlignment="Right" Background="#FF4500"
 									        Padding="12,6"
 									        Command="{Binding ToggleAcerServicesCommand}"
 									        ToolTip="Stops NitroSense and Acer Care Center services to free system RAM, reduce background CPU, and prevent OEM software from overriding Nitrous fan curves.">
@@ -972,27 +978,25 @@
 										<TextBlock Text="System Diagnostics &amp; Logs" Foreground="White" FontWeight="Bold" FontSize="12"
 										           VerticalAlignment="Center" />
 									</StackPanel>
-									<TextBlock Text="Open log files in Explorer or copy a sanitized hardware diagnostic report."
+									<TextBlock Text="Open log files or copy a hardware report."
 									           Foreground="#A1A1AA" FontSize="11" TextWrapping="Wrap" />
 								</StackPanel>
-								<StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-									<Button x:Name="BtnOpenLogsFolder" Style="{StaticResource GhostBtn}" Margin="0,0,8,0" Padding="12,6"
-									        Command="{Binding OpenLogsFolderCommand}"
-									        ToolTip="Opens the directory containing Nitrous diagnostic log files in File Explorer.">
-										<StackPanel Orientation="Horizontal">
-											<Path Data="M20,18H4V8H20M20,6H12L10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8A2,2 0 0,0 20,6Z"
-											      Fill="White" Stretch="Uniform" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
-											<TextBlock Text="OPEN LOGS" FontSize="10" FontWeight="Bold" />
-										</StackPanel>
-									</Button>
-									<Button x:Name="BtnCopyDiagnostics" Style="{StaticResource AccentBtn}" Background="#FF4500" Padding="12,6"
+								<StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Right" VerticalAlignment="Center">
+									<Button x:Name="BtnCopyDiagnostics" Style="{StaticResource AccentBtn}" Background="#FF4500"
+									        Width="{Binding ActualWidth, ElementName=BtnAcerServices}" MinWidth="80"
+									        Padding="12,6" Margin="0,0,0,6"
+									        HorizontalContentAlignment="Center"
 									        Command="{Binding CopyDiagnosticsCommand}"
 									        ToolTip="Generates an anonymized hardware diagnostics summary and copies it to your clipboard for GitHub issue reports.">
-										<StackPanel Orientation="Horizontal">
-											<Path Data="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3M7,7H17V5H19V19H5V5H7V7Z"
-											      Fill="White" Stretch="Uniform" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
-											<TextBlock Text="COPY REPORT" FontSize="10" FontWeight="Bold" />
-										</StackPanel>
+										<TextBlock Text="COPY" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
+									</Button>
+									<Button x:Name="BtnOpenLogsFolder" Style="{StaticResource GhostBtn}"
+									        Width="{Binding ActualWidth, ElementName=BtnAcerServices}" MinWidth="80"
+									        Padding="12,6"
+									        HorizontalContentAlignment="Center"
+									        Command="{Binding OpenLogsFolderCommand}"
+									        ToolTip="Opens the directory containing Nitrous diagnostic log files in File Explorer.">
+										<TextBlock Text="LOGS" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
 									</Button>
 								</StackPanel>
 							</Grid>
@@ -1002,215 +1006,219 @@
 				<!-- 3. GPU PAGE -->
 				<ScrollViewer x:Name="GpuPage" Visibility="Collapsed" Margin="20,10,20,0" VerticalScrollBarVisibility="Hidden">
 					<StackPanel Margin="0,0,0,16">
-					<!-- Compact Hero Banner -->
+						<!-- Compact Hero Banner -->
 
-					<!-- GPU TELEMETRY STATS GRID -->
-					<Border Background="#151518" CornerRadius="10" BorderBrush="#222226" BorderThickness="1" Padding="16"
-					        Margin="0,0,0,12"
-					        ToolTip="Live NVIDIA GPU telemetry via NVML. Statistics update while dashboard is active.">
-						<StackPanel>
-							<!-- GPU Name Header -->
-							<StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-								<Path Fill="#FF4500" Stretch="Uniform" Width="12" Height="12" Margin="0,0,6,0"
-								      Data="M22,9V7H20V5A2,2 0 0,0 18,3H4A2,2 0 0,0 2,5V19A2,2 0 0,0 4,21H18A2,2 0 0,0 20,19V17H22V15H20V13H22V11H20V9H22M18,19H4V5H18V19M6,13H11V17H6V13M12,7H16V10H12V7M6,7H11V12H6V7M12,11H16V17H12V11Z" />
-								<TextBlock Text="{Binding GpuNameText}" Foreground="White" FontSize="12" FontWeight="Bold"
-								           VerticalAlignment="Center" />
-								<TextBlock Text="{Binding GpuArchText}" Foreground="#A1A1AA" FontSize="11" Margin="6,0,0,0"
-								           VerticalAlignment="Center" />
+						<!-- GPU TELEMETRY STATS GRID -->
+						<Border Background="#151518" CornerRadius="10" BorderBrush="#222226" BorderThickness="1" Padding="16"
+						        Margin="0,0,0,12"
+						        ToolTip="Live NVIDIA GPU telemetry via NVML. Statistics update while dashboard is active.">
+							<StackPanel>
+								<!-- GPU Name Header -->
+								<StackPanel Orientation="Horizontal" Margin="0,0,0,16">
+									<Path Fill="#FF4500" Stretch="Uniform" Width="12" Height="12" Margin="0,0,6,0"
+									      Data="M22,9V7H20V5A2,2 0 0,0 18,3H4A2,2 0 0,0 2,5V19A2,2 0 0,0 4,21H18A2,2 0 0,0 20,19V17H22V15H20V13H22V11H20V9H22M18,19H4V5H18V19M6,13H11V17H6V13M12,7H16V10H12V7M6,7H11V12H6V7M12,11H16V17H12V11Z" />
+									<TextBlock Text="{Binding GpuNameText}" Foreground="White" FontSize="12" FontWeight="Bold"
+									           VerticalAlignment="Center" />
+									<TextBlock Text="{Binding GpuArchText}" Foreground="#A1A1AA" FontSize="11" Margin="6,0,0,0"
+									           VerticalAlignment="Center" />
+								</StackPanel>
+								<!-- 2-Column Stats Grid -->
+								<Grid>
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="*" />
+										<ColumnDefinition Width="*" />
+									</Grid.ColumnDefinitions>
+									<Grid.RowDefinitions>
+										<RowDefinition Height="Auto" />
+										<RowDefinition Height="12" />
+										<!-- Spacer -->
+										<RowDefinition Height="Auto" />
+										<RowDefinition Height="12" />
+										<!-- Spacer -->
+										<RowDefinition Height="Auto" />
+									</Grid.RowDefinitions>
+									<!-- Row 0 -->
+									<StackPanel Grid.Row="0" Grid.Column="0">
+										<TextBlock Text="CORE LOAD" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
+										<TextBlock Text="{Binding GpuLoadText}" Foreground="{Binding GpuLoadColor}" FontSize="15" FontWeight="Bold"
+										           Margin="0,2,0,0" />
+									</StackPanel>
+									<StackPanel Grid.Row="0" Grid.Column="1">
+										<TextBlock Text="CORE TEMP" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
+										<TextBlock Text="{Binding GpuDeepTempText}" Foreground="{Binding GpuDeepTempColor}" FontSize="15"
+										           FontWeight="Bold" Margin="0,2,0,0" />
+									</StackPanel>
+									<!-- Row 2 -->
+									<StackPanel Grid.Row="2" Grid.Column="0">
+										<TextBlock Text="CORE CLOCK" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
+										<TextBlock Text="{Binding GpuCoreClockText}" Foreground="White" FontSize="15" FontWeight="Bold"
+										           Margin="0,2,0,0" />
+									</StackPanel>
+									<StackPanel Grid.Row="2" Grid.Column="1">
+										<TextBlock Text="MEMORY CLOCK" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
+										<TextBlock Text="{Binding GpuMemClockText}" Foreground="White" FontSize="15" FontWeight="Bold"
+										           Margin="0,2,0,0" />
+									</StackPanel>
+									<!-- Row 4 -->
+									<StackPanel Grid.Row="4" Grid.Column="0">
+										<TextBlock Text="VRAM USAGE" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
+										<TextBlock Text="{Binding GpuVramText}" Foreground="White" FontSize="13" FontWeight="Bold" Margin="0,2,0,0" />
+									</StackPanel>
+									<StackPanel Grid.Row="4" Grid.Column="1">
+										<TextBlock Text="POWER / ENFORCED / CAP" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
+										<TextBlock Text="{Binding GpuPowerText}" Foreground="White" FontSize="13" FontWeight="Bold" Margin="0,2,0,0" />
+									</StackPanel>
+								</Grid>
 							</StackPanel>
-							<!-- 2-Column Stats Grid -->
-							<Grid>
-								<Grid.ColumnDefinitions>
-									<ColumnDefinition Width="*" />
-									<ColumnDefinition Width="*" />
-								</Grid.ColumnDefinitions>
-								<Grid.RowDefinitions>
-									<RowDefinition Height="Auto" />
-									<RowDefinition Height="12" />
-									<!-- Spacer -->
-									<RowDefinition Height="Auto" />
-									<RowDefinition Height="12" />
-									<!-- Spacer -->
-									<RowDefinition Height="Auto" />
-								</Grid.RowDefinitions>
-								<!-- Row 0 -->
-								<StackPanel Grid.Row="0" Grid.Column="0">
-									<TextBlock Text="CORE LOAD" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
-									<TextBlock Text="{Binding GpuLoadText}" Foreground="{Binding GpuLoadColor}" FontSize="15" FontWeight="Bold"
-									           Margin="0,2,0,0" />
-								</StackPanel>
-								<StackPanel Grid.Row="0" Grid.Column="1">
-									<TextBlock Text="CORE TEMP" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
-									<TextBlock Text="{Binding GpuDeepTempText}" Foreground="{Binding GpuDeepTempColor}" FontSize="15"
-									           FontWeight="Bold" Margin="0,2,0,0" />
-								</StackPanel>
-								<!-- Row 2 -->
-								<StackPanel Grid.Row="2" Grid.Column="0">
-									<TextBlock Text="CORE CLOCK" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
-									<TextBlock Text="{Binding GpuCoreClockText}" Foreground="White" FontSize="15" FontWeight="Bold"
-									           Margin="0,2,0,0" />
-								</StackPanel>
-								<StackPanel Grid.Row="2" Grid.Column="1">
-									<TextBlock Text="MEMORY CLOCK" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
-									<TextBlock Text="{Binding GpuMemClockText}" Foreground="White" FontSize="15" FontWeight="Bold"
-									           Margin="0,2,0,0" />
-								</StackPanel>
-								<!-- Row 4 -->
-								<StackPanel Grid.Row="4" Grid.Column="0">
-									<TextBlock Text="VRAM USAGE" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
-									<TextBlock Text="{Binding GpuVramText}" Foreground="White" FontSize="13" FontWeight="Bold" Margin="0,2,0,0" />
-								</StackPanel>
-								<StackPanel Grid.Row="4" Grid.Column="1">
-									<TextBlock Text="POWER / ENFORCED / CAP" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
-									<TextBlock Text="{Binding GpuPowerText}" Foreground="White" FontSize="13" FontWeight="Bold" Margin="0,2,0,0" />
-								</StackPanel>
-							</Grid>
-						</StackPanel>
-					</Border>
-					<!-- CLOCK OFFSETS SLIDERS -->
-					<Border Background="#151518" CornerRadius="10" BorderBrush="#222226" BorderThickness="1" Padding="16,12,16,16"
-					        Margin="0,0,0,16">
-						<StackPanel>
-							<TextBlock Text="CLOCK OFFSETS" Foreground="#A1A1AA" FontSize="10" FontWeight="Bold" Margin="0,0,0,12" />
-							<!-- Core Slider -->
-							<Grid Margin="0,0,0,4">
-								<TextBlock Text="Core Clock" Foreground="White" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Left"
-								           VerticalAlignment="Center" />
-								<!-- Pill border removed, back to clean floating text -->
-								<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-									<TextBox x:Name="GpuCoreInput" Text="{Binding GpuCoreOffset, UpdateSourceTrigger=PropertyChanged}"
-									         Foreground="#FF4500" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0"
-									         MaxLength="4" Width="36" TextAlignment="Right" VerticalContentAlignment="Center" CaretBrush="#FF4500"
-									         ToolTip="Directly input discrete GPU core clock frequency offset in MHz (-250 to +250)." />
-									<TextBlock Text=" MHz" Foreground="#FF4500" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
-								</StackPanel>
-							</Grid>
-							<Slider x:Name="GpuCoreSlider" Style="{StaticResource ModernSliderStyle}" Minimum="-250" Maximum="250"
-							        Value="{Binding GpuCoreOffset, UpdateSourceTrigger=PropertyChanged}" IsSnapToTickEnabled="True"
-							        TickFrequency="5" Margin="0,0,0,12"
-							        ToolTip="Applies a frequency offset (-250 MHz to +250 MHz) to discrete GPU core clocks via NVML." />
-							<!-- Memory Slider -->
-							<Grid Margin="0,0,0,4">
-								<TextBlock Text="Memory Clock" Foreground="White" FontSize="11" FontWeight="SemiBold"
-								           HorizontalAlignment="Left" VerticalAlignment="Center" />
-								<!-- Pill border removed, back to clean floating text -->
-								<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-									<TextBox x:Name="GpuMemoryInput" Text="{Binding GpuMemoryOffset, UpdateSourceTrigger=PropertyChanged}"
-									         Foreground="#FF4500" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0"
-									         MaxLength="5" Width="36" TextAlignment="Right" VerticalContentAlignment="Center" CaretBrush="#FF4500"
-									         ToolTip="Directly input discrete GPU video memory (VRAM) frequency offset in MHz (-1000 to +1000)." />
-									<TextBlock Text=" MHz" Foreground="#FF4500" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
-								</StackPanel>
-							</Grid>
-							<Slider x:Name="GpuMemorySlider" Style="{StaticResource ModernSliderStyle}" Minimum="-1000" Maximum="1000"
-							        Value="{Binding GpuMemoryOffset, UpdateSourceTrigger=PropertyChanged}" IsSnapToTickEnabled="True"
-							        TickFrequency="10"
-							        ToolTip="Applies a frequency offset (-1000 MHz to +1000 MHz) to discrete GPU video memory (VRAM)." />
-						</StackPanel>
-					</Border>
-					<!-- ACTION BUTTONS -->
-					<Grid>
-						<Grid.Resources>
-							<!-- Ghost Button Style for RESET -->
-							<Style x:Key="GhostBtn" TargetType="Button">
-								<Setter Property="Background" Value="Transparent" />
-								<Setter Property="Foreground" Value="#A1A1AA" />
-								<Setter Property="BorderBrush" Value="#222226" />
-								<Setter Property="BorderThickness" Value="1" />
-								<Setter Property="Cursor" Value="Hand" />
-								<Setter Property="Template">
-									<Setter.Value>
-										<ControlTemplate TargetType="Button">
-											<Border x:Name="BtnBorder" Background="{TemplateBinding Background}"
-											        BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
-											        CornerRadius="8">
-												<!-- Added Margin binding to properly space the content -->
-												<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
-												                  Margin="{TemplateBinding Padding}" />
-											</Border>
-											<ControlTemplate.Triggers>
-												<Trigger Property="IsMouseOver" Value="True">
-													<Setter TargetName="BtnBorder" Property="Background" Value="#1E1E22" />
-													<!-- Subtle lighter grey -->
-													<Setter Property="Foreground" Value="#E0E0E0" />
-												</Trigger>
-											</ControlTemplate.Triggers>
-										</ControlTemplate>
-									</Setter.Value>
-								</Setter>
-							</Style>
-							<!-- Accent Button Style for APPLY (Preserves dynamic binding) -->
-							<Style x:Key="AccentBtn" TargetType="Button">
-								<Setter Property="Foreground" Value="#0C0C0E" />
-								<Setter Property="Cursor" Value="Hand" />
-								<Setter Property="Template">
-									<Setter.Value>
-										<ControlTemplate TargetType="Button">
-											<Border Background="{TemplateBinding Background}" CornerRadius="8">
-												<Grid>
-													<!-- Invisible overlay that lights up on hover -->
-													<Border x:Name="HoverOverlay" Background="White" Opacity="0" CornerRadius="8" />
+						</Border>
+						<!-- CLOCK OFFSETS SLIDERS -->
+						<Border Background="#151518" CornerRadius="10" BorderBrush="#222226" BorderThickness="1" Padding="16,12,16,16"
+						        Margin="0,0,0,16">
+							<StackPanel>
+								<TextBlock Text="CLOCK OFFSETS" Foreground="#A1A1AA" FontSize="10" FontWeight="Bold" Margin="0,0,0,12" />
+								<!-- Core Slider -->
+								<Grid Margin="0,0,0,4">
+									<TextBlock Text="Core Clock" Foreground="White" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Left"
+									           VerticalAlignment="Center" />
+									<!-- Pill border removed, back to clean floating text -->
+									<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+										<TextBox x:Name="GpuCoreInput" Text="{Binding GpuCoreOffset, UpdateSourceTrigger=PropertyChanged}"
+										         Foreground="#FF4500" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0"
+										         MaxLength="4" Width="36" TextAlignment="Right" VerticalContentAlignment="Center"
+										         CaretBrush="#FF4500"
+										         ToolTip="Directly input discrete GPU core clock frequency offset in MHz (-250 to +250)." />
+										<TextBlock Text=" MHz" Foreground="#FF4500" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+									</StackPanel>
+								</Grid>
+								<Slider x:Name="GpuCoreSlider" Style="{StaticResource ModernSliderStyle}" Minimum="-250" Maximum="250"
+								        Value="{Binding GpuCoreOffset, UpdateSourceTrigger=PropertyChanged}" IsSnapToTickEnabled="True"
+								        TickFrequency="5" Margin="0,0,0,12"
+								        ToolTip="Applies a frequency offset (-250 MHz to +250 MHz) to discrete GPU core clocks via NVML." />
+								<!-- Memory Slider -->
+								<Grid Margin="0,0,0,4">
+									<TextBlock Text="Memory Clock" Foreground="White" FontSize="11" FontWeight="SemiBold"
+									           HorizontalAlignment="Left" VerticalAlignment="Center" />
+									<!-- Pill border removed, back to clean floating text -->
+									<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
+										<TextBox x:Name="GpuMemoryInput" Text="{Binding GpuMemoryOffset, UpdateSourceTrigger=PropertyChanged}"
+										         Foreground="#FF4500" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0"
+										         MaxLength="5" Width="36" TextAlignment="Right" VerticalContentAlignment="Center"
+										         CaretBrush="#FF4500"
+										         ToolTip="Directly input discrete GPU video memory (VRAM) frequency offset in MHz (-1000 to +1000)." />
+										<TextBlock Text=" MHz" Foreground="#FF4500" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+									</StackPanel>
+								</Grid>
+								<Slider x:Name="GpuMemorySlider" Style="{StaticResource ModernSliderStyle}" Minimum="-1000" Maximum="1000"
+								        Value="{Binding GpuMemoryOffset, UpdateSourceTrigger=PropertyChanged}" IsSnapToTickEnabled="True"
+								        TickFrequency="10"
+								        ToolTip="Applies a frequency offset (-1000 MHz to +1000 MHz) to discrete GPU video memory (VRAM)." />
+							</StackPanel>
+						</Border>
+						<!-- ACTION BUTTONS -->
+						<Grid>
+							<Grid.Resources>
+								<!-- Ghost Button Style for RESET -->
+								<Style x:Key="GhostBtn" TargetType="Button">
+									<Setter Property="Background" Value="Transparent" />
+									<Setter Property="Foreground" Value="#A1A1AA" />
+									<Setter Property="BorderBrush" Value="#222226" />
+									<Setter Property="BorderThickness" Value="1" />
+									<Setter Property="Cursor" Value="Hand" />
+									<Setter Property="Template">
+										<Setter.Value>
+											<ControlTemplate TargetType="Button">
+												<Border x:Name="BtnBorder" Background="{TemplateBinding Background}"
+												        BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+												        CornerRadius="8">
+													<!-- Added Margin binding to properly space the content -->
 													<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
 													                  Margin="{TemplateBinding Padding}" />
-												</Grid>
-											</Border>
-											<ControlTemplate.Triggers>
-												<Trigger Property="IsMouseOver" Value="True">
-													<Setter TargetName="HoverOverlay" Property="Opacity" Value="0.15" />
-													<!-- Slight brightness bump -->
-												</Trigger>
-											</ControlTemplate.Triggers>
-										</ControlTemplate>
-									</Setter.Value>
-								</Setter>
-							</Style>
-						</Grid.Resources>
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition Width="*" />
-							<ColumnDefinition Width="12" />
-							<!-- Slightly wider gap -->
-							<ColumnDefinition Width="*" />
-						</Grid.ColumnDefinitions>
-						<!-- Secondary Action (Ghost Button) - Explicit Height and larger font -->
-						<Button Grid.Column="0" Content="RESET" Command="{Binding ResetGpuClocksCommand}"
-						        Style="{StaticResource GhostBtn}" FontSize="12" FontWeight="Bold" Height="40"
-						        ToolTip="Reverts GPU core and memory clock offsets back to stock factory settings (0 MHz)." />
-						<!-- Primary Action (Accent Button) - Explicit Height and larger font -->
-						<Button Grid.Column="2" Content="{Binding ApplyBtnText}" Command="{Binding ApplyGpuClocksCommand}"
-						        Background="{Binding ApplyBtnColor}" Style="{StaticResource AccentBtn}" FontSize="12" FontWeight="Heavy"
-						        Height="40"
-						        ToolTip="Commits the selected core and memory clock offsets to the discrete GPU." />
-					</Grid>
+												</Border>
+												<ControlTemplate.Triggers>
+													<Trigger Property="IsMouseOver" Value="True">
+														<Setter TargetName="BtnBorder" Property="Background" Value="#1E1E22" />
+														<!-- Subtle lighter grey -->
+														<Setter Property="Foreground" Value="#E0E0E0" />
+													</Trigger>
+												</ControlTemplate.Triggers>
+											</ControlTemplate>
+										</Setter.Value>
+									</Setter>
+								</Style>
+								<!-- Accent Button Style for APPLY (Preserves dynamic binding) -->
+								<Style x:Key="AccentBtn" TargetType="Button">
+									<Setter Property="Foreground" Value="#0C0C0E" />
+									<Setter Property="Cursor" Value="Hand" />
+									<Setter Property="Template">
+										<Setter.Value>
+											<ControlTemplate TargetType="Button">
+												<Border Background="{TemplateBinding Background}" CornerRadius="8">
+													<Grid>
+														<!-- Invisible overlay that lights up on hover -->
+														<Border x:Name="HoverOverlay" Background="White" Opacity="0" CornerRadius="8" />
+														<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center"
+														                  Margin="{TemplateBinding Padding}" />
+													</Grid>
+												</Border>
+												<ControlTemplate.Triggers>
+													<Trigger Property="IsMouseOver" Value="True">
+														<Setter TargetName="HoverOverlay" Property="Opacity" Value="0.15" />
+														<!-- Slight brightness bump -->
+													</Trigger>
+												</ControlTemplate.Triggers>
+											</ControlTemplate>
+										</Setter.Value>
+									</Setter>
+								</Style>
+							</Grid.Resources>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="*" />
+								<ColumnDefinition Width="12" />
+								<!-- Slightly wider gap -->
+								<ColumnDefinition Width="*" />
+							</Grid.ColumnDefinitions>
+							<!-- Secondary Action (Ghost Button) - Explicit Height and larger font -->
+							<Button Grid.Column="0" Content="RESET" Command="{Binding ResetGpuClocksCommand}"
+							        Style="{StaticResource GhostBtn}" FontSize="12" FontWeight="Bold" Height="40"
+							        ToolTip="Reverts GPU core and memory clock offsets back to stock factory settings (0 MHz)." />
+							<!-- Primary Action (Accent Button) - Explicit Height and larger font -->
+							<Button Grid.Column="2" Content="{Binding ApplyBtnText}" Command="{Binding ApplyGpuClocksCommand}"
+							        Background="{Binding ApplyBtnColor}" Style="{StaticResource AccentBtn}" FontSize="12" FontWeight="Heavy"
+							        Height="40"
+							        ToolTip="Commits the selected core and memory clock offsets to the discrete GPU." />
+						</Grid>
 
-					<!-- GPU STATUS & NOTIFICATION -->
-					<StackPanel Margin="0,12,0,0" Visibility="{Binding GpuAlertVisibility}">
-						<TextBlock TextWrapping="Wrap" LineHeight="14">
-							<Run Text="{Binding GpuAlertTitle}" FontWeight="Bold" Foreground="{Binding GpuAlertForeground}" FontSize="11" />
-							<LineBreak />
-							<Run Text="{Binding GpuAlertMessage}" Foreground="#A1A1AA" FontSize="10" />
-						</TextBlock>
-						<Button Content="Dismiss" Command="{Binding DismissGpuAlertCommand}"
-						        HorizontalAlignment="Left" Background="Transparent" BorderBrush="#35353A" BorderThickness="1"
-						        Padding="8,2" Margin="0,6,0,0" Cursor="Hand"
-						        ToolTip="Dismiss notification.">
-							<Button.Template>
-								<ControlTemplate TargetType="Button">
-									<Border x:Name="Brd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-									        BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4" Padding="{TemplateBinding Padding}">
-										<TextBlock x:Name="Txt" Text="{TemplateBinding Content}" Foreground="#A1A1AA" FontSize="10" FontWeight="SemiBold" />
-									</Border>
-									<ControlTemplate.Triggers>
-										<Trigger Property="IsMouseOver" Value="True">
-											<Setter TargetName="Brd" Property="Background" Value="#1E1E22" />
-											<Setter TargetName="Txt" Property="Foreground" Value="#FFFFFF" />
-										</Trigger>
-									</ControlTemplate.Triggers>
-								</ControlTemplate>
-							</Button.Template>
-						</Button>
+						<!-- GPU STATUS & NOTIFICATION -->
+						<StackPanel Margin="0,12,0,0" Visibility="{Binding GpuAlertVisibility}">
+							<TextBlock TextWrapping="Wrap" LineHeight="14">
+								<Run Text="{Binding GpuAlertTitle}" FontWeight="Bold" Foreground="{Binding GpuAlertForeground}" FontSize="11" />
+								<LineBreak />
+								<Run Text="{Binding GpuAlertMessage}" Foreground="#A1A1AA" FontSize="10" />
+							</TextBlock>
+							<Button Content="Dismiss" Command="{Binding DismissGpuAlertCommand}"
+							        HorizontalAlignment="Left" Background="Transparent" BorderBrush="#35353A" BorderThickness="1"
+							        Padding="8,2" Margin="0,6,0,0" Cursor="Hand"
+							        ToolTip="Dismiss notification.">
+								<Button.Template>
+									<ControlTemplate TargetType="Button">
+										<Border x:Name="Brd" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+										        BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4"
+										        Padding="{TemplateBinding Padding}">
+											<TextBlock x:Name="Txt" Text="{TemplateBinding Content}" Foreground="#A1A1AA" FontSize="10"
+											           FontWeight="SemiBold" />
+										</Border>
+										<ControlTemplate.Triggers>
+											<Trigger Property="IsMouseOver" Value="True">
+												<Setter TargetName="Brd" Property="Background" Value="#1E1E22" />
+												<Setter TargetName="Txt" Property="Foreground" Value="#FFFFFF" />
+											</Trigger>
+										</ControlTemplate.Triggers>
+									</ControlTemplate>
+								</Button.Template>
+							</Button>
+						</StackPanel>
 					</StackPanel>
-				</StackPanel>
-			</ScrollViewer>
+				</ScrollViewer>
 
 				<!-- 4. KEYBOARD PAGE -->
 				<StackPanel x:Name="KeyboardPage" Visibility="Collapsed" Margin="20,10,20,0">
@@ -1323,6 +1331,4 @@
 		</Grid>
 	</Border>
 </Window>
-
-
 
