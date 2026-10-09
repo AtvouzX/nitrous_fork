@@ -684,13 +684,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
 
                 bool isTurbo = AcerWmiManager.IsTurboModeSupported();
                 bool isTaskEnabled = StartupManager.CheckStartupTask();
-                bool isNitroKeyEnabled = NitroKeyManager.IsIntegrationEnabled() ||
-                                         SettingsManager.Get("NitroKeyIntegrated", 0) == 1;
-
-                if (isNitroKeyEnabled)
-                {
-                    NitroKeyManager.SyncExecutablePath(Environment.ProcessPath ?? "");
-                }
+                bool isNitroKeyEnabled = false;
 
                 int core = 0, memory = 0;
                 bool hasClocks = _gpuManager.IsValid && _gpuManager.GetClocks(out core, out memory);

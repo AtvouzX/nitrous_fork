@@ -59,6 +59,9 @@ public class TrayApplication : ApplicationContext
 
             _ = Task.Run(async () =>
             {
+                // Clean up any legacy IFEO registry entries, dummy System32 files, or AppData scripts
+                NitroKeyManager.PurgeLegacyIfeoIntegration();
+
                 // Initial quick memory trim after JIT compilation
                 await Task.Delay(2000);
                 MemoryHelper.TrimWorkingSet();
