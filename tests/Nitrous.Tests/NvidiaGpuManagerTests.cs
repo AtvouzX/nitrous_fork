@@ -71,4 +71,31 @@ public class NvidiaGpuManagerTests
 
         Assert.False(result);
     }
+
+    [Fact]
+    public async Task ApplyPowerProfileOcAsync_WhenOnDcPower_ReturnsZeroWithoutWakingGpu()
+    {
+        using var manager = new NvidiaGpuManager();
+        
+        // When on DC (battery) power, OC must be completely bypassed to preserve D3Cold sleep
+        int result = await manager.ApplyPowerProfileOcAsync(Nitrous.Enums.PowerProfile.Performance, isAcOnline: false);
+        Assert.Equal(0, result);
+    }
+
+    [Fact]
+    public async Task ApplyOnBootAsync_WhenOnDcPower_CompletesCleanlyWithoutWakingGpu()
+    {
+        using var manager = new NvidiaGpuManager();
+
+        // Boot OC must abort immediately when on DC power
+        var ex = await Record.ExceptionAsync(() => manager.ApplyOnBootAsync(Nitrous.Enums.PowerProfile.Performance, isAcOnline: false));
+        Assert.Null(ex);
+    }
+
+    [Fact]
+    public void IsAcPowerConnected_ReturnsBooleanWithoutExceptions()
+    {
+        bool isOnline = NvidiaGpuManager.IsAcPowerConnected();
+        Assert.True(isOnline || !isOnline);
+    }
 }

@@ -633,4 +633,85 @@ public class DashboardAndTrayUiTests
             }
         });
     }
+
+    [Fact]
+    public void DashboardViewModel_GpuAlert_ShowAndDismiss_UpdatesPropertiesAndVisibility()
+    {
+        RunInSta(() =>
+        {
+            using var vm = new DashboardViewModel();
+
+            // Initial state: Alert must be collapsed
+            Assert.Equal(Visibility.Collapsed, vm.GpuAlertVisibility);
+
+            // Warning alert (e.g. Battery deferred or D3Cold sleep)
+            vm.ShowGpuAlert(DashboardViewModel.GpuAlertLevel.Warning, "Battery Notice", "Tuning deferred on battery.");
+            Assert.Equal(Visibility.Visible, vm.GpuAlertVisibility);
+            Assert.Equal("Battery Notice", vm.GpuAlertTitle);
+            Assert.Equal("Tuning deferred on battery.", vm.GpuAlertMessage);
+            Assert.Equal("#FF9F0A", vm.GpuAlertForeground);
+            Assert.Equal("#1C1610", vm.GpuAlertBackground);
+
+            // Success alert
+            vm.ShowGpuAlert(DashboardViewModel.GpuAlertLevel.Success, "Applied", "Clocks committed.");
+            Assert.Equal(Visibility.Visible, vm.GpuAlertVisibility);
+            Assert.Equal("#34C759", vm.GpuAlertForeground);
+            Assert.Equal("#101C14", vm.GpuAlertBackground);
+
+            // Error alert
+            vm.ShowGpuAlert(DashboardViewModel.GpuAlertLevel.Error, "Rejected", "Driver rejected offsets.");
+            Assert.Equal(Visibility.Visible, vm.GpuAlertVisibility);
+            Assert.Equal("#FF453A", vm.GpuAlertForeground);
+            Assert.Equal("#201214", vm.GpuAlertBackground);
+
+            // Dismiss via method
+            vm.DismissGpuAlert();
+            Assert.Equal(Visibility.Collapsed, vm.GpuAlertVisibility);
+
+            // Show again and dismiss via Command
+            vm.ShowGpuAlert(DashboardViewModel.GpuAlertLevel.Info, "Info", "Some info");
+            Assert.Equal(Visibility.Visible, vm.GpuAlertVisibility);
+            vm.DismissGpuAlertCommand.Execute(null);
+            Assert.Equal(Visibility.Collapsed, vm.GpuAlertVisibility);
+        });
+    }
+
+    [Fact]
+    public void DashboardViewModel_ApplyGpuClocks_WhenApplying_ShowsInformativeAlert()
+    {
+        RunInSta(() =>
+        {
+            using var vm = new DashboardViewModel();
+            vm.GpuCoreOffset = 50;
+            vm.GpuMemoryOffset = 100;
+
+            // Trigger clock application
+            vm.ApplyGpuClocksCommand.Execute(null);
+
+            // An informative alert explaining the outcome must be displayed
+            Assert.Equal(Visibility.Visible, vm.GpuAlertVisibility);
+            Assert.NotEmpty(vm.GpuAlertTitle);
+            Assert.NotEmpty(vm.GpuAlertMessage);
+        });
+    }
+
+    [Fact]
+    public void DashboardViewModel_ResetGpuClocks_ShowsResetConfirmationAlert()
+    {
+        RunInSta(() =>
+        {
+            using var vm = new DashboardViewModel();
+            vm.GpuCoreOffset = 100;
+            vm.GpuMemoryOffset = 200;
+
+            // Trigger reset
+            vm.ResetGpuClocksCommand.Execute(null);
+
+            // Reset alert must be displayed
+            Assert.Equal(Visibility.Visible, vm.GpuAlertVisibility);
+            Assert.Equal("Clocks Reset to Stock", vm.GpuAlertTitle);
+            Assert.Contains("0 MHz", vm.GpuAlertMessage);
+        });
+    }
 }
+

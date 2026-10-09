@@ -75,6 +75,12 @@ public class NvidiaGpuManager : IDisposable
             return;
         }
 
+        // Guard against waking sleeping dGPU in D3Cold sleep
+        if (!IsGpuAwake())
+        {
+            return;
+        }
+
         try
         {
             try { NVIDIA.Unload(); } catch { }
@@ -123,6 +129,7 @@ public class NvidiaGpuManager : IDisposable
     public bool GetClocks(out int core, out int memory)
     {
         core = memory = 0;
+        if (!IsGpuAwake()) return false;
         if (_internalGpu == null) InitializeNvAPI();
         if (!IsValid) return false;
 
@@ -149,6 +156,7 @@ public class NvidiaGpuManager : IDisposable
 
     private int SetClocksInternal(int core, int memory)
     {
+        if (!IsGpuAwake()) return 0;
         if (_internalGpu == null) InitializeNvAPI();
         if (!IsValid) return 0;
 
@@ -183,8 +191,27 @@ public class NvidiaGpuManager : IDisposable
         }
     }
 
-    public async Task ApplyOnBootAsync(PowerProfile currentProfile)
+    public static bool IsAcPowerConnected()
     {
+        try
+        {
+            return System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Online;
+        }
+        catch
+        {
+            return true;
+        }
+    }
+
+    public async Task ApplyOnBootAsync(PowerProfile currentProfile, bool? isAcOnline = null)
+    {
+        bool online = isAcOnline ?? IsAcPowerConnected();
+        if (!online || !IsGpuAwake())
+        {
+            // Core Battery Invariant: discrete NVIDIA GPU must remain in D3Cold sleep on battery.
+            return;
+        }
+
         int core = SettingsManager.Get($"GpuCore_{currentProfile}", GetDefaultCore(currentProfile));
         int memory = SettingsManager.Get($"GpuMemory_{currentProfile}", GetDefaultMemory(currentProfile));
 
@@ -195,6 +222,8 @@ public class NvidiaGpuManager : IDisposable
 
         for (int attempt = 1; attempt <= maxAttempts; attempt++)
         {
+            if (!IsGpuAwake()) return;
+
             try
             {
                 if (_internalGpu == null) InitializeNvAPI();
@@ -211,8 +240,16 @@ public class NvidiaGpuManager : IDisposable
         }
     }
 
-    public async Task<int> ApplyPowerProfileOcAsync(PowerProfile profile)
+    public async Task<int> ApplyPowerProfileOcAsync(PowerProfile profile, bool? isAcOnline = null)
     {
+        bool online = isAcOnline ?? IsAcPowerConnected();
+        if (!online || !IsGpuAwake())
+        {
+            // Core Battery Invariant: discrete NVIDIA GPU must remain in D3Cold sleep on battery.
+            // Never invoke NvAPI when on DC power or when the dGPU is asleep.
+            return 0;
+        }
+
         return await Task.Run(() =>
         {
             int coreOffset = SettingsManager.Get($"GpuCore_{profile}", GetDefaultCore(profile));

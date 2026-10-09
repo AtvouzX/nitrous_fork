@@ -69,8 +69,12 @@ public class TrayApplication : ApplicationContext
                 await Task.Delay(6000);
                 ApplyPowerSettings(true);
 
-                var bootProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-                await _gpuManager.ApplyOnBootAsync(bootProfile);
+                bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
+                if (isOnline)
+                {
+                    var bootProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+                    await _gpuManager.ApplyOnBootAsync(bootProfile, isOnline);
+                }
 
                 // Final trim after all boot settings are applied
                 MemoryHelper.TrimWorkingSet();
@@ -111,7 +115,7 @@ public class TrayApplication : ApplicationContext
                         _ = CpuPowerManager.ApplyProfileLimitsAsync(profile, isOnline);
                     }
 
-                    await _gpuManager.ApplyPowerProfileOcAsync(profile);
+                    await _gpuManager.ApplyPowerProfileOcAsync(profile, isOnline);
                     TriggerProfileOsd(profile);
 
                     foreach (ToolStripItem sibling in powerMenu.DropDownItems)
@@ -398,7 +402,7 @@ public class TrayApplication : ApplicationContext
         var refreshMode = (RefreshProfile)SettingsManager.Get("RefreshMode", (int)RefreshProfile.Auto);
         DisplayManager.ApplyRefreshProfile(refreshMode, isOnline);
 
-        _ = _gpuManager.ApplyPowerProfileOcAsync(currentProfile);
+        _ = _gpuManager.ApplyPowerProfileOcAsync(currentProfile, isOnline);
     }
 
     private PowerProfile? _cachedProfile;
@@ -619,7 +623,7 @@ public class TrayApplication : ApplicationContext
             _ = CpuPowerManager.ApplyProfileLimitsAsync(nextProfile, isOnline);
         }
 
-        _ = _gpuManager.ApplyPowerProfileOcAsync(nextProfile);
+        _ = _gpuManager.ApplyPowerProfileOcAsync(nextProfile, isOnline);
         TriggerProfileOsd(nextProfile);
     }
 
