@@ -67,35 +67,94 @@ public static class AcerServiceManager
         "ASMSvc"
     };
 
-    public static AcerServiceSummary GetServiceSummary()
+    /// <summary>
+    /// Safely disposes all ServiceController instances in the specified collection.
+    /// </summary>
+    public static void DisposeServices(IEnumerable<ServiceController>? services)
     {
-        var summary = new AcerServiceSummary();
-        
+        if (services == null) return;
+        foreach (var svc in services)
+        {
+            try
+            {
+                svc.Dispose();
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to dispose ServiceController: {ex.Message}");
+            }
+        }
+    }
+
+    /// <summary>
+    /// Enumerates all Windows services, filtering for target Acer services while immediately disposing all non-matching services.
+    /// The caller is responsible for disposing the returned list of services (e.g. via <see cref="DisposeServices"/>).
+    /// </summary>
+    public static List<ServiceController> GetTargetServices()
+    {
+        var targetList = new List<ServiceController>();
+        ServiceController[]? allServices = null;
         try
         {
-            var allServices = ServiceController.GetServices();
+            allServices = ServiceController.GetServices();
             foreach (var svc in allServices)
             {
                 if (TargetServices.Contains(svc.ServiceName, StringComparer.OrdinalIgnoreCase))
                 {
-                    summary.TotalFound++;
-                    if (svc.Status == ServiceControllerStatus.Running || svc.Status == ServiceControllerStatus.StartPending)
+                    targetList.Add(svc);
+                }
+                else
+                {
+                    try
                     {
-                        summary.RunningCount++;
+                        svc.Dispose();
                     }
-                    
-                    summary.Services.Add(new AcerServiceInfo
+                    catch
                     {
-                        ServiceName = svc.ServiceName,
-                        DisplayName = svc.DisplayName,
-                        Status = svc.Status
-                    });
+                    }
                 }
             }
         }
         catch (Exception ex)
         {
             Debug.WriteLine($"Failed to enumerate services: {ex.Message}");
+            DisposeServices(allServices);
+            DisposeServices(targetList);
+            targetList.Clear();
+        }
+
+        return targetList;
+    }
+
+    public static AcerServiceSummary GetServiceSummary()
+    {
+        var summary = new AcerServiceSummary();
+        var targets = GetTargetServices();
+        try
+        {
+            foreach (var svc in targets)
+            {
+                summary.TotalFound++;
+                if (svc.Status == ServiceControllerStatus.Running || svc.Status == ServiceControllerStatus.StartPending)
+                {
+                    summary.RunningCount++;
+                }
+
+                summary.Services.Add(new AcerServiceInfo
+                {
+                    ServiceName = svc.ServiceName,
+                    DisplayName = svc.DisplayName,
+                    Status = svc.Status
+                });
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.WriteLine($"Failed to inspect services: {ex.Message}");
+        }
+        finally
+        {
+            DisposeServices(targets);
         }
 
         return summary;
@@ -105,10 +164,10 @@ public static class AcerServiceManager
     {
         await Task.Run(() =>
         {
-            var allServices = ServiceController.GetServices();
-            foreach (var svc in allServices)
+            var targets = GetTargetServices();
+            try
             {
-                if (TargetServices.Contains(svc.ServiceName, StringComparer.OrdinalIgnoreCase))
+                foreach (var svc in targets)
                 {
                     try
                     {
@@ -126,6 +185,10 @@ public static class AcerServiceManager
                     }
                 }
             }
+            finally
+            {
+                DisposeServices(targets);
+            }
         });
     }
 
@@ -133,23 +196,36 @@ public static class AcerServiceManager
     {
         await Task.Run(() =>
         {
-            var svc = ServiceController.GetServices().FirstOrDefault(s => string.Equals(s.ServiceName, serviceName, StringComparison.OrdinalIgnoreCase));
-            if (svc != null)
+            ServiceController[]? allServices = null;
+            try
             {
-                try
+                allServices = ServiceController.GetServices();
+                var svc = allServices.FirstOrDefault(s => string.Equals(s.ServiceName, serviceName, StringComparison.OrdinalIgnoreCase));
+                if (svc != null)
                 {
-                    ChangeServiceStartType(svc, SERVICE_DISABLED);
-
-                    if (svc.Status != ServiceControllerStatus.Stopped && svc.Status != ServiceControllerStatus.StopPending)
+                    try
                     {
-                        svc.Stop();
-                        svc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(3));
+                        ChangeServiceStartType(svc, SERVICE_DISABLED);
+
+                        if (svc.Status != ServiceControllerStatus.Stopped && svc.Status != ServiceControllerStatus.StopPending)
+                        {
+                            svc.Stop();
+                            svc.WaitForStatus(ServiceControllerStatus.Stopped, TimeSpan.FromSeconds(3));
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Debug.WriteLine($"Failed to stop/disable {svc.ServiceName}: {ex.Message}");
                     }
                 }
-                catch (Exception ex)
-                {
-                    Debug.WriteLine($"Failed to stop/disable {svc.ServiceName}: {ex.Message}");
-                }
+            }
+            catch (Exception ex)
+            {
+                Debug.WriteLine($"Failed to query service {serviceName}: {ex.Message}");
+            }
+            finally
+            {
+                DisposeServices(allServices);
             }
         });
     }
@@ -158,10 +234,10 @@ public static class AcerServiceManager
     {
         await Task.Run(() =>
         {
-            var allServices = ServiceController.GetServices();
-            foreach (var svc in allServices)
+            var targets = GetTargetServices();
+            try
             {
-                if (TargetServices.Contains(svc.ServiceName, StringComparer.OrdinalIgnoreCase))
+                foreach (var svc in targets)
                 {
                     try
                     {
@@ -178,6 +254,10 @@ public static class AcerServiceManager
                         Debug.WriteLine($"Failed to restore/start {svc.ServiceName}: {ex.Message}");
                     }
                 }
+            }
+            finally
+            {
+                DisposeServices(targets);
             }
         });
     }

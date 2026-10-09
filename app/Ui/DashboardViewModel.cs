@@ -21,6 +21,9 @@ public class DashboardViewModel : ObservableObject, IDisposable
     private CancellationTokenSource? _pollingCts;
     private PerformanceCounter? _cpuUsageCounter;
 
+    internal PerformanceCounter? CpuUsageCounter => _cpuUsageCounter;
+    internal void SetCpuUsageCounterForTesting(PerformanceCounter? counter) => _cpuUsageCounter = counter;
+
     public struct TelemetryPoint
     {
         public long Timestamp;
@@ -1389,6 +1392,19 @@ public class DashboardViewModel : ObservableObject, IDisposable
                     // Run Acer WMI telemetry first for CPU stats and fan RPMs
                     var telemetry = await Task.Run(() => AcerWmiManager.GetSystemTelemetry(), token);
 
+                    // Read CPU usage on the background thread to avoid UI thread micro-stutters
+                    float cpuUsage = 0;
+                    if (_cpuUsageCounter != null)
+                    {
+                        try
+                        {
+                            cpuUsage = _cpuUsageCounter.NextValue();
+                        }
+                        catch
+                        {
+                        }
+                    }
+
                     // Use the Windows CM API (DEVPKEY_Device_PowerData) to determine the actual
                     // GPU device power state (D0 = awake, D3 = asleep). This is the same technique
                     // used by the NVIDIA GPU Activity tray icon and OpenSense.
@@ -1494,18 +1510,6 @@ public class DashboardViewModel : ObservableObject, IDisposable
                         }
 
                         // 3. Update Graphing Data
-                        float cpuUsage = 0;
-                        if (_cpuUsageCounter != null)
-                        {
-                            try
-                            {
-                                cpuUsage = _cpuUsageCounter.NextValue();
-                            }
-                            catch
-                            {
-                            }
-                        }
-
                         CpuUsageText = $"{cpuUsage:0}%";
 
                         long now = Environment.TickCount64;
@@ -1755,6 +1759,14 @@ public class DashboardViewModel : ObservableObject, IDisposable
         _pollingCts = null;
         _fanDebouncer.Dispose();
         _gpuManager.Dispose();
+        try
+        {
+            _cpuUsageCounter?.Dispose();
+        }
+        catch
+        {
+        }
+        _cpuUsageCounter = null;
     }
 
     private static bool IsTestHost()

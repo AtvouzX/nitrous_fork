@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.ServiceProcess;
 using Nitrous.Managers;
 using Xunit;
@@ -27,5 +28,37 @@ public class AcerServiceManagerTests
         {
             Assert.Contains(svc.ServiceName, AcerServiceManager.TargetServices, StringComparer.OrdinalIgnoreCase);
         }
+    }
+
+    [Fact]
+    public void GetTargetServices_FiltersCorrectlyAndCallerDisposesSafely()
+    {
+        // Act
+        var targets = AcerServiceManager.GetTargetServices();
+
+        try
+        {
+            Assert.NotNull(targets);
+            foreach (var svc in targets)
+            {
+                Assert.Contains(svc.ServiceName, AcerServiceManager.TargetServices, StringComparer.OrdinalIgnoreCase);
+            }
+        }
+        finally
+        {
+            AcerServiceManager.DisposeServices(targets);
+        }
+    }
+
+    [Fact]
+    public void DisposeServices_HandlesNullAndDoubleDisposeGracefully()
+    {
+        // Null test
+        var exNull = Record.Exception(() => AcerServiceManager.DisposeServices(null));
+        Assert.Null(exNull);
+
+        // Empty list test
+        var exEmpty = Record.Exception(() => AcerServiceManager.DisposeServices(new List<ServiceController>()));
+        Assert.Null(exEmpty);
     }
 }

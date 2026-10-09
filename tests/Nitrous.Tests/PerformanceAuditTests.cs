@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Reflection;
 using Nitrous.Helpers;
@@ -51,6 +52,24 @@ public class PerformanceAuditTests
         // 4. On disposal, polling token must be cancelled and cleaned up
         vm.Dispose();
         Assert.False(vm.IsPollingActive, "Telemetry polling must be cancelled on Dispose.");
+    }
+
+    [Fact]
+    public void DashboardViewModel_Dispose_DisposesAndNullsCpuUsageCounter()
+    {
+        using var vm = new DashboardViewModel();
+        var counter = new PerformanceCounter();
+        bool isDisposed = false;
+        counter.Disposed += (_, _) => isDisposed = true;
+
+        vm.SetCpuUsageCounterForTesting(counter);
+        Assert.NotNull(vm.CpuUsageCounter);
+        Assert.False(isDisposed);
+
+        vm.Dispose();
+
+        Assert.Null(vm.CpuUsageCounter);
+        Assert.True(isDisposed, "PerformanceCounter must be cleanly disposed on ViewModel disposal.");
     }
 
     [Fact]

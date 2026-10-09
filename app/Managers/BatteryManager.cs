@@ -66,39 +66,51 @@ public static class BatteryManager
 
             // 1. Get Designed Capacity
             using (var searcher = new ManagementObjectSearcher(@"root\wmi", "SELECT DesignedCapacity FROM BatteryStaticData"))
+            using (var collection = searcher.Get())
             {
-                foreach (ManagementObject obj in searcher.Get())
+                foreach (ManagementObject obj in collection)
                 {
-                    if (obj["DesignedCapacity"] != null)
+                    using (obj)
                     {
-                        designed = Convert.ToUInt32(obj["DesignedCapacity"]);
-                        break;
+                        if (obj["DesignedCapacity"] != null)
+                        {
+                            designed = Convert.ToUInt32(obj["DesignedCapacity"]);
+                            break;
+                        }
                     }
                 }
             }
 
             // 2. Get Full Charged Capacity
             using (var searcher = new ManagementObjectSearcher(@"root\wmi", "SELECT FullChargedCapacity FROM BatteryFullChargedCapacity"))
+            using (var collection = searcher.Get())
             {
-                foreach (ManagementObject obj in searcher.Get())
+                foreach (ManagementObject obj in collection)
                 {
-                    if (obj["FullChargedCapacity"] != null)
+                    using (obj)
                     {
-                        full = Convert.ToUInt32(obj["FullChargedCapacity"]);
-                        break;
+                        if (obj["FullChargedCapacity"] != null)
+                        {
+                            full = Convert.ToUInt32(obj["FullChargedCapacity"]);
+                            break;
+                        }
                     }
                 }
             }
 
             // 3. Get Cycle Count
             using (var searcher = new ManagementObjectSearcher(@"root\wmi", "SELECT CycleCount FROM BatteryCycleCount"))
+            using (var collection = searcher.Get())
             {
-                foreach (ManagementObject obj in searcher.Get())
+                foreach (ManagementObject obj in collection)
                 {
-                    if (obj["CycleCount"] != null)
+                    using (obj)
                     {
-                        cycleCount = Convert.ToUInt32(obj["CycleCount"]);
-                        break;
+                        if (obj["CycleCount"] != null)
+                        {
+                            cycleCount = Convert.ToUInt32(obj["CycleCount"]);
+                            break;
+                        }
                     }
                 }
             }
