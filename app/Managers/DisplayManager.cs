@@ -74,7 +74,10 @@ public static class DisplayManager
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            LogManager.Warn($"EnumDisplaySettings failed to query refresh rate: {ex.Message}", "Display");
+        }
 
         _cachedMaxRefreshRate = maxHz;
         return maxHz;
@@ -96,11 +99,19 @@ public static class DisplayManager
             var mode = new DEVMODEW { dmSize = (short)Marshal.SizeOf<DEVMODEW>() };
             if (EnumDisplaySettingsW(null, ENUM_CURRENT_SETTINGS, ref mode) && mode.dmDisplayFrequency != targetHz)
             {
+                LogManager.Info($"Switching display refresh rate from {mode.dmDisplayFrequency}Hz to {targetHz}Hz (Profile: {profile}, AC: {isAcPower})", "Display");
                 mode.dmFields = DM_DISPLAYFREQUENCY;
                 mode.dmDisplayFrequency = targetHz;
-                ChangeDisplaySettingsExW(null, ref mode, IntPtr.Zero, CDS_UPDATEREGISTRY, IntPtr.Zero);
+                int ret = ChangeDisplaySettingsExW(null, ref mode, IntPtr.Zero, CDS_UPDATEREGISTRY, IntPtr.Zero);
+                if (ret != 0)
+                {
+                    LogManager.Warn($"ChangeDisplaySettingsExW returned error code {ret}", "Display");
+                }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            LogManager.Warn($"Failed to apply refresh profile {profile}: {ex.Message}", "Display");
+        }
     }
 }

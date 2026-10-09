@@ -42,7 +42,7 @@ public static class BatteryManager
         uint ret = CallNtPowerInformation(SystemBatteryStateLevel, IntPtr.Zero, 0, out state, (uint)Marshal.SizeOf<SYSTEM_BATTERY_STATE>());
         if (ret != 0)
         {
-            Debug.WriteLine($"CallNtPowerInformation failed with code {ret}");
+            LogManager.Warn($"CallNtPowerInformation failed with NTSTATUS 0x{ret:X}", "Battery");
         }
         return state;
     }
@@ -136,7 +136,7 @@ public static class BatteryManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Failed to read WMI battery health: {ex.Message}");
+            LogManager.Warn($"Failed to read WMI battery health: {ex.Message}", "Battery");
         }
 
         return null;

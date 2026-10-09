@@ -21,7 +21,10 @@ public static class SystemInfoManager
                 return _cachedModel;
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"BIOS registry model lookup failed: {ex.Message}", "SystemInfo");
+        }
 
         // Fallback: WMI query
         try
@@ -33,11 +36,15 @@ public static class SystemInfoManager
                 using (item)
                 {
                     _cachedModel = item["Model"]?.ToString() ?? "Unknown System";
+                    LogManager.Info($"System model detected via WMI: {_cachedModel}", "SystemInfo");
                     return _cachedModel;
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            LogManager.Warn($"WMI model query failed: {ex.Message}", "SystemInfo");
+        }
         return "Unknown System";
     }
 }

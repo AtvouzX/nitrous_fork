@@ -16,7 +16,11 @@ public static class StartupManager
             p?.WaitForExit();
             return p != null && p.ExitCode == 0;
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            LogManager.Warn($"CheckStartupTask failed: {ex.Message}", "Startup");
+            return false;
+        }
     }
 
     public static bool ToggleStartupTask(bool enable, string exePath)
@@ -39,7 +43,9 @@ public static class StartupManager
                     using var p2 = Process.Start(new ProcessStartInfo(CachedSchtasksPath, $"/create /tn \"Nitrous_Dashboard\" /xml \"{tempFile}\" /f") { CreateNoWindow = true, UseShellExecute = false });
                     p2?.WaitForExit();
 
-                    return p != null && p.ExitCode == 0;
+                    bool success = p != null && p.ExitCode == 0;
+                    LogManager.Info($"ToggleStartupTask(true) completed. Success: {success}", "Startup");
+                    return success;
                 }
                 finally
                 {
@@ -52,9 +58,16 @@ public static class StartupManager
                 p?.WaitForExit();
                 using var p2 = Process.Start(new ProcessStartInfo(CachedSchtasksPath, "/delete /tn \"Nitrous_Dashboard\" /f") { CreateNoWindow = true, UseShellExecute = false });
                 p2?.WaitForExit();
-                return p != null && p.ExitCode == 0;
+
+                bool success = p != null && p.ExitCode == 0;
+                LogManager.Info($"ToggleStartupTask(false) completed. Success: {success}", "Startup");
+                return success;
             }
         }
-        catch { return false; }
+        catch (Exception ex)
+        {
+            LogManager.Error($"ToggleStartupTask({enable}) failed: {ex.Message}", ex, "Startup");
+            return false;
+        }
     }
 }

@@ -49,7 +49,7 @@ public static class AcerWmiManager
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[AcerWmiManager] Failed to get AcerGamingFunction: {ex.Message}");
+                LogManager.Warn($"Failed to get AcerGamingFunction: {ex.Message}", "AcerWmi");
             }
 
             return null;
@@ -93,9 +93,9 @@ public static class AcerWmiManager
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Fail safely if the WMI method isn't supported at all
+            LogManager.Debug($"IsTurboModeSupported check failed: {ex.Message}", "AcerWmi");
         }
 
         return false;
@@ -129,7 +129,7 @@ public static class AcerWmiManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[AcerWmiManager] Failed reading active power mode: {ex.Message}");
+            LogManager.Warn($"Failed reading active power mode: {ex.Message}", "AcerWmi");
         }
 
         return null;
@@ -138,11 +138,13 @@ public static class AcerWmiManager
     public static async Task SetPowerModeAsync(PowerProfile profile)
     {
         ulong payload = ((ulong)profile << 8) | 0x0B;
+        LogManager.Info($"Setting power mode to {profile} (0x{payload:X})", "AcerWmi");
         await InvokeWmiAsync("AcerGamingFunction", "SetGamingMiscSetting", payload);
     }
 
     public static async Task SetFansAsync(FanProfile profile)
     {
+        LogManager.Info($"Setting fans to {profile}", "AcerWmi");
         if (profile == FanProfile.Auto)
         {
             await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", 0x41000Ful);
@@ -163,6 +165,7 @@ public static class AcerWmiManager
 
     public static async Task SetCustomFansAsync(int cpuSpeed, int gpuSpeed)
     {
+        LogManager.Info($"Setting custom fans: CPU={cpuSpeed}%, GPU={gpuSpeed}%", "AcerWmi");
         await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", 0xC3000Ful);
         await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 1ul | ((ulong)cpuSpeed << 8));
         await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 2ul | ((ulong)gpuSpeed << 8));
@@ -196,9 +199,9 @@ public static class AcerWmiManager
                 }
             }
         }
-        catch
+        catch (Exception ex)
         {
-            // Fail silently if WMI is entirely inaccessible
+            LogManager.Debug($"ReadHardwareSensors failed: {ex.Message}", "AcerWmi");
         }
 
         return (cpuTemp, cpuRpm, gpuTemp, gpuRpm);
@@ -262,7 +265,7 @@ public static class AcerWmiManager
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[AcerWmiManager] Failed to set battery charge limit: {ex.Message}");
+                LogManager.Error($"Failed to set battery charge limit: {ex.Message}", ex, "AcerWmi");
             }
         });
     }
@@ -288,7 +291,7 @@ public static class AcerWmiManager
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"[AcerWmiManager] Error invoking {methodName}(0x{gmInput:X}): {ex.Message}");
+                LogManager.Error($"Error invoking {methodName}(0x{gmInput:X}): {ex.Message}", ex, "AcerWmi");
             }
         });
     }

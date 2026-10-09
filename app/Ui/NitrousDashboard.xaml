@@ -926,6 +926,77 @@
 								          ToolTip="Registers an elevated Task Scheduler task to start Nitrous silently in the system tray at Windows logon without UAC prompts." />
 							</Grid>
 						</Border>
+						<TextBlock Text="DIAGNOSTICS" Foreground="#A1A1AA" FontSize="10" FontWeight="Bold"
+						           Margin="0,8,0,8" />
+						<!-- Debugging Toggle -->
+						<Border Background="#151518" CornerRadius="10" Height="70" BorderBrush="#222226" BorderThickness="1"
+						        Margin="0,0,0,10"
+						        ToolTip="Enables verbose diagnostic logging of Acer EC registers, WMI calls, and GPU sleep transitions to %LOCALAPPDATA%\Nitrous\Logs\nitrous.log. Turn off during normal use for minimal disk writes.">
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*" />
+									<ColumnDefinition Width="Auto" />
+								</Grid.ColumnDefinitions>
+								<StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="15,0,10,0">
+									<StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+										<!-- Bug / Diagnostics Icon Path -->
+										<Path
+											Data="M20,8H17.19C16.74,7.22 16.12,6.55 15.37,6.04L17,4.41L15.59,3L13.42,5.17C12.96,5.06 12.49,5 12,5C11.51,5 11.04,5.06 10.59,5.17L8.41,3L7,4.41L8.62,6.04C7.88,6.55 7.26,7.22 6.81,8H4V10H6.09C6.04,10.33 6,10.66 6,11V12H4V14H6V15C6,15.34 6.04,15.67 6.09,16H4V18H6.81C7.85,19.79 9.78,21 12,21C14.22,21 16.15,19.79 17.19,18H20V16H17.91C17.96,15.67 18,15.34 18,15V14H20V12H18V11C18,10.66 17.96,10.33 17.91,10H20V8M16,15A4,4 0 0,1 12,19A4,4 0 0,1 8,15V11A4,4 0 0,1 12,7A4,4 0 0,1 16,7V15Z"
+											Fill="White" Stretch="Uniform" Width="14" Height="14" Margin="0,0,6,0" VerticalAlignment="Center" />
+										<TextBlock Text="Debugging" Foreground="White" FontWeight="Bold" FontSize="12"
+										           VerticalAlignment="Center" />
+									</StackPanel>
+									<TextBlock Text="Record detailed hardware sensor registers and WMI operations to disk."
+									           Foreground="#A1A1AA" FontSize="11" TextWrapping="Wrap" />
+								</StackPanel>
+								<CheckBox Grid.Column="1" x:Name="TogDebugging" Style="{StaticResource ModernToggleStyle}"
+								          HorizontalAlignment="Right" Margin="0,0,15,0"
+								          IsChecked="{Binding IsDebuggingEnabled, UpdateSourceTrigger=PropertyChanged}"
+								          ToolTip="Enables verbose diagnostic logging of Acer EC registers, WMI calls, and GPU sleep transitions to %LOCALAPPDATA%\Nitrous\Logs\nitrous.log. Turn off during normal use for minimal disk writes." />
+							</Grid>
+						</Border>
+						<!-- Diagnostics Actions Card -->
+						<Border Background="#151518" CornerRadius="10" Margin="0,0,0,10" BorderBrush="#222226" BorderThickness="1"
+						        Padding="15"
+						        ToolTip="Diagnostic troubleshooting utilities: open the local log folder or copy a complete hardware diagnostic report to clipboard.">
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*" />
+									<ColumnDefinition Width="Auto" />
+								</Grid.ColumnDefinitions>
+								<StackPanel Grid.Column="0" VerticalAlignment="Center">
+									<StackPanel Orientation="Horizontal" Margin="0,0,0,2">
+										<Path
+											Data="M14,2H6A2,2 0 0,0 4,4V20A2,2 0 0,0 6,22H18A2,2 0 0,0 20,20V8L14,2M18,20H6V4H13V9H18V20Z"
+											Fill="White" Stretch="Uniform" Width="12" Height="14" Margin="0,0,6,0" VerticalAlignment="Center" />
+										<TextBlock Text="System Diagnostics &amp; Logs" Foreground="White" FontWeight="Bold" FontSize="12"
+										           VerticalAlignment="Center" />
+									</StackPanel>
+									<TextBlock Text="Open log files in Explorer or copy a sanitized hardware diagnostic report."
+									           Foreground="#A1A1AA" FontSize="11" TextWrapping="Wrap" />
+								</StackPanel>
+								<StackPanel Grid.Column="1" Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+									<Button x:Name="BtnOpenLogsFolder" Style="{StaticResource GhostBtn}" Margin="0,0,8,0" Padding="12,6"
+									        Command="{Binding OpenLogsFolderCommand}"
+									        ToolTip="Opens the directory containing Nitrous diagnostic log files in File Explorer.">
+										<StackPanel Orientation="Horizontal">
+											<Path Data="M20,18H4V8H20M20,6H12L10,4H4C2.89,4 2,4.89 2,6V18A2,2 0 0,0 4,20H20A2,2 0 0,0 22,18V8A2,2 0 0,0 20,6Z"
+											      Fill="White" Stretch="Uniform" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+											<TextBlock Text="OPEN LOGS" FontSize="10" FontWeight="Bold" />
+										</StackPanel>
+									</Button>
+									<Button x:Name="BtnCopyDiagnostics" Style="{StaticResource AccentBtn}" Background="#FF4500" Padding="12,6"
+									        Command="{Binding CopyDiagnosticsCommand}"
+									        ToolTip="Generates an anonymized hardware diagnostics summary and copies it to your clipboard for GitHub issue reports.">
+										<StackPanel Orientation="Horizontal">
+											<Path Data="M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3M12,3A1,1 0 0,1 13,4A1,1 0 0,1 12,5A1,1 0 0,1 11,4A1,1 0 0,1 12,3M7,7H17V5H19V19H5V5H7V7Z"
+											      Fill="White" Stretch="Uniform" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center" />
+											<TextBlock Text="COPY REPORT" FontSize="10" FontWeight="Bold" />
+										</StackPanel>
+									</Button>
+								</StackPanel>
+							</Grid>
+						</Border>
 					</StackPanel>
 				</ScrollViewer>
 				<!-- 3. GPU PAGE -->

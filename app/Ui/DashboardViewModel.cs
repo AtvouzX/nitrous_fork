@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Collections.ObjectModel;
 using System.Diagnostics;
@@ -728,6 +729,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
         _chargeLimit = SettingsManager.Get("ChargeLimit", 0) == 1;
         _autoSwitch = SettingsManager.Get("AutoSwitch", 0) == 1;
         _refreshAutoSwitch = SettingsManager.Get("RefreshAutoSwitch", 0) == 1;
+        _isDebuggingEnabled = SettingsManager.Get("Debugging", SettingsManager.Get("DebugLogging", false));
 
         // Fast load cached profile to prevent UI blocking
         ActivePowerProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
@@ -742,8 +744,9 @@ public class DashboardViewModel : ObservableObject, IDisposable
                     // This is notoriously slow on first access and must NOT be on the UI thread!
                     _cpuUsageCounter = new PerformanceCounter("Processor Information", "% Processor Utility", "_Total", true);
                 }
-                catch
+                catch (Exception ex)
                 {
+                    LogManager.Debug($"PerformanceCounter init failed: {ex.Message}", "DashboardVM");
                 }
 
                 var actualMode = AcerWmiManager.GetActivePowerMode();
@@ -821,7 +824,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Failed to set power mode: {ex.Message}");
+                    LogManager.Warn($"Failed to set power mode: {ex.Message}", "DashboardVM");
                 }
             }
         });
@@ -968,7 +971,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to apply GPU clocks: {ex.Message}");
+                LogManager.Warn($"Failed to apply GPU clocks: {ex.Message}", "DashboardVM");
                 ShowGpuAlert(
                     GpuAlertLevel.Error,
                     "Application Error",
@@ -1008,7 +1011,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to reset GPU clocks: {ex.Message}");
+                LogManager.Warn($"Failed to reset GPU clocks: {ex.Message}", "DashboardVM");
             }
         });
 
@@ -1033,6 +1036,46 @@ public class DashboardViewModel : ObservableObject, IDisposable
             {
                 await AcerServiceManager.StopAndDisableSingleAsync(serviceName);
                 _ = RefreshAcerServicesAsync();
+            }
+        });
+
+        OpenLogsFolderCommand = new RelayCommand(_ =>
+        {
+            try
+            {
+                string logDir = LogManager.LogsDirectory;
+                if (!Directory.Exists(logDir))
+                {
+                    Directory.CreateDirectory(logDir);
+                }
+                string explorerPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+                if (!File.Exists(explorerPath))
+                {
+                    explorerPath = Path.Combine(Environment.SystemDirectory, "explorer.exe");
+                }
+                Process.Start(new ProcessStartInfo(explorerPath, logDir) { UseShellExecute = true });
+            }
+            catch (Exception ex)
+            {
+                LogManager.Warn($"Failed to open logs folder: {ex.Message}", "DashboardVM");
+            }
+        });
+
+        CopyDiagnosticsCommand = new RelayCommand(_ =>
+        {
+            try
+            {
+                string dump = LogManager.ExportSystemDiagnostics();
+                System.Windows.Clipboard.SetText(dump);
+                ShowGpuAlert(
+                    GpuAlertLevel.Info,
+                    "Diagnostics Copied",
+                    "System diagnostic report has been copied to your clipboard.",
+                    "M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3Z");
+            }
+            catch (Exception ex)
+            {
+                LogManager.Warn($"Failed to copy diagnostics: {ex.Message}", "DashboardVM");
             }
         });
 
@@ -1210,7 +1253,7 @@ public class DashboardViewModel : ObservableObject, IDisposable
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to apply current fan curve: {ex.Message}");
+                LogManager.Warn($"Failed to apply current fan curve: {ex.Message}", "DashboardVM");
             }
         });
     }
@@ -1297,6 +1340,23 @@ public class DashboardViewModel : ObservableObject, IDisposable
         }
     }
 
+    private bool _isDebuggingEnabled;
+
+    public bool IsDebuggingEnabled
+    {
+        get => _isDebuggingEnabled;
+        set
+        {
+            if (SetProperty(ref _isDebuggingEnabled, value))
+            {
+                SettingsManager.Save("Debugging", value);
+                SettingsManager.Save("DebugLogging", value);
+                LogManager.IsDebugEnabled = value;
+                LogManager.Info($"Debugging mode toggled: {value}", "DashboardVM");
+            }
+        }
+    }
+
     private bool _isNitroKeyIntegrated;
 
     public bool IsNitroKeyIntegrated
@@ -1329,6 +1389,8 @@ public class DashboardViewModel : ObservableObject, IDisposable
     public ICommand DismissGpuAlertCommand { get; }
     public ICommand ToggleAcerServicesCommand { get; }
     public ICommand KillAcerServiceCommand { get; }
+    public ICommand OpenLogsFolderCommand { get; }
+    public ICommand CopyDiagnosticsCommand { get; }
 
     public void ShowGpuAlert(GpuAlertLevel level, string title, string message, string? customIcon = null)
     {
@@ -1400,8 +1462,9 @@ public class DashboardViewModel : ObservableObject, IDisposable
                         {
                             cpuUsage = _cpuUsageCounter.NextValue();
                         }
-                        catch
+                        catch (Exception ex)
                         {
+                            LogManager.Debug($"CPU usage counter read failed: {ex.Message}", "DashboardVM");
                         }
                     }
 
@@ -1577,9 +1640,9 @@ public class DashboardViewModel : ObservableObject, IDisposable
                 {
                     break; // Gracefully exit when token is cancelled
                 }
-                catch
+                catch (Exception ex)
                 {
-                    // Silently absorb loop exceptions to prevent background thread crash
+                    LogManager.Debug($"Telemetry loop exception: {ex.Message}", "DashboardVM");
                 }
             }
         }, token);
@@ -1750,6 +1813,14 @@ public class DashboardViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(DeepGpuTelemetry));
             if (!_deepGpuTelemetry) ClearDeepTelemetryUI();
         }
+
+        var newDebugging = SettingsManager.Get("Debugging", SettingsManager.Get("DebugLogging", false));
+        if (_isDebuggingEnabled != newDebugging)
+        {
+            _isDebuggingEnabled = newDebugging;
+            LogManager.IsDebugEnabled = newDebugging;
+            OnPropertyChanged(nameof(IsDebuggingEnabled));
+        }
     }
 
     public void Dispose()
@@ -1763,8 +1834,9 @@ public class DashboardViewModel : ObservableObject, IDisposable
         {
             _cpuUsageCounter?.Dispose();
         }
-        catch
+        catch (Exception ex)
         {
+            LogManager.Debug($"PerformanceCounter dispose failed: {ex.Message}", "DashboardVM");
         }
         _cpuUsageCounter = null;
     }

@@ -23,6 +23,8 @@ public class TrayApplication : ApplicationContext
     private CancellationTokenSource _engineCts = new CancellationTokenSource();
     private int _lastAppliedCpuSpeed = -1;
     private int _lastAppliedGpuSpeed = -1;
+    private RegisteredWaitHandle? _settingsSyncReg;
+    private EventWaitHandle? _settingsSyncEvent;
 
     private readonly GlobalHotkeyManager _hotkeys = new();
     private readonly OsdForm _osd = new();
@@ -38,7 +40,8 @@ public class TrayApplication : ApplicationContext
     {
         Instance = this;
         Icon appIcon = SystemIcons.Shield;
-        try { appIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Shield; } catch { }
+        try { appIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Shield; }
+        catch (Exception ex) { LogManager.Debug($"Could not extract app icon: {ex.Message}", "Tray"); }
 
         trayIcon = new NotifyIcon { Icon = appIcon, Visible = true, Text = "Nitrous" };
         trayIcon.MouseClick += (s, e) => { if (e.Button == MouseButtons.Left) ShowDashboard(); };
@@ -47,7 +50,22 @@ public class TrayApplication : ApplicationContext
 
         if (!IsTestHost())
         {
+            LogManager.Info("TrayApplication initializing background engine...", "Tray");
             SystemEvents.PowerModeChanged += OnPowerStateChanged;
+
+            try
+            {
+                _settingsSyncEvent = new EventWaitHandle(false, EventResetMode.AutoReset, Program.SettingsChangedEventName);
+                _settingsSyncReg = ThreadPool.RegisterWaitForSingleObject(_settingsSyncEvent, (state, timedOut) =>
+                {
+                    LogManager.SyncSettings();
+                    ReloadHotkeys();
+                }, null, Timeout.Infinite, false);
+            }
+            catch (Exception ex)
+            {
+                LogManager.Warn($"Failed to register settings sync listener in Tray: {ex.Message}", "Tray");
+            }
 
             _ = Task.Run(() => UpdateManager.CheckForUpdatesAsync(true, () => Exit(null, EventArgs.Empty)));
 
@@ -126,7 +144,7 @@ public class TrayApplication : ApplicationContext
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Failed to set power mode: {ex.Message}");
+                    LogManager.Warn($"Failed to set power mode: {ex.Message}", "Tray");
                 }
             })
             {
@@ -200,7 +218,7 @@ public class TrayApplication : ApplicationContext
                 }
                 catch (Exception ex)
                 {
-                    Debug.WriteLine($"Failed to set fan mode: {ex.Message}");
+                    LogManager.Warn($"Failed to set fan mode: {ex.Message}", "Tray");
                 }
             })
             {
@@ -251,7 +269,7 @@ public class TrayApplication : ApplicationContext
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to check for updates: {ex.Message}");
+                LogManager.Warn($"Failed to check for updates: {ex.Message}", "Tray");
             }
         });
         menu.Items.Add(new ToolStripSeparator());
@@ -285,7 +303,10 @@ public class TrayApplication : ApplicationContext
         {
             AllowSetForegroundWindow(ASFW_ANY);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"AllowSetForegroundWindow failed: {ex.Message}", "Tray");
+        }
 
         // 1. Fast signal: If a dashboard process is already running and listening, signal it to restore/activate
         try
@@ -299,7 +320,10 @@ public class TrayApplication : ApplicationContext
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"DashboardEvent signal check failed: {ex.Message}", "Tray");
+        }
 
         // 2. Mutex check: If a dashboard is in the middle of launching, avoid spawning a duplicate
         try
@@ -312,7 +336,10 @@ public class TrayApplication : ApplicationContext
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"Dashboard mutex check failed: {ex.Message}", "Tray");
+        }
 
         // 3. Fallback Win32 check by window title
         IntPtr existingHwnd = FindWindow(null, "Nitrous Dashboard");
@@ -337,7 +364,10 @@ public class TrayApplication : ApplicationContext
                     MemoryHelper.TrimWorkingSet();
                 };
             }
-            catch { }
+            catch (Exception ex)
+            {
+                LogManager.Debug($"Failed configuring dashboard process exit handler: {ex.Message}", "Tray");
+            }
         }
     }
 
@@ -569,7 +599,10 @@ public class TrayApplication : ApplicationContext
             uint key = uint.Parse(parts[1]);
             _hotkeys.Register(id, mods, key);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"Failed registering hotkey ID {id} ('{saved}'): {ex.Message}", "Tray");
+        }
     }
 
     private void OnCustomHotkeyPressed(int id)
@@ -664,6 +697,8 @@ public class TrayApplication : ApplicationContext
         trayIcon.Dispose();
         _osd.Dispose();
         _gpuManager.Dispose();
+        _settingsSyncReg?.Unregister(null);
+        _settingsSyncEvent?.Dispose();
         _engineCts.Dispose();
         _hotkeys.Dispose();
 
@@ -709,6 +744,7 @@ public class TrayApplication : ApplicationContext
 
     private void Exit(object? sender, EventArgs e)
     {
+        LogManager.Info("TrayApplication exit requested", "Tray");
         CleanupResources();
         Application.Exit();
     }

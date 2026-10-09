@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using System.Runtime.InteropServices;
+using Nitrous.Managers;
 
 namespace Nitrous.Helpers;
 
@@ -23,9 +24,9 @@ public static class MemoryHelper
             using var currentProcess = Process.GetCurrentProcess();
             EmptyWorkingSet(currentProcess.Handle);
         }
-        catch
+        catch (Exception ex)
         {
-            // Fail silently if process permissions restrict working set modification
+            LogManager.Debug($"TrimWorkingSet failed: {ex.Message}", "Memory");
         }
     }
 }

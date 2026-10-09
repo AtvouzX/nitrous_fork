@@ -39,6 +39,31 @@ static class Program
     [STAThread]
     static void Main(string[] args)
     {
+        // Parse debug CLI flags early
+        bool isDebugArg = false;
+        foreach (var arg in args)
+        {
+            if (string.Equals(arg, "--debug", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(arg, "-d", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(arg, "--verbose", StringComparison.OrdinalIgnoreCase))
+            {
+                isDebugArg = true;
+                break;
+            }
+        }
+
+        // Global crash and unobserved task exception traps
+        AppDomain.CurrentDomain.UnhandledException += (s, e) =>
+        {
+            LogManager.Error("Fatal unhandled AppDomain exception", e.ExceptionObject as Exception, "CrashHandler");
+        };
+
+        TaskScheduler.UnobservedTaskException += (s, e) =>
+        {
+            LogManager.Error("Unobserved Task exception", e.Exception, "TaskScheduler");
+            e.SetObserved();
+        };
+
         // Check if launched via IFEO debugger
         // When launched by IFEO, args[0] is the path of the intercepted binary (e.g., PSLauncher.exe, NSLauncher.exe, NitroSense.exe)
         bool isIfeoLaunch = false;
@@ -57,19 +82,23 @@ static class Program
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                LogManager.Debug($"Error evaluating IFEO launch arg: {ex.Message}", "Program");
+            }
         }
 
         // 1. TRANSIENT UI MODE: Run the dashboard directly
-        if ((args.Length > 0 && args[0] == "--ui") || isIfeoLaunch)
+        if ((args.Length > 0 && (args[0] == "--ui" || Array.Exists(args, a => a == "--ui"))) || isIfeoLaunch)
         {
+            LogManager.Initialize(isUiProcess: true, forceDebug: isDebugArg ? true : null);
             EnsureTrayRunning();
 
             // Strictly enforce single-instance Dashboard UI via named mutex
             using var uiMutex = new Mutex(true, DashboardMutexName, out bool isOnlyUiInstance);
             if (!isOnlyUiInstance)
             {
-                // Another UI process is already running or initializing. Signal it to restore and bring to front.
+                LogManager.Info("Another UI process is already active. Signaling existing dashboard.", "Program");
                 SignalExistingDashboard();
                 return;
             }
@@ -81,6 +110,11 @@ static class Program
             using var syncEvent = new EventWaitHandle(false, EventResetMode.AutoReset, SettingsChangedEventName);
 
             var app = new System.Windows.Application();
+            app.DispatcherUnhandledException += (s, e) =>
+            {
+                LogManager.Error("Unhandled WPF UI Dispatcher exception", e.Exception, "WpfDispatcher");
+            };
+
             var dashboard = new NitrousDashboard();
 
             // Register background wait on the threadpool with zero CPU/thread polling overhead
@@ -94,6 +128,7 @@ static class Program
 
             var syncHandleReg = ThreadPool.RegisterWaitForSingleObject(syncEvent, (state, timedOut) =>
             {
+                LogManager.SyncSettings();
                 dashboard.Dispatcher.BeginInvoke(new Action(() =>
                 {
                     dashboard.RefreshDashboardState();
@@ -118,18 +153,30 @@ static class Program
         }
 
         // 2. BACKGROUND ENGINE MODE: Runs purely in the system tray
+        LogManager.Initialize(isUiProcess: false, forceDebug: isDebugArg ? true : null);
+
         mutex = new Mutex(true, AppMutexName, out bool createdNew);
         if (!createdNew)
         {
-            // If already running in tray, launching the executable opens or restores the Dashboard
+            LogManager.Info("Tray engine is already running. Signaling existing dashboard.", "Program");
             SignalExistingDashboard();
             return;
         }
 
+        Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
+        Application.ThreadException += (s, e) =>
+        {
+            LogManager.Error("Unhandled WinForms ThreadException in Tray engine", e.Exception, "WinForms");
+        };
+
         Application.EnableVisualStyles();
         Application.SetCompatibleTextRenderingDefault(false);
 
-        if (!AcerWmiManager.IsHardwareSupported()) return;
+        if (!AcerWmiManager.IsHardwareSupported())
+        {
+            LogManager.Warn("AcerGamingFunction hardware not detected. Nitrous engine shutting down.", "Program");
+            return;
+        }
 
         Application.Run(new TrayApplication());
         GC.KeepAlive(mutex);
@@ -141,7 +188,10 @@ static class Program
         {
             AllowSetForegroundWindow(ASFW_ANY);
         }
-        catch { }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"AllowSetForegroundWindow failed: {ex.Message}", "Program");
+        }
 
         try
         {
@@ -154,7 +204,10 @@ static class Program
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"Failed to signal DashboardEvent: {ex.Message}", "Program");
+        }
 
         // If event isn't ready or UI not running, launch or bring existing window to front
         if (!BringExistingDashboardToFront())
@@ -166,7 +219,10 @@ static class Program
                     UseShellExecute = true
                 });
             }
-            catch { }
+            catch (Exception ex)
+            {
+                LogManager.Warn($"Failed to launch --ui process: {ex.Message}", "Program");
+            }
         }
     }
 
@@ -200,7 +256,10 @@ static class Program
                 }
             }
         }
-        catch { }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"BringExistingDashboardToFront lookup failed: {ex.Message}", "Program");
+        }
         return false;
     }
 
@@ -216,7 +275,10 @@ static class Program
                     UseShellExecute = true
                 });
             }
-            catch { }
+            catch (Exception ex)
+            {
+                LogManager.Warn($"EnsureTrayRunning failed to launch background tray: {ex.Message}", "Program");
+            }
         }
     }
 }

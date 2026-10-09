@@ -25,12 +25,36 @@ public class GlobalHotkeyManager : NativeWindow, IDisposable
     public void Register(int id, uint modifiers, uint key)
     {
         UnregisterHotKey(this.Handle, id); // Clear existing
-        RegisterHotKey(this.Handle, id, modifiers, key);
+        bool success = RegisterHotKey(this.Handle, id, modifiers, key);
+        string formatted = FormatHotkey(modifiers, key);
+        if (!success)
+        {
+            LogManager.Warn($"RegisterHotKey failed for ID {id} ('{formatted}'). Another program may be using this shortcut.", "GlobalHotkey");
+        }
+        else
+        {
+            LogManager.Debug($"Registered global hotkey ID {id} ('{formatted}')", "GlobalHotkey");
+        }
+    }
+
+    private static string FormatHotkey(uint modifiers, uint key)
+    {
+        var sb = new System.Text.StringBuilder();
+        if ((modifiers & 0x0002) != 0) sb.Append("Ctrl + ");
+        if ((modifiers & 0x0004) != 0) sb.Append("Shift + ");
+        if ((modifiers & 0x0001) != 0) sb.Append("Alt + ");
+        if ((modifiers & 0x0008) != 0) sb.Append("Win + ");
+        sb.Append(((Keys)key).ToString());
+        return sb.ToString();
     }
 
     public void UnregisterAll(params int[] ids)
     {
-        foreach (var id in ids) UnregisterHotKey(this.Handle, id);
+        foreach (var id in ids)
+        {
+            UnregisterHotKey(this.Handle, id);
+        }
+        LogManager.Debug($"Unregistered {ids.Length} global hotkeys", "GlobalHotkey");
     }
 
     protected override void WndProc(ref Message m)

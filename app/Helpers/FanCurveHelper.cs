@@ -80,8 +80,9 @@ public static class FanCurveHelper
             }
             return [.. defaultCurve];
         }
-        catch
+        catch (Exception ex)
         {
+            LogManager.Debug($"Failed parsing fan curve from registry '{keyName}': {ex.Message}", "FanCurve");
             return [.. defaultCurve];
         }
     }

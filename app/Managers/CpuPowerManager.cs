@@ -109,6 +109,7 @@ public static class CpuPowerManager
     public static async Task ApplyProfileLimitsAsync(PowerProfile profile, bool isOnline = true)
     {
         var (acMin, acMax, acBoost, dcMin, dcMax, dcBoost) = GetProfileLimits(profile);
+        LogManager.Info($"Applying CPU limits for {profile}: AC={acMin}-{acMax}% (Boost {acBoost}), DC={dcMin}-{dcMax}% (Boost {dcBoost})", "CpuPower");
         await SetDualLimitsAsync(acMin, acMax, acBoost, dcMin, dcMax, dcBoost);
     }
 
@@ -181,7 +182,7 @@ public static class CpuPowerManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Failed to apply in-process power limits: {ex.Message}");
+            LogManager.Warn($"Failed to apply in-process power limits: {ex.Message}", "CpuPower");
             return false;
         }
         finally
@@ -204,7 +205,7 @@ public static class CpuPowerManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"PowerCfg error: {ex.Message}");
+            LogManager.Error($"PowerCfg execution error: {ex.Message}", ex, "CpuPower");
         }
     }
 }

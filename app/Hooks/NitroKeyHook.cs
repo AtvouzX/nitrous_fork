@@ -22,6 +22,7 @@ public partial class NitroKeyHook : IDisposable
     {
         _proc = HookCallback;
         _hookID = SetHook(_proc);
+        Managers.LogManager.Debug("NitroKeyHook installed WH_KEYBOARD_LL hook.", "NitroKeyHook");
     }
 
     private static IntPtr SetHook(LowLevelKeyboardProc proc)
@@ -48,6 +49,7 @@ public partial class NitroKeyHook : IDisposable
                 if (now - _lastTriggerTick >= 400)
                 {
                     _lastTriggerTick = now;
+                    Managers.LogManager.Info($"Physical Nitro key detected (scanCode: {kbd.scanCode}). Dispatching activation.", "NitroKeyHook");
                     // Asynchronously dispatch the event so the OS keyboard hook callback returns immediately
                     ThreadPool.QueueUserWorkItem(_ => NitroKeyPressed?.Invoke(this, EventArgs.Empty));
                 }
@@ -57,7 +59,11 @@ public partial class NitroKeyHook : IDisposable
         return CallNextHookEx(_hookID, nCode, wParam, lParam);
     }
 
-    public void Dispose() => UnhookWindowsHookEx(_hookID);
+    public void Dispose()
+    {
+        UnhookWindowsHookEx(_hookID);
+        Managers.LogManager.Debug("NitroKeyHook unhooked.", "NitroKeyHook");
+    }
 
     [StructLayout(LayoutKind.Sequential)]
     private struct KBDLLHOOKSTRUCT { public uint vkCode; public uint scanCode; public uint flags; public uint time; public IntPtr dwExtraInfo; }

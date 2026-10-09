@@ -47,7 +47,7 @@ public static class NitroKeyManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[NitroKeyManager] Failed checking legacy IFEO: {ex.Message}");
+            LogManager.Debug($"Failed checking legacy IFEO: {ex.Message}", "NitroKey");
         }
 
         return false;
@@ -101,7 +101,7 @@ public static class NitroKeyManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[NitroKeyManager] Failed purging legacy IFEO registry entries: {ex.Message}");
+            LogManager.Debug($"Failed purging legacy IFEO registry entries: {ex.Message}", "NitroKey");
         }
 
         // 2. Remove any legacy zero-byte dummy files previously placed in System32
@@ -123,7 +123,7 @@ public static class NitroKeyManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[NitroKeyManager] Failed removing legacy dummy files from System32: {ex.Message}");
+            LogManager.Debug($"Failed removing legacy dummy files from System32: {ex.Message}", "NitroKey");
         }
 
         // 3. Remove legacy Launcher.vbs script from user AppData
@@ -138,7 +138,7 @@ public static class NitroKeyManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[NitroKeyManager] Failed removing legacy Launcher.vbs: {ex.Message}");
+            LogManager.Debug($"Failed removing legacy Launcher.vbs: {ex.Message}", "NitroKey");
         }
 
         SettingsManager.Delete("NitroKeyIntegrated");

@@ -183,10 +183,12 @@ public class NvidiaGpuManager : IDisposable
         try
         {
             GPUApi.SetPerformanceStates20(_internalGpu!.Handle, overclock);
+            LogManager.Info($"Applied GPU offsets: Core={core} MHz, Memory={memory} MHz", "NvidiaGpu");
             return 1;
         }
-        catch
+        catch (Exception ex)
         {
+            LogManager.Warn($"Failed to apply GPU offsets: {ex.Message}", "NvidiaGpu");
             return 0;
         }
     }
@@ -209,6 +211,7 @@ public class NvidiaGpuManager : IDisposable
         if (!online || !IsGpuAwake())
         {
             // Core Battery Invariant: discrete NVIDIA GPU must remain in D3Cold sleep on battery.
+            LogManager.Debug("ApplyOnBootAsync: dGPU is on battery or in D3Cold sleep; NvAPI boot clock apply skipped.", "NvidiaGpu");
             return;
         }
 
@@ -234,7 +237,10 @@ public class NvidiaGpuManager : IDisposable
                     if (result == 1) return;
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                LogManager.Debug($"ApplyOnBootAsync retry failed: {ex.Message}", "NvidiaGpu");
+            }
 
             await Task.Delay(delayMs);
         }
@@ -247,6 +253,7 @@ public class NvidiaGpuManager : IDisposable
         {
             // Core Battery Invariant: discrete NVIDIA GPU must remain in D3Cold sleep on battery.
             // Never invoke NvAPI when on DC power or when the dGPU is asleep.
+            LogManager.Debug($"ApplyPowerProfileOcAsync: dGPU is on battery or asleep; skipping OC for {profile}.", "NvidiaGpu");
             return 0;
         }
 
@@ -298,7 +305,10 @@ public class NvidiaGpuManager : IDisposable
             NVIDIA.Unload();
             NativeNvml.Shutdown();
         }
-        catch { }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"Error during NvidiaGpuManager disposal: {ex.Message}", "NvidiaGpu");
+        }
     }
 
     public class GpuTelemetry
@@ -372,7 +382,7 @@ public class NvidiaGpuManager : IDisposable
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[NvidiaGpuManager] IsGpuAwake CM API failed: {ex.Message}");
+            LogManager.Warn($"IsGpuAwake CM API failed: {ex.Message}", "NvidiaGpu");
         }
 
         // Ultimate fallback — assume awake so telemetry is never permanently blocked
@@ -411,7 +421,7 @@ public class NvidiaGpuManager : IDisposable
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"[NvidiaGpuManager] ResolveNvidiaInstanceId failed: {ex.Message}");
+            LogManager.Warn($"ResolveNvidiaInstanceId failed: {ex.Message}", "NvidiaGpu");
             return null;
         }
     }
@@ -472,7 +482,7 @@ public class NvidiaGpuManager : IDisposable
 
                     if (shouldSleep)
                     {
-                        Debug.WriteLine("[NvidiaGpuManager] Only Nitrous is running on the GPU. Unloading NVML to allow sleep.");
+                        LogManager.Info("Only Nitrous is running on the GPU. Unloading NVML to allow sleep.", "NvidiaGpu");
                         try { NVIDIA.Unload(); } catch { }
                         try { NativeNvml.Shutdown(); } catch { }
                         
@@ -545,9 +555,10 @@ public class NvidiaGpuManager : IDisposable
                     t.MaxPowerLimitW = Math.Round(maxLimit / 1000.0, 1);
                 }
             }
-            catch
+            catch (Exception ex)
             {
                 // Ignore P/Invoke exceptions on unsupported platforms or sleeping GPUs
+                LogManager.Debug($"GPU telemetry read failed: {ex.Message}", "NvidiaGpu");
             }
 
             return t;

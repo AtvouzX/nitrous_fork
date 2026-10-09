@@ -25,11 +25,14 @@ public static class SettingsManager
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                LogManager.Debug($"Failed to signal settings change event: {ex.Message}", "Settings");
+            }
         }
-        catch (UnauthorizedAccessException) { /* Safe failure on permission denial */ }
-        catch (SecurityException) { /* Safe failure on security restriction */ }
-        catch (Exception) { }
+        catch (UnauthorizedAccessException ex) { LogManager.Warn($"Unauthorized access saving setting '{key}': {ex.Message}", "Settings"); }
+        catch (SecurityException ex) { LogManager.Warn($"Security restriction saving setting '{key}': {ex.Message}", "Settings"); }
+        catch (Exception ex) { LogManager.Error($"Error saving setting '{key}': {ex.Message}", ex, "Settings"); }
     }
 
     public static void Delete(string key)
@@ -49,11 +52,14 @@ public static class SettingsManager
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                LogManager.Debug($"Failed to signal settings change event on delete: {ex.Message}", "Settings");
+            }
         }
-        catch (UnauthorizedAccessException) { }
-        catch (SecurityException) { }
-        catch (Exception) { }
+        catch (UnauthorizedAccessException ex) { LogManager.Warn($"Unauthorized access deleting setting '{key}': {ex.Message}", "Settings"); }
+        catch (SecurityException ex) { LogManager.Warn($"Security restriction deleting setting '{key}': {ex.Message}", "Settings"); }
+        catch (Exception ex) { LogManager.Error($"Error deleting setting '{key}': {ex.Message}", ex, "Settings"); }
     }
 
     public static T Get<T>(string key, T defaultValue)
@@ -64,9 +70,9 @@ public static class SettingsManager
             object? val = regKey?.GetValue(key);
             if (val != null) return (T)Convert.ChangeType(val, typeof(T))!;
         }
-        catch (UnauthorizedAccessException) { }
-        catch (SecurityException) { }
-        catch (Exception) { }
+        catch (UnauthorizedAccessException ex) { LogManager.Debug($"Unauthorized access reading setting '{key}': {ex.Message}", "Settings"); }
+        catch (SecurityException ex) { LogManager.Debug($"Security restriction reading setting '{key}': {ex.Message}", "Settings"); }
+        catch (Exception ex) { LogManager.Debug($"Error reading setting '{key}': {ex.Message}", "Settings"); }
 
         return defaultValue;
     }

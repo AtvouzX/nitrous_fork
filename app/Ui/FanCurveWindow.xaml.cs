@@ -428,7 +428,7 @@ public partial class FanCurveWindow : Window
         }
         catch (Exception ex)
         {
-            System.Diagnostics.Debug.WriteLine($"Failed to immediately apply fan curve: {ex.Message}");
+            LogManager.Warn($"Failed to immediately apply fan curve: {ex.Message}", "FanCurve");
         }
 
         Close();

@@ -22,6 +22,7 @@ public static class UpdateManager
     {
         try
         {
+            LogManager.Info("Checking for Nitrous updates via GitHub API...", "Update");
             using var client = CreateHttpClient();
             string res = await client.GetStringAsync($"https://api.github.com/repos/{GithubRepo}/releases/latest");
             using var doc = JsonDocument.Parse(res);
@@ -35,21 +36,27 @@ public static class UpdateManager
             {
                 if (vLatest > vCurrent)
                 {
+                    LogManager.Info($"New Nitrous release available: {latestTag} (Current: {CurrentVersion})", "Update");
                     if (MessageBox.Show($"New version ({latestTag}) is available! Update now?", "Update",
                             MessageBoxButtons.YesNo, MessageBoxIcon.Information) == DialogResult.Yes)
                     {
                         await PerformUpdateAsync(latestTag, exitCallback);
                     }
                 }
-                else if (!silent)
+                else
                 {
-                    MessageBox.Show($"Nitrous is up to date! ({CurrentVersion})", "Up to date", MessageBoxButtons.OK,
-                        MessageBoxIcon.Information);
+                    LogManager.Info($"Nitrous is up to date ({CurrentVersion}).", "Update");
+                    if (!silent)
+                    {
+                        MessageBox.Show($"Nitrous is up to date! ({CurrentVersion})", "Up to date", MessageBoxButtons.OK,
+                            MessageBoxIcon.Information);
+                    }
                 }
             }
         }
         catch (Exception ex)
         {
+            LogManager.Warn($"Update check failed: {ex.Message}", "Update");
             if (!silent)
                 MessageBox.Show($"Update check failed: {ex.Message}", "Error", MessageBoxButtons.OK,
                     MessageBoxIcon.Warning);
@@ -60,10 +67,12 @@ public static class UpdateManager
     {
         try
         {
+            LogManager.Info($"Performing update to version {tag}...", "Update");
             // Validate tag to prevent path manipulation
             if (string.IsNullOrWhiteSpace(tag) || tag.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0 ||
                 tag.Contains(".."))
             {
+                LogManager.Error($"Invalid release tag received: '{tag}'", null, "Update");
                 MessageBox.Show("Invalid release tag received.", "Update Error", MessageBoxButtons.OK,
                     MessageBoxIcon.Error);
                 return;
@@ -81,6 +90,7 @@ public static class UpdateManager
             }
 
             await File.WriteAllBytesAsync(tempExe, data);
+            LogManager.Info($"Update binary downloaded successfully ({data.Length} bytes). Spawning replacement process.", "Update");
 
             // Escape paths for cmd.exe invocation
             string sanitizedTemp = tempExe.Replace("\"", "");
@@ -95,6 +105,7 @@ public static class UpdateManager
         }
         catch (Exception ex)
         {
+            LogManager.Error($"Update installation failed: {ex.Message}", ex, "Update");
             MessageBox.Show($"Update failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
         }
     }

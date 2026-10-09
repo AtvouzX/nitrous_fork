@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -20,6 +20,7 @@ public partial class NitrousDashboard : Window
         DataContext = new DashboardViewModel();
 
         SettingsVersionText.Text = $"Nitrous {UpdateManager.CurrentVersion}";
+        LogManager.Info("NitrousDashboard initialized.", "UI");
 
         if (IsTestHost())
         {
@@ -272,6 +273,7 @@ public partial class NitrousDashboard : Window
 
     public void RestoreAndActivate()
     {
+        LogManager.Info("Dashboard RestoreAndActivate requested.", "UI");
         _lastActivationTick = Environment.TickCount64;
 
         if (this.WindowState == WindowState.Minimized)
@@ -302,6 +304,7 @@ public partial class NitrousDashboard : Window
     protected override void OnClosed(EventArgs e)
     {
         base.OnClosed(e);
+        LogManager.Info("Dashboard window closed; disposing resources.", "UI");
         SystemEvents.PowerModeChanged -= OnPowerStateChanged;
         SettingsManager.Save("IsPinned", this.Topmost);
         (DataContext as IDisposable)?.Dispose();

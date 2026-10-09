@@ -81,7 +81,7 @@ public static class AcerServiceManager
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to dispose ServiceController: {ex.Message}");
+                LogManager.Warn($"Failed to dispose ServiceController: {ex.Message}", "AcerService");
             }
         }
     }
@@ -117,7 +117,7 @@ public static class AcerServiceManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Failed to enumerate services: {ex.Message}");
+            LogManager.Warn($"Failed to enumerate services: {ex.Message}", "AcerService");
             DisposeServices(allServices);
             DisposeServices(targetList);
             targetList.Clear();
@@ -150,7 +150,7 @@ public static class AcerServiceManager
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Failed to inspect services: {ex.Message}");
+            LogManager.Warn($"Failed to inspect services: {ex.Message}", "AcerService");
         }
         finally
         {
@@ -171,6 +171,7 @@ public static class AcerServiceManager
                 {
                     try
                     {
+                        LogManager.Info($"Stopping and disabling Acer service: {svc.ServiceName}", "AcerService");
                         ChangeServiceStartType(svc, SERVICE_DISABLED);
 
                         if (svc.Status != ServiceControllerStatus.Stopped && svc.Status != ServiceControllerStatus.StopPending)
@@ -181,7 +182,7 @@ public static class AcerServiceManager
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"Failed to stop/disable {svc.ServiceName}: {ex.Message}");
+                        LogManager.Warn($"Failed to stop/disable {svc.ServiceName}: {ex.Message}", "AcerService");
                     }
                 }
             }
@@ -215,13 +216,13 @@ public static class AcerServiceManager
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"Failed to stop/disable {svc.ServiceName}: {ex.Message}");
+                        LogManager.Warn($"Failed to stop/disable {svc.ServiceName}: {ex.Message}", "AcerService");
                     }
                 }
             }
             catch (Exception ex)
             {
-                Debug.WriteLine($"Failed to query service {serviceName}: {ex.Message}");
+                LogManager.Warn($"Failed to query service {serviceName}: {ex.Message}", "AcerService");
             }
             finally
             {
@@ -241,6 +242,7 @@ public static class AcerServiceManager
                 {
                     try
                     {
+                        LogManager.Info($"Restoring and starting Acer service: {svc.ServiceName}", "AcerService");
                         ChangeServiceStartType(svc, SERVICE_AUTO_START);
 
                         if (svc.Status != ServiceControllerStatus.Running && svc.Status != ServiceControllerStatus.StartPending)
@@ -251,7 +253,7 @@ public static class AcerServiceManager
                     }
                     catch (Exception ex)
                     {
-                        Debug.WriteLine($"Failed to restore/start {svc.ServiceName}: {ex.Message}");
+                        LogManager.Warn($"Failed to restore/start {svc.ServiceName}: {ex.Message}", "AcerService");
                     }
                 }
             }
@@ -282,12 +284,12 @@ public static class AcerServiceManager
             if (!success)
             {
                 int error = Marshal.GetLastWin32Error();
-                Debug.WriteLine($"ChangeServiceConfig failed for {svc.ServiceName} with error {error}");
+                LogManager.Warn($"ChangeServiceConfig failed for {svc.ServiceName} with Win32 error {error}", "AcerService");
             }
         }
         catch (Exception ex)
         {
-            Debug.WriteLine($"Exception changing start type for {svc.ServiceName}: {ex.Message}");
+            LogManager.Warn($"Exception changing start type for {svc.ServiceName}: {ex.Message}", "AcerService");
         }
     }
 }

@@ -713,5 +713,65 @@ public class DashboardAndTrayUiTests
             Assert.Contains("0 MHz", vm.GpuAlertMessage);
         });
     }
+
+    [Fact]
+    public void DashboardViewModel_IsDebuggingEnabled_TogglesSettingsAndLogManager()
+    {
+        RunInSta(() =>
+        {
+            using var vm = new DashboardViewModel();
+
+            vm.IsDebuggingEnabled = true;
+            Assert.True(LogManager.IsDebugEnabled);
+            Assert.True(SettingsManager.Get("Debugging", false));
+
+            vm.IsDebuggingEnabled = false;
+            Assert.False(LogManager.IsDebugEnabled);
+            Assert.False(SettingsManager.Get("Debugging", true));
+        });
+    }
+
+    [Fact]
+    public void DashboardViewModel_CopyDiagnosticsCommand_ShowsConfirmationAlert()
+    {
+        RunInSta(() =>
+        {
+            using var vm = new DashboardViewModel();
+
+            vm.CopyDiagnosticsCommand.Execute(null);
+
+            Assert.Equal(Visibility.Visible, vm.GpuAlertVisibility);
+            Assert.Equal("Diagnostics Copied", vm.GpuAlertTitle);
+            Assert.Contains("diagnostic report", vm.GpuAlertMessage);
+        });
+    }
+
+    [Fact]
+    public void Dashboard_DiagnosticsUIElements_ArePresentAndHaveTooltips()
+    {
+        RunInSta(() =>
+        {
+            var window = new NitrousDashboard();
+            try
+            {
+                Assert.NotNull(window.TogDebugging);
+                Assert.NotNull(window.BtnOpenLogsFolder);
+                Assert.NotNull(window.BtnCopyDiagnostics);
+
+                Assert.NotNull(window.TogDebugging.ToolTip);
+                Assert.NotEmpty(window.TogDebugging.ToolTip.ToString() ?? "");
+
+                Assert.NotNull(window.BtnOpenLogsFolder.ToolTip);
+                Assert.NotEmpty(window.BtnOpenLogsFolder.ToolTip.ToString() ?? "");
+
+                Assert.NotNull(window.BtnCopyDiagnostics.ToolTip);
+                Assert.NotEmpty(window.BtnCopyDiagnostics.ToolTip.ToString() ?? "");
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
 }
 

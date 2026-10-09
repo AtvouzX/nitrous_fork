@@ -108,4 +108,11 @@ public class ArchitectureAndSecurityTests
         Assert.EndsWith(binaryName, path, StringComparison.OrdinalIgnoreCase);
         Assert.True(File.Exists(path), $"{binaryName} must exist at {path}.");
     }
+
+    [Fact]
+    public void ExplorerBinaryPath_PointsToWindowsDirectoryAndExists()
+    {
+        string explorerPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
+        Assert.True(File.Exists(explorerPath), $"explorer.exe must exist at {explorerPath}");
+    }
 }
