@@ -1,3 +1,4 @@
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Nitrous.Managers;
@@ -53,5 +54,15 @@ public class ArchitectureAndSecurityTests
         string threePartVersion = $"{parts[0]}.{parts[1]}.{parts[2]}";
 
         Assert.Equal(UpdateManager.CurrentVersion, threePartVersion);
+    }
+
+    [Fact]
+    public void StartupManager_SchtasksPath_IsAbsoluteAndPointsToSystemDirectory()
+    {
+        string path = StartupManager.CachedSchtasksPath;
+
+        Assert.True(Path.IsPathRooted(path), "schtasks path must be absolute and rooted.");
+        Assert.StartsWith(Environment.SystemDirectory, path, StringComparison.OrdinalIgnoreCase);
+        Assert.EndsWith("schtasks.exe", path, StringComparison.OrdinalIgnoreCase);
     }
 }

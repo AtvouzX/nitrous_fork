@@ -87,7 +87,8 @@ public static class UpdateManager
             string cmd =
                 $"/c timeout /t 2 /nobreak & move /y \"{sanitizedTemp}\" \"{sanitizedCurrent}\" & start \"\" \"{sanitizedCurrent}\"";
 
-            using var p = Process.Start(new ProcessStartInfo("cmd.exe", cmd)
+            string cmdExe = Path.Combine(Environment.SystemDirectory, "cmd.exe");
+            using var p = Process.Start(new ProcessStartInfo(cmdExe, cmd)
                 { CreateNoWindow = true, UseShellExecute = false });
 
             exitCallback.Invoke();
