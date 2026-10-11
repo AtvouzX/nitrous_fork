@@ -56,6 +56,10 @@ static class Program
         AppDomain.CurrentDomain.UnhandledException += (s, e) =>
         {
             LogManager.Error("Fatal unhandled AppDomain exception", e.ExceptionObject as Exception, "CrashHandler");
+            if (TrayApplication.Instance != null)
+            {
+                TrayApplication.TriggerExitFanReset();
+            }
         };
 
         TaskScheduler.UnobservedTaskException += (s, e) =>
@@ -155,6 +159,11 @@ static class Program
         // 2. BACKGROUND ENGINE MODE: Runs purely in the system tray
         LogManager.Initialize(isUiProcess: false, forceDebug: isDebugArg ? true : null);
 
+        AppDomain.CurrentDomain.ProcessExit += (s, e) =>
+        {
+            TrayApplication.TriggerExitFanReset();
+        };
+
         mutex = new Mutex(true, AppMutexName, out bool createdNew);
         if (!createdNew)
         {
@@ -167,6 +176,7 @@ static class Program
         Application.ThreadException += (s, e) =>
         {
             LogManager.Error("Unhandled WinForms ThreadException in Tray engine", e.Exception, "WinForms");
+            TrayApplication.TriggerExitFanReset();
         };
 
         Application.EnableVisualStyles();
@@ -178,8 +188,15 @@ static class Program
             return;
         }
 
-        Application.Run(new TrayApplication());
-        GC.KeepAlive(mutex);
+        try
+        {
+            Application.Run(new TrayApplication());
+        }
+        finally
+        {
+            TrayApplication.TriggerExitFanReset();
+            GC.KeepAlive(mutex);
+        }
     }
 
     public static void SignalExistingDashboard()

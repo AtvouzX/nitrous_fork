@@ -36,6 +36,21 @@ public class TrayApplication : ApplicationContext
 
     public static TrayApplication? Instance { get; private set; }
 
+    private static int _exitResetExecuted = 0;
+
+    internal static bool TriggerExitFanReset()
+    {
+        if (SettingsManager.Get("ResetFansOnExit", 1) != 1) return false;
+        if (Interlocked.Exchange(ref _exitResetExecuted, 1) == 1) return false;
+
+        return AcerWmiManager.ResetFansToAutoSync();
+    }
+
+    internal static void ResetExitFlagForTesting()
+    {
+        Interlocked.Exchange(ref _exitResetExecuted, 0);
+    }
+
     public TrayApplication()
     {
         Instance = this;
@@ -52,6 +67,7 @@ public class TrayApplication : ApplicationContext
         {
             LogManager.Info("TrayApplication initializing background engine...", "Tray");
             SystemEvents.PowerModeChanged += OnPowerStateChanged;
+            SystemEvents.SessionEnding += OnSessionEnding;
 
             try
             {
@@ -386,6 +402,12 @@ public class TrayApplication : ApplicationContext
         }
     }
 
+    private void OnSessionEnding(object? sender, SessionEndingEventArgs e)
+    {
+        LogManager.Info($"Session ending (Reason: {e.Reason}). Triggering fan reset to Auto.", "Tray");
+        TriggerExitFanReset();
+    }
+
     internal void ApplyPowerSettings(bool isStartup = false, bool? isOnlineOverride = null)
     {
         bool isOnline = isOnlineOverride ?? (SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online);
@@ -686,10 +708,14 @@ public class TrayApplication : ApplicationContext
 
     private void CleanupResources()
     {
+        // 0. Synchronously reset fan speeds to Auto before disposing resources
+        TriggerExitFanReset();
+
         // 1. Cancel background loops and unhook events
         _engineCts.Cancel();
         _nitroHook?.Dispose();
         SystemEvents.PowerModeChanged -= OnPowerStateChanged;
+        SystemEvents.SessionEnding -= OnSessionEnding;
 
         // 2. Hide and dispose tray icon to prevent ghost icons
         trayIcon.Visible = false;

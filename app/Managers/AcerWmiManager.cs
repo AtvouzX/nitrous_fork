@@ -16,6 +16,11 @@ public static class AcerWmiManager
     public const uint SensorGpuTempFallback2 = 0x0B01u;
     public const uint SensorGpuRpm = 0x0601u;
 
+    // Acer EC Fan Behavior Registers
+    public const ulong FanBehaviorAuto = 0x41000Ful;
+    public const ulong FanBehaviorMax = 0x82000Ful;
+    public const ulong FanBehaviorCustom = 0xC3000Ful;
+
     private static ManagementObject? _cachedGamingFunction;
     private static readonly object _wmiLock = new();
 
@@ -142,20 +147,35 @@ public static class AcerWmiManager
         await InvokeWmiAsync("AcerGamingFunction", "SetGamingMiscSetting", payload);
     }
 
+    public static bool ResetFansToAutoSync()
+    {
+        if (!IsHardwareSupported()) return false;
+        try
+        {
+            LogManager.Info("Resetting fan mode to Auto (synchronous failsafe)", "AcerWmi");
+            return InvokeWmiSync("AcerGamingFunction", "SetGamingFanBehavior", FanBehaviorAuto);
+        }
+        catch (Exception ex)
+        {
+            LogManager.Error($"Failed resetting fans to Auto: {ex.Message}", ex, "AcerWmi");
+            return false;
+        }
+    }
+
     public static async Task SetFansAsync(FanProfile profile)
     {
         LogManager.Info($"Setting fans to {profile}", "AcerWmi");
         if (profile == FanProfile.Auto)
         {
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", 0x41000Ful);
+            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", FanBehaviorAuto);
         }
         else if (profile == FanProfile.Max)
         {
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", 0x82000Ful);
+            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", FanBehaviorMax);
         }
         else // Custom (Unified)
         {
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", 0xC3000Ful);
+            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", FanBehaviorCustom);
             ulong speedPercent = (ulong)profile;
             await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 1ul | (speedPercent << 8));
             await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 2ul | (speedPercent << 8));
@@ -166,7 +186,7 @@ public static class AcerWmiManager
     public static async Task SetCustomFansAsync(int cpuSpeed, int gpuSpeed)
     {
         LogManager.Info($"Setting custom fans: CPU={cpuSpeed}%, GPU={gpuSpeed}%", "AcerWmi");
-        await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", 0xC3000Ful);
+        await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", FanBehaviorCustom);
         await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 1ul | ((ulong)cpuSpeed << 8));
         await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 2ul | ((ulong)gpuSpeed << 8));
         await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 4ul | ((ulong)gpuSpeed << 8));
@@ -270,29 +290,35 @@ public static class AcerWmiManager
         });
     }
 
-    private static async Task InvokeWmiAsync(string className, string methodName, ulong gmInput)
+    internal static bool InvokeWmiSync(string className, string methodName, ulong gmInput)
     {
-        await Task.Run(() =>
+        try
         {
-            try
+            // Grabbing a fresh instance ensures the COM object is alive and connected
+            using var searcher = new ManagementObjectSearcher(@"root\wmi", $"SELECT * FROM {className}");
+            using var collection = searcher.Get();
+            bool invoked = false;
+            foreach (ManagementObject instance in collection)
             {
-                // Grabbing a fresh instance ensures the COM object is alive and connected
-                using var searcher = new ManagementObjectSearcher(@"root\wmi", $"SELECT * FROM {className}");
-                using var collection = searcher.Get();
-                foreach (ManagementObject instance in collection)
+                using (instance)
                 {
-                    using (instance)
-                    {
-                        using var inParams = instance.GetMethodParameters(methodName);
-                        inParams["gmInput"] = gmInput;
-                        instance.InvokeMethod(methodName, inParams, null);
-                    }
+                    using var inParams = instance.GetMethodParameters(methodName);
+                    inParams["gmInput"] = gmInput;
+                    instance.InvokeMethod(methodName, inParams, null);
+                    invoked = true;
                 }
             }
-            catch (Exception ex)
-            {
-                LogManager.Error($"Error invoking {methodName}(0x{gmInput:X}): {ex.Message}", ex, "AcerWmi");
-            }
-        });
+            return invoked;
+        }
+        catch (Exception ex)
+        {
+            LogManager.Error($"Error invoking {methodName}(0x{gmInput:X}): {ex.Message}", ex, "AcerWmi");
+            return false;
+        }
+    }
+
+    private static async Task InvokeWmiAsync(string className, string methodName, ulong gmInput)
+    {
+        await Task.Run(() => InvokeWmiSync(className, methodName, gmInput));
     }
 }
