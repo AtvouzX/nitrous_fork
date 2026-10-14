@@ -58,13 +58,8 @@ public class CpuPowerManagerTests
     [Fact]
     public async Task ApplyProfileLimitsAsync_CalledTwice_TriggersCacheGuard()
     {
-        // Clear cache via reflection for test isolation
-        var cacheFields = new[] { "_lastAcMin", "_lastAcMax", "_lastAcBoost", "_lastDcMin", "_lastDcMax", "_lastDcBoost" };
-        foreach (var field in cacheFields)
-        {
-            var fieldInfo = typeof(CpuPowerManager).GetField(field, BindingFlags.Static | BindingFlags.NonPublic);
-            fieldInfo?.SetValue(null, -1);
-        }
+        // Reset cache for test isolation
+        CpuPowerManager.ResetCacheForTesting();
 
         // Apply profile once
         await CpuPowerManager.ApplyProfileLimitsAsync(PowerProfile.Balanced);
@@ -75,12 +70,18 @@ public class CpuPowerManagerTests
         var lastAcMin = (int)(acMinField.GetValue(null) ?? -1);
         Assert.NotEqual(-1, lastAcMin);
 
-        // Applying it twice should just return quickly due to cache guard.
+        int countAfterFirst = CpuPowerManager.ExecutionCount;
+        Assert.True(countAfterFirst > 0, "First call should execute power application");
+
+        // Applying it twice should return immediately due to cache guard without re-executing
         var stopwatch = System.Diagnostics.Stopwatch.StartNew();
         await CpuPowerManager.ApplyProfileLimitsAsync(PowerProfile.Balanced);
         stopwatch.Stop();
         
-        // Ensure it ran extremely fast (cache hit)
-        Assert.True(stopwatch.ElapsedMilliseconds < 100, "Second call should return immediately due to cache guard");
+        // Ensure execution was bypassed by cache guard (deterministic)
+        Assert.Equal(countAfterFirst, CpuPowerManager.ExecutionCount);
+
+        // Ensure it ran fast (cache hit) with a safe margin for CI hypervisor load
+        Assert.True(stopwatch.ElapsedMilliseconds < 500, $"Second call took {stopwatch.ElapsedMilliseconds}ms; should return quickly due to cache guard");
     }
 }

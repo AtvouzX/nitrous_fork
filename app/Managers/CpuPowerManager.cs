@@ -47,6 +47,8 @@ public static class CpuPowerManager
     [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
     private static extern IntPtr LocalFree(IntPtr hMem);
 
+    private static readonly object _cacheLock = new();
+
     // Cache the applied state to prevent redundant powercfg process executions
     private static int _lastAcMin = -1;
     private static int _lastAcMax = -1;
@@ -54,6 +56,22 @@ public static class CpuPowerManager
     private static int _lastDcMin = -1;
     private static int _lastDcMax = -1;
     private static int _lastDcBoost = -1;
+
+    internal static int ExecutionCount { get; private set; }
+
+    internal static void ResetCacheForTesting()
+    {
+        lock (_cacheLock)
+        {
+            _lastAcMin = -1;
+            _lastAcMax = -1;
+            _lastAcBoost = -1;
+            _lastDcMin = -1;
+            _lastDcMax = -1;
+            _lastDcBoost = -1;
+            ExecutionCount = 0;
+        }
+    }
 
     public static (int acMin, int acMax, int acBoost, int dcMin, int dcMax, int dcBoost) GetProfileLimits(PowerProfile profile)
     {
@@ -109,6 +127,15 @@ public static class CpuPowerManager
     public static async Task ApplyProfileLimitsAsync(PowerProfile profile, bool isOnline = true)
     {
         var (acMin, acMax, acBoost, dcMin, dcMax, dcBoost) = GetProfileLimits(profile);
+
+        lock (_cacheLock)
+        {
+            if (AreLimitsApplied(acMin, acMax, acBoost, dcMin, dcMax, dcBoost))
+            {
+                return;
+            }
+        }
+
         LogManager.Info($"Applying CPU limits for {profile}: AC={acMin}-{acMax}% (Boost {acBoost}), DC={dcMin}-{dcMax}% (Boost {dcBoost})", "CpuPower");
         await SetDualLimitsAsync(acMin, acMax, acBoost, dcMin, dcMax, dcBoost);
     }
@@ -116,24 +143,36 @@ public static class CpuPowerManager
     public static async Task RestoreDefaultsAsync(bool isOnline = true)
     {
         // Standard Windows default is 5% min, 100% max, Boost enabled (2 = Aggressive)
+        lock (_cacheLock)
+        {
+            if (AreLimitsApplied(5, 100, 2, 5, 100, 2))
+            {
+                return;
+            }
+        }
+
+        LogManager.Info("Restoring default CPU limits: AC=5-100% (Boost 2), DC=5-100% (Boost 2)", "CpuPower");
         await SetDualLimitsAsync(5, 100, 2, 5, 100, 2);
     }
 
     private static async Task SetDualLimitsAsync(int acMin, int acMax, int acBoost, int dcMin, int dcMax, int dcBoost)
     {
-        // Zero-Process Execution: Prevent redundant process spawns if state hasn't changed
-        if (_lastAcMin == acMin && _lastAcMax == acMax && _lastAcBoost == acBoost &&
-            _lastDcMin == dcMin && _lastDcMax == dcMax && _lastDcBoost == dcBoost)
+        lock (_cacheLock)
         {
-            return;
-        }
+            // Zero-Process Execution: Prevent redundant process spawns if state hasn't changed
+            if (AreLimitsApplied(acMin, acMax, acBoost, dcMin, dcMax, dcBoost))
+            {
+                return;
+            }
 
-        _lastAcMin = acMin;
-        _lastAcMax = acMax;
-        _lastAcBoost = acBoost;
-        _lastDcMin = dcMin;
-        _lastDcMax = dcMax;
-        _lastDcBoost = dcBoost;
+            _lastAcMin = acMin;
+            _lastAcMax = acMax;
+            _lastAcBoost = acBoost;
+            _lastDcMin = dcMin;
+            _lastDcMax = dcMax;
+            _lastDcBoost = dcBoost;
+            ExecutionCount++;
+        }
 
         await Task.Run(() =>
         {
@@ -151,6 +190,12 @@ public static class CpuPowerManager
                 RunPowerCfg("/setactive SCHEME_CURRENT");
             }
         });
+    }
+
+    private static bool AreLimitsApplied(int acMin, int acMax, int acBoost, int dcMin, int dcMax, int dcBoost)
+    {
+        return _lastAcMin == acMin && _lastAcMax == acMax && _lastAcBoost == acBoost &&
+               _lastDcMin == dcMin && _lastDcMax == dcMax && _lastDcBoost == dcBoost;
     }
 
     private static bool ApplyInProcessLimits(int acMin, int acMax, int acBoost, int dcMin, int dcMax, int dcBoost)
