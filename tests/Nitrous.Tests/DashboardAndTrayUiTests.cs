@@ -152,6 +152,44 @@ public class DashboardAndTrayUiTests
     }
 
     [Fact]
+    public void Dashboard_RefreshDashboardState_WhenPowerModeChangesInSettings_UpdatesRadioButtonsImmediately()
+    {
+        RunInSta(() =>
+        {
+            var window = new NitrousDashboard();
+            int origMode = SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+            try
+            {
+                // Test switching to Quiet
+                SettingsManager.Save("LastPowerMode", (int)PowerProfile.Quiet);
+                window.RefreshDashboardState();
+                Assert.True(window.BtnPowerQuiet.IsChecked == true);
+                Assert.False(window.BtnPowerBal.IsChecked == true);
+                Assert.False(window.BtnPowerPerf.IsChecked == true);
+
+                // Test switching to Performance
+                SettingsManager.Save("LastPowerMode", (int)PowerProfile.Performance);
+                window.RefreshDashboardState();
+                Assert.False(window.BtnPowerQuiet.IsChecked == true);
+                Assert.False(window.BtnPowerBal.IsChecked == true);
+                Assert.True(window.BtnPowerPerf.IsChecked == true);
+
+                // Test switching to Balanced
+                SettingsManager.Save("LastPowerMode", (int)PowerProfile.Balanced);
+                window.RefreshDashboardState();
+                Assert.False(window.BtnPowerQuiet.IsChecked == true);
+                Assert.True(window.BtnPowerBal.IsChecked == true);
+                Assert.False(window.BtnPowerPerf.IsChecked == true);
+            }
+            finally
+            {
+                SettingsManager.Save("LastPowerMode", origMode);
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
     public void Dashboard_MinimizationAndRestoration_ControlsPollingLifecycle()
     {
         RunInSta(() =>

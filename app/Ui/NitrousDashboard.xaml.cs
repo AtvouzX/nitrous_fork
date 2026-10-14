@@ -190,8 +190,7 @@ public partial class NitrousDashboard : Window
 
     public void RefreshDashboardState()
     {
-        var activeMode = AcerWmiManager.GetActivePowerMode() ??
-                         (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+        var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
         var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f)
             ? f
             : FanProfile.Auto;
