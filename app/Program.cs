@@ -113,6 +113,10 @@ static class Program
             // Create named event to listen for settings sync signals
             using var syncEvent = new EventWaitHandle(false, EventResetMode.AutoReset, SettingsChangedEventName);
 
+            // Enforce software rendering for WPF UI to ensure the dashboard process NEVER
+            // creates Direct3D devices on the discrete NVIDIA GPU or prevents D3Cold sleep.
+            System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
+
             var app = new System.Windows.Application();
             app.DispatcherUnhandledException += (s, e) =>
             {

@@ -43,6 +43,7 @@ public partial class NvidiaGpuManager : IDisposable
     private int _cachedVramTotal;
     private NvmlProcessInfo[]? _cachedGraphicsInfos;
     private NvmlProcessInfo[]? _cachedComputeInfos;
+    private DateTime _sleepPendingUntil = DateTime.MinValue;
 
     private static string FormatPState(NvmlPstates pState)
     {
@@ -438,6 +439,18 @@ public partial class NvidiaGpuManager : IDisposable
             // If the GPU is asleep, bypass NVML completely to preserve D3Cold power state.
             if (!IsGpuAwake())
             {
+                _sleepPendingUntil = DateTime.MinValue;
+                t.PState = "Sleep";
+                t.CoreTemp = 0;
+                t.GpuLoad = 0;
+                t.Name = "NVIDIA (Asleep)";
+                return t;
+            }
+
+            // If we recently unloaded NVML to allow D3Cold sleep, do not re-init NVML immediately
+            // while the driver is transitioning to sleep.
+            if (DateTime.UtcNow < _sleepPendingUntil)
+            {
                 t.PState = "Sleep";
                 t.CoreTemp = 0;
                 t.GpuLoad = 0;
@@ -490,6 +503,7 @@ public partial class NvidiaGpuManager : IDisposable
                         
                         _nvmlDeviceHandle = IntPtr.Zero;
                         _internalGpu = null;
+                        _sleepPendingUntil = DateTime.UtcNow.AddSeconds(15);
 
                         t.PState = "Sleep";
                         t.CoreTemp = 0;

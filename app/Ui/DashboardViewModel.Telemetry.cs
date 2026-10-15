@@ -536,7 +536,7 @@ public partial class DashboardViewModel
                         GpuTempColor = telemetry.GpuTemp > 85 ? "#FF453A" : "White";
 
                         // 2. Update NVIDIA SMI Deep Telemetry
-                        if (smi != null && !string.IsNullOrEmpty(smi.Name) && smi.Name != "Unknown")
+                        if (smi != null && !string.IsNullOrEmpty(smi.Name) && smi.Name != "Unknown" && smi.PState != "Sleep")
                         {
                             // Override WMI GPU temp with highly-accurate NVML temp if awake
                             if (smi.CoreTemp > 0)
@@ -597,7 +597,7 @@ public partial class DashboardViewModel
                             _gpuHistory.Add(new TelemetryPoint
                                 { Timestamp = now, Temp = gpuTemp, Usage = smi.GpuLoad });
                         }
-                        else if (gpuIsAwake)
+                        else if (gpuIsAwake && smi?.PState != "Sleep")
                         {
                             // GPU is awake (D0) but NVML failed or is unavailable
                             GpuGraphOpacity = 1.0;
@@ -607,14 +607,14 @@ public partial class DashboardViewModel
                         }
                         else
                         {
-                            // GPU is in D3/D3Cold sleep (confirmed by CM API)
+                            // GPU is in D3/D3Cold sleep (or sleep pending)
                             ClearDeepTelemetryUI();
                             GpuGraphOpacity = 0.3;
                             GpuUsageText = "Sleep";
                             _gpuHistory.Add(new TelemetryPoint { Timestamp = now, Temp = 0, Usage = 0 });
                         }
 
-                        GpuSleepOverlayVisibility = gpuIsAwake
+                        GpuSleepOverlayVisibility = (gpuIsAwake && smi?.PState != "Sleep")
                             ? Visibility.Collapsed
                             : Visibility.Visible;
 
