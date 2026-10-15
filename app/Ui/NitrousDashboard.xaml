@@ -712,7 +712,7 @@
 								</Border>
 								<StackPanel VerticalAlignment="Center">
 									<TextBlock x:Name="SettingsVersionText" Text="Nitrous" Foreground="White" FontWeight="Bold" FontSize="14" />
-									<TextBlock Text="Pure hardware control for Acer Nitro laptops." Foreground="#A1A1AA" FontSize="11"
+									<TextBlock Text="Hardware control for Acer Nitro laptops." Foreground="#A1A1AA" FontSize="11"
 									           Margin="0,2,0,0" />
 								</StackPanel>
 							</StackPanel>
@@ -853,7 +853,8 @@
 											</ItemsControl>
 										</Border>
 									</Popup>
-									<Button x:Name="BtnAcerServices" Grid.Column="1" Style="{StaticResource AccentBtn}" HorizontalAlignment="Right" Background="#FF4500"
+									<Button x:Name="BtnAcerServices" Grid.Column="1" Style="{StaticResource AccentBtn}"
+									        HorizontalAlignment="Right" Background="#FF4500"
 									        Padding="12,6"
 									        Command="{Binding ToggleAcerServicesCommand}"
 									        ToolTip="Stops NitroSense and Acer Care Center services to free system RAM, reduce background CPU, and prevent OEM software from overriding Nitrous fan curves.">
