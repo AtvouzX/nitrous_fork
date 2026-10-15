@@ -757,6 +757,10 @@ public class DashboardAndTrayUiTests
     {
         RunInSta(() =>
         {
+            SettingsManager.Save("Debugging", false);
+            SettingsManager.Save("DebugLogging", false);
+            LogManager.IsDebugEnabled = false;
+
             using var vm = new DashboardViewModel();
 
             vm.IsDebuggingEnabled = true;
@@ -768,6 +772,24 @@ public class DashboardAndTrayUiTests
             Assert.False(SettingsManager.Get("Debugging", true));
         });
     }
+
+    [Fact]
+    public void DashboardViewModel_AutoApplyGpuClocks_TogglesAndSavesSetting()
+    {
+        RunInSta(() =>
+        {
+            using var vm = new DashboardViewModel();
+
+            vm.AutoApplyGpuClocks = false;
+            Assert.False(vm.AutoApplyGpuClocks);
+            Assert.Equal(0, SettingsManager.Get("AutoApplyGpuClocks", 1));
+
+            vm.AutoApplyGpuClocks = true;
+            Assert.True(vm.AutoApplyGpuClocks);
+            Assert.Equal(1, SettingsManager.Get("AutoApplyGpuClocks", 0));
+        });
+    }
+
 
     [Fact]
     public void DashboardViewModel_CopyDiagnosticsCommand_ShowsConfirmationAlert()
@@ -795,6 +817,7 @@ public class DashboardAndTrayUiTests
                 Assert.NotNull(window.TogDebugging);
                 Assert.NotNull(window.BtnOpenLogsFolder);
                 Assert.NotNull(window.BtnCopyDiagnostics);
+                Assert.NotNull(window.TogAutoApplyClocks);
 
                 Assert.NotNull(window.TogDebugging.ToolTip);
                 Assert.NotEmpty(window.TogDebugging.ToolTip.ToString() ?? "");
@@ -804,6 +827,9 @@ public class DashboardAndTrayUiTests
 
                 Assert.NotNull(window.BtnCopyDiagnostics.ToolTip);
                 Assert.NotEmpty(window.BtnCopyDiagnostics.ToolTip.ToString() ?? "");
+
+                Assert.NotNull(window.TogAutoApplyClocks.ToolTip);
+                Assert.NotEmpty(window.TogAutoApplyClocks.ToolTip.ToString() ?? "");
             }
             finally
             {

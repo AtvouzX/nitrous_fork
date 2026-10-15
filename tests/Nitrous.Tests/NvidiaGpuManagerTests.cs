@@ -98,4 +98,12 @@ public class NvidiaGpuManagerTests
         bool isOnline = NvidiaGpuManager.IsAcPowerConnected();
         Assert.True(isOnline || !isOnline);
     }
+
+    [Fact]
+    public void EnsureInitialized_DoesNotThrowExceptions()
+    {
+        using var manager = new NvidiaGpuManager();
+        bool result = manager.EnsureInitialized();
+        Assert.True(result || !result);
+    }
 }

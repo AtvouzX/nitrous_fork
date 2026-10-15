@@ -381,6 +381,7 @@ public partial class TrayApplication : ApplicationContext
         _osd.ShowProfile($"{profile} MODE", osdColor, profile);
     }
 
+
     protected override void Dispose(bool disposing)
     {
         if (disposing)

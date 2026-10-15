@@ -29,68 +29,28 @@ public partial class DashboardViewModel
     public IReadOnlyList<TelemetryPoint> GpuHistory => _gpuHistory;
 
     private PointCollection _cpuTempPoints = new PointCollection();
-
-    public PointCollection CpuTempPoints
-    {
-        get => _cpuTempPoints;
-        set => SetProperty(ref _cpuTempPoints, value);
-    }
+    public PointCollection CpuTempPoints { get => _cpuTempPoints; set => SetProperty(ref _cpuTempPoints, value); }
 
     private PointCollection _cpuTempFillPoints = new PointCollection();
-
-    public PointCollection CpuTempFillPoints
-    {
-        get => _cpuTempFillPoints;
-        set => SetProperty(ref _cpuTempFillPoints, value);
-    }
+    public PointCollection CpuTempFillPoints { get => _cpuTempFillPoints; set => SetProperty(ref _cpuTempFillPoints, value); }
 
     private PointCollection _cpuUsagePoints = new PointCollection();
-
-    public PointCollection CpuUsagePoints
-    {
-        get => _cpuUsagePoints;
-        set => SetProperty(ref _cpuUsagePoints, value);
-    }
+    public PointCollection CpuUsagePoints { get => _cpuUsagePoints; set => SetProperty(ref _cpuUsagePoints, value); }
 
     private PointCollection _cpuUsageFillPoints = new PointCollection();
-
-    public PointCollection CpuUsageFillPoints
-    {
-        get => _cpuUsageFillPoints;
-        set => SetProperty(ref _cpuUsageFillPoints, value);
-    }
+    public PointCollection CpuUsageFillPoints { get => _cpuUsageFillPoints; set => SetProperty(ref _cpuUsageFillPoints, value); }
 
     private PointCollection _gpuTempPoints = new PointCollection();
-
-    public PointCollection GpuTempPoints
-    {
-        get => _gpuTempPoints;
-        set => SetProperty(ref _gpuTempPoints, value);
-    }
+    public PointCollection GpuTempPoints { get => _gpuTempPoints; set => SetProperty(ref _gpuTempPoints, value); }
 
     private PointCollection _gpuTempFillPoints = new PointCollection();
-
-    public PointCollection GpuTempFillPoints
-    {
-        get => _gpuTempFillPoints;
-        set => SetProperty(ref _gpuTempFillPoints, value);
-    }
+    public PointCollection GpuTempFillPoints { get => _gpuTempFillPoints; set => SetProperty(ref _gpuTempFillPoints, value); }
 
     private PointCollection _gpuUsagePoints = new PointCollection();
-
-    public PointCollection GpuUsagePoints
-    {
-        get => _gpuUsagePoints;
-        set => SetProperty(ref _gpuUsagePoints, value);
-    }
+    public PointCollection GpuUsagePoints { get => _gpuUsagePoints; set => SetProperty(ref _gpuUsagePoints, value); }
 
     private PointCollection _gpuUsageFillPoints = new PointCollection();
-
-    public PointCollection GpuUsageFillPoints
-    {
-        get => _gpuUsageFillPoints;
-        set => SetProperty(ref _gpuUsageFillPoints, value);
-    }
+    public PointCollection GpuUsageFillPoints { get => _gpuUsageFillPoints; set => SetProperty(ref _gpuUsageFillPoints, value); }
 
     private double _gpuGraphOpacity = 1.0;
 
@@ -301,17 +261,16 @@ public partial class DashboardViewModel
         set => SetProperty(ref _gpuPowerText, value);
     }
 
-    private bool _deepGpuTelemetry;
+    private bool _autoApplyGpuClocks = true;
 
-    public bool DeepGpuTelemetry
+    public bool AutoApplyGpuClocks
     {
-        get => _deepGpuTelemetry;
+        get => _autoApplyGpuClocks;
         set
         {
-            if (SetProperty(ref _deepGpuTelemetry, value))
+            if (SetProperty(ref _autoApplyGpuClocks, value))
             {
-                SettingsManager.Save("DeepGpuTelemetry", value ? 1 : 0);
-                if (!value) ClearDeepTelemetryUI();
+                SettingsManager.Save("AutoApplyGpuClocks", value ? 1 : 0);
             }
         }
     }
@@ -503,6 +462,8 @@ public partial class DashboardViewModel
         }
     }
 
+    private bool _wasGpuAwake;
+
     private void StartTelemetryPolling()
     {
         _pollingCts?.Cancel();
@@ -535,6 +496,15 @@ public partial class DashboardViewModel
 
                     // Check if discrete GPU is awake before querying NVML
                     bool gpuIsAwake = NvidiaGpuManager.IsGpuAwake();
+                    if (!_wasGpuAwake && gpuIsAwake)
+                    {
+                        if (NvidiaGpuManager.IsAcPowerConnected() && SettingsManager.Get("AutoApplyGpuClocks", 1) == 1)
+                        {
+                            _ = AutoApplyGpuClocksAsync();
+                        }
+                    }
+                    _wasGpuAwake = gpuIsAwake;
+
                     NvidiaGpuManager.GpuTelemetry? smi = null;
 
                     if (gpuIsAwake)
@@ -575,39 +545,36 @@ public partial class DashboardViewModel
                                 GpuTempColor = smi.CoreTemp >= 85 ? "#FF453A" : "White";
                             }
 
-                            if (DeepGpuTelemetry)
+                            GpuNameText = smi.Name;
+                            GpuArchText = smi.Architecture;
+
+                            GpuLoadText = $"{smi.GpuLoad}%";
+                            GpuLoadColor = smi.GpuLoad >= 95
+                                ? "#FF453A"
+                                : (smi.GpuLoad >= 80 ? "#FF9F0A" : "White");
+
+                            GpuVramText = $"{smi.VramUsedMb} / {smi.VramTotalMb} MB";
+
+                            GpuDeepTempText = $"{smi.CoreTemp} C";
+                            GpuDeepTempColor =
+                                smi.CoreTemp >= 85 ? "#FF453A" : (smi.CoreTemp >= 78 ? "#FF9F0A" : "White");
+
+                            GpuPStateText = smi.PState;
+                            GpuCoreClockText = $"{smi.CurrentCoreClock} MHz";
+                            GpuMemClockText = $"{smi.CurrentMemoryClock} MHz";
+
+                            if (smi.EnforcedPowerLimitW > 0 && smi.MaxPowerLimitW > 0)
                             {
-                                GpuNameText = smi.Name;
-                                GpuArchText = smi.Architecture;
-
-                                GpuLoadText = $"{smi.GpuLoad}%";
-                                GpuLoadColor = smi.GpuLoad >= 95
-                                    ? "#FF453A"
-                                    : (smi.GpuLoad >= 80 ? "#FF9F0A" : "White");
-
-                                GpuVramText = $"{smi.VramUsedMb} / {smi.VramTotalMb} MB";
-
-                                GpuDeepTempText = $"{smi.CoreTemp} C";
-                                GpuDeepTempColor =
-                                    smi.CoreTemp >= 85 ? "#FF453A" : (smi.CoreTemp >= 78 ? "#FF9F0A" : "White");
-
-                                GpuPStateText = smi.PState;
-                                GpuCoreClockText = $"{smi.CurrentCoreClock} MHz";
-                                GpuMemClockText = $"{smi.CurrentMemoryClock} MHz";
-
-                                if (smi.EnforcedPowerLimitW > 0 && smi.MaxPowerLimitW > 0)
-                                {
-                                    GpuPowerText =
-                                        $"{smi.PowerDrawW:0.0} / {smi.EnforcedPowerLimitW:0} / {smi.MaxPowerLimitW:0} W";
-                                }
-                                else if (smi.EnforcedPowerLimitW > 0)
-                                {
-                                    GpuPowerText = $"{smi.PowerDrawW:0.0} / {smi.EnforcedPowerLimitW:0} W";
-                                }
-                                else
-                                {
-                                    GpuPowerText = $"{smi.PowerDrawW:0.0} W";
-                                }
+                                GpuPowerText =
+                                    $"{smi.PowerDrawW:0.0} / {smi.EnforcedPowerLimitW:0} / {smi.MaxPowerLimitW:0} W";
+                            }
+                            else if (smi.EnforcedPowerLimitW > 0)
+                            {
+                                GpuPowerText = $"{smi.PowerDrawW:0.0} / {smi.EnforcedPowerLimitW:0} W";
+                            }
+                            else
+                            {
+                                GpuPowerText = $"{smi.PowerDrawW:0.0} W";
                             }
                         }
 
@@ -641,6 +608,7 @@ public partial class DashboardViewModel
                         else
                         {
                             // GPU is in D3/D3Cold sleep (confirmed by CM API)
+                            ClearDeepTelemetryUI();
                             GpuGraphOpacity = 0.3;
                             GpuUsageText = "Sleep";
                             _gpuHistory.Add(new TelemetryPoint { Timestamp = now, Temp = 0, Usage = 0 });

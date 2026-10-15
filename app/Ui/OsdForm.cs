@@ -91,6 +91,7 @@ public class OsdForm : Form
         });
     }
 
+
     private void FadeTimer_Tick(object? sender, EventArgs e)
     {
         _opacity -= 0.05;
@@ -135,18 +136,16 @@ public class OsdForm : Form
         DrawSpeedometerIcon(e.Graphics, new Rectangle(25, 17, 36, 36), _accentColor, _activeProfile);
 
         // 4. Draw Text
-        using (var font = new Font("Segoe UI", 16, FontStyle.Bold))
-        using (var textBrush = new SolidBrush(Color.White))
+        using var font = new Font("Segoe UI", 16, FontStyle.Bold);
+        using var textBrush = new SolidBrush(Color.White);
+        StringFormat format = new StringFormat
         {
-            StringFormat format = new StringFormat
-            {
-                Alignment = StringAlignment.Center,
-                LineAlignment = StringAlignment.Center
-            };
+            Alignment = StringAlignment.Center,
+            LineAlignment = StringAlignment.Center
+        };
 
-            Rectangle textRect = new Rectangle(65, 0, this.Width - 65, this.Height);
-            e.Graphics.DrawString(_profileText, font, textBrush, textRect, format);
-        }
+        Rectangle textRect = new Rectangle(65, 0, this.Width - 65, this.Height);
+        e.Graphics.DrawString(_profileText, font, textBrush, textRect, format);
     }
 
     // Helper method to generate standard geometric curves for rounded edges

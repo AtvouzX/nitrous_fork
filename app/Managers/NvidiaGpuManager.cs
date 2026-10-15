@@ -20,7 +20,15 @@ namespace Nitrous.Managers;
 public partial class NvidiaGpuManager : IDisposable
 {
     private PhysicalGPU? _internalGpu;
-    public bool IsValid => _internalGpu != null;
+    public bool IsValid => _internalGpu != null || (IsGpuAwake() && EnsureInitialized());
+
+    public bool EnsureInitialized()
+    {
+        if (_internalGpu != null) return true;
+        if (!IsGpuAwake()) return false;
+        InitializeNvAPI();
+        return _internalGpu != null;
+    }
 
     public int MaxCoreOffset = 250;
     public int MinCoreOffset = -250;
@@ -129,9 +137,7 @@ public partial class NvidiaGpuManager : IDisposable
     public bool GetClocks(out int core, out int memory)
     {
         core = memory = 0;
-        if (!IsGpuAwake()) return false;
-        if (_internalGpu == null) InitializeNvAPI();
-        if (!IsValid) return false;
+        if (!EnsureInitialized()) return false;
 
         try
         {
@@ -156,9 +162,7 @@ public partial class NvidiaGpuManager : IDisposable
 
     private int SetClocksInternal(int core, int memory)
     {
-        if (!IsGpuAwake()) return 0;
-        if (_internalGpu == null) InitializeNvAPI();
-        if (!IsValid) return 0;
+        if (!EnsureInitialized()) return 0;
 
         if (core < MinCoreOffset || core > MaxCoreOffset) return 0;
         if (memory < MinMemoryOffset || memory > MaxMemoryOffset) return 0;
@@ -229,9 +233,7 @@ public partial class NvidiaGpuManager : IDisposable
 
             try
             {
-                if (_internalGpu == null) InitializeNvAPI();
-
-                if (IsValid)
+                if (EnsureInitialized())
                 {
                     int result = SetClocksInternal(core, memory);
                     if (result == 1) return;

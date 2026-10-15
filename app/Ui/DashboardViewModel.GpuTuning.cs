@@ -147,7 +147,7 @@ public partial class DashboardViewModel
                     ShowGpuAlert(
                         GpuAlertLevel.Warning,
                         "GPU in D3Cold Sleep",
-                        "The discrete GPU is powered down by Windows Optimus to conserve power. Your offsets are saved. Launch a 3D application or game to wake the GPU, then re-apply.",
+                        "The discrete GPU is asleep to conserve power. Your offsets are saved and will automatically apply when the GPU wakes up (you can toggle this in Settings).",
                         "M12.3,2A10,10 0 0,0 1.9,14.42C3.12,17.7 6.3,20 10,20A10,10 0 0,0 20,10C20,6.3 17.7,3.12 14.42,1.9C13.72,1.75 13,1.67 12.3,2Z");
 
                     ApplyBtnText = "SAVED";
@@ -158,8 +158,8 @@ public partial class DashboardViewModel
                     return;
                 }
 
-                // 3. Check if GPU / NvAPI is valid
-                if (!_gpuManager.IsValid)
+                // 3. Check if GPU / NvAPI is valid (lazily initializes if awake)
+                if (!_gpuManager.EnsureInitialized())
                 {
                     ShowGpuAlert(
                         GpuAlertLevel.Error,
@@ -306,5 +306,28 @@ public partial class DashboardViewModel
     public void DismissGpuAlert()
     {
         GpuAlertVisibility = Visibility.Collapsed;
+    }
+
+
+    public async Task AutoApplyGpuClocksAsync()
+    {
+        try
+        {
+            var profile = ActivePowerProfile;
+            int core = SettingsManager.Get($"GpuCore_{profile}", _gpuManager.GetDefaultCore(profile));
+            int mem = SettingsManager.Get($"GpuMemory_{profile}", _gpuManager.GetDefaultMemory(profile));
+
+            if (core == 0 && mem == 0) return;
+
+            int result = await _gpuManager.ApplyPowerProfileOcAsync(profile, true);
+            if (result == 1)
+            {
+                LogManager.Info($"Auto-applied GPU clocks on wake: Core={core} MHz, Memory={mem} MHz", "DashboardVM");
+            }
+        }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"AutoApplyGpuClocksAsync error: {ex.Message}", "DashboardVM");
+        }
     }
 }

@@ -118,17 +118,14 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         InitializeGpuTuning();
         InitializeServices();
 
-        _deepGpuTelemetry = SettingsManager.Get("DeepGpuTelemetry", 1) == 1;
-        if (!_deepGpuTelemetry)
-        {
-            ClearDeepTelemetryUI();
-        }
+        _autoApplyGpuClocks = SettingsManager.Get("AutoApplyGpuClocks", 1) == 1;
 
         // Initialize Settings State
         _chargeLimit = SettingsManager.Get("ChargeLimit", 0) == 1;
         _autoSwitch = SettingsManager.Get("AutoSwitch", 0) == 1;
         _refreshAutoSwitch = SettingsManager.Get("RefreshAutoSwitch", 0) == 1;
         _isDebuggingEnabled = SettingsManager.Get("Debugging", SettingsManager.Get("DebugLogging", false));
+        LogManager.IsDebugEnabled = _isDebuggingEnabled;
 
         // Fast load cached profile to prevent UI blocking
         ActivePowerProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
@@ -292,13 +289,13 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(RefreshAutoSwitch));
         }
 
-        var newDeepGpu = SettingsManager.Get("DeepGpuTelemetry", 1) == 1;
-        if (_deepGpuTelemetry != newDeepGpu)
+        var newAutoApply = SettingsManager.Get("AutoApplyGpuClocks", 1) == 1;
+        if (_autoApplyGpuClocks != newAutoApply)
         {
-            _deepGpuTelemetry = newDeepGpu;
-            OnPropertyChanged(nameof(DeepGpuTelemetry));
-            if (!_deepGpuTelemetry) ClearDeepTelemetryUI();
+            _autoApplyGpuClocks = newAutoApply;
+            OnPropertyChanged(nameof(AutoApplyGpuClocks));
         }
+
 
         var newDebugging = SettingsManager.Get("Debugging", SettingsManager.Get("DebugLogging", false));
         if (_isDebuggingEnabled != newDebugging)
