@@ -106,4 +106,65 @@ public class NvidiaGpuManagerTests
         bool result = manager.EnsureInitialized();
         Assert.True(result || !result);
     }
+
+    [Theory]
+    [InlineData(false, true, true, 1, true)]    // Wakes up on AC with setting enabled -> Auto-apply
+    [InlineData(true, true, true, 1, false)]     // Already awake -> No duplicate apply
+    [InlineData(false, true, false, 1, false)]   // Wakes up on DC (Battery) -> Suppressed
+    [InlineData(false, true, true, 0, false)]    // Wakes up on AC but setting disabled -> Suppressed
+    [InlineData(false, false, true, 1, false)]   // Asleep -> Suppressed
+    [InlineData(true, false, true, 1, false)]    // Going to sleep -> Suppressed
+    public void ShouldAutoApplyGpuClocks_EvaluatesCorrectly(bool wasGpuAwake, bool isGpuAwake, bool isAcOnline, int autoApplySetting, bool expected)
+    {
+        bool result = NvidiaGpuManager.ShouldAutoApplyGpuClocks(wasGpuAwake, isGpuAwake, isAcOnline, autoApplySetting);
+        Assert.Equal(expected, result);
+    }
+
+    [Theory]
+    [InlineData(true, false, true)]    // Was awake, now asleep -> Reset handle
+    [InlineData(false, false, false)]  // Was asleep, still asleep -> No reset
+    [InlineData(true, true, false)]    // Was awake, still awake -> No reset
+    [InlineData(false, true, false)]   // Was asleep, now awake -> No reset
+    public void ShouldResetGpuHandle_EvaluatesCorrectly(bool wasGpuAwake, bool isGpuAwake, bool expected)
+    {
+        bool result = NvidiaGpuManager.ShouldResetGpuHandle(wasGpuAwake, isGpuAwake);
+        Assert.Equal(expected, result);
+    }
+
+    [Fact]
+    public async Task AutoApplyClocksAsync_WhenOnDcPower_ReturnsZeroWithoutWakingGpu()
+    {
+        using var manager = new NvidiaGpuManager();
+        int result = await manager.AutoApplyClocksAsync(Nitrous.Enums.PowerProfile.Performance, isAcOnline: false);
+        Assert.Equal(0, result);
+    }
+
+    [Fact]
+    public async Task AutoApplyClocksAsync_WhenDisabledInSettings_ReturnsZero()
+    {
+        SettingsManager.Save("AutoApplyGpuClocks", 0);
+        try
+        {
+            using var manager = new NvidiaGpuManager();
+            int result = await manager.AutoApplyClocksAsync(Nitrous.Enums.PowerProfile.Performance, isAcOnline: true);
+            Assert.Equal(0, result);
+        }
+        finally
+        {
+            SettingsManager.Save("AutoApplyGpuClocks", 1);
+        }
+    }
+
+    [Fact]
+    public void ResetGpuHandle_DoesNotThrowExceptions()
+    {
+        using var manager = new NvidiaGpuManager();
+        var ex = Record.Exception(() =>
+        {
+            manager.ResetGpuHandle();
+            manager.ResetGpuHandle();
+        });
+        Assert.Null(ex);
+    }
 }
+

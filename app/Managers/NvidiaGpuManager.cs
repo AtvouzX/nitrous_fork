@@ -20,12 +20,39 @@ namespace Nitrous.Managers;
 public partial class NvidiaGpuManager : IDisposable
 {
     private PhysicalGPU? _internalGpu;
+    private int _isAutoApplyingClocks;
     public bool IsValid => _internalGpu != null || (IsGpuAwake() && EnsureInitialized());
+
+    public void ResetGpuHandle()
+    {
+        _internalGpu = null;
+        _nvmlDeviceHandle = IntPtr.Zero;
+        try { NVIDIA.Unload(); } catch { }
+        try { NativeNvml.Shutdown(); } catch { }
+    }
+
+    public static bool ShouldAutoApplyGpuClocks(bool wasGpuAwake, bool isGpuAwake, bool isAcOnline, int autoApplySetting)
+    {
+        return !wasGpuAwake && isGpuAwake && isAcOnline && autoApplySetting == 1;
+    }
+
+    public static bool ShouldResetGpuHandle(bool wasGpuAwake, bool isGpuAwake)
+    {
+        return wasGpuAwake && !isGpuAwake;
+    }
 
     public bool EnsureInitialized()
     {
+        if (!IsGpuAwake())
+        {
+            if (_internalGpu != null)
+            {
+                ResetGpuHandle();
+            }
+            return false;
+        }
+
         if (_internalGpu != null) return true;
-        if (!IsGpuAwake()) return false;
         InitializeNvAPI();
         return _internalGpu != null;
     }
@@ -194,6 +221,7 @@ public partial class NvidiaGpuManager : IDisposable
         catch (Exception ex)
         {
             LogManager.Warn($"Failed to apply GPU offsets: {ex.Message}", "NvidiaGpu");
+            ResetGpuHandle();
             return 0;
         }
     }
@@ -210,43 +238,76 @@ public partial class NvidiaGpuManager : IDisposable
         }
     }
 
-    public async Task ApplyOnBootAsync(PowerProfile currentProfile, bool? isAcOnline = null)
+    public async Task<int> AutoApplyClocksAsync(PowerProfile? activeProfile = null, bool? isAcOnline = null)
     {
         bool online = isAcOnline ?? IsAcPowerConnected();
         if (!online || !IsGpuAwake())
         {
-            // Core Battery Invariant: discrete NVIDIA GPU must remain in D3Cold sleep on battery.
-            LogManager.Debug("ApplyOnBootAsync: dGPU is on battery or in D3Cold sleep; NvAPI boot clock apply skipped.", "NvidiaGpu");
-            return;
+            LogManager.Debug("AutoApplyClocksAsync: dGPU is on battery or asleep; skipping auto-apply.", "NvidiaGpu");
+            return 0;
         }
 
-        int core = SettingsManager.Get($"GpuCore_{currentProfile}", GetDefaultCore(currentProfile));
-        int memory = SettingsManager.Get($"GpuMemory_{currentProfile}", GetDefaultMemory(currentProfile));
-
-        if (core == 0 && memory == 0) return;
-
-        const int maxAttempts = 8;
-        const int delayMs = 1500;
-
-        for (int attempt = 1; attempt <= maxAttempts; attempt++)
+        if (SettingsManager.Get("AutoApplyGpuClocks", 1) != 1)
         {
-            if (!IsGpuAwake()) return;
+            LogManager.Debug("AutoApplyClocksAsync: AutoApplyGpuClocks disabled in settings.", "NvidiaGpu");
+            return 0;
+        }
 
-            try
+        if (Interlocked.CompareExchange(ref _isAutoApplyingClocks, 1, 0) != 0)
+        {
+            return 0;
+        }
+
+        try
+        {
+            var profile = activeProfile ?? (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+            int core = SettingsManager.Get($"GpuCore_{profile}", GetDefaultCore(profile));
+            int mem = SettingsManager.Get($"GpuMemory_{profile}", GetDefaultMemory(profile));
+
+            if (core == 0 && mem == 0) return 0;
+
+            const int maxAttempts = 5;
+            const int delayMs = 1000;
+
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
             {
-                if (EnsureInitialized())
+                if (!IsGpuAwake() || !(isAcOnline ?? IsAcPowerConnected())) return 0;
+
+                try
                 {
-                    int result = SetClocksInternal(core, memory);
-                    if (result == 1) return;
+                    if (EnsureInitialized())
+                    {
+                        int result = SetClocksInternal(core, mem);
+                        if (result == 1)
+                        {
+                            LogManager.Info($"Auto-applied GPU clocks: Core={core} MHz, Memory={mem} MHz (Profile: {profile})", "NvidiaGpu");
+                            return 1;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogManager.Debug($"AutoApplyClocksAsync attempt {attempt} failed: {ex.Message}", "NvidiaGpu");
+                }
+
+                if (attempt < maxAttempts)
+                {
+                    ResetGpuHandle();
+                    await Task.Delay(delayMs);
                 }
             }
-            catch (Exception ex)
-            {
-                LogManager.Debug($"ApplyOnBootAsync retry failed: {ex.Message}", "NvidiaGpu");
-            }
 
-            await Task.Delay(delayMs);
+            return 0;
         }
+        finally
+        {
+            Interlocked.Exchange(ref _isAutoApplyingClocks, 0);
+        }
+    }
+
+    public async Task ApplyOnBootAsync(PowerProfile currentProfile, bool? isAcOnline = null)
+    {
+        await AutoApplyClocksAsync(currentProfile, isAcOnline);
     }
 
     public async Task<int> ApplyPowerProfileOcAsync(PowerProfile profile, bool? isAcOnline = null)
@@ -305,8 +366,7 @@ public partial class NvidiaGpuManager : IDisposable
     {
         try
         {
-            NVIDIA.Unload();
-            NativeNvml.Shutdown();
+            ResetGpuHandle();
         }
         catch (Exception ex)
         {

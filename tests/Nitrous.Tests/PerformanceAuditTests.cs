@@ -137,6 +137,17 @@ public class PerformanceAuditTests
         Assert.DoesNotContain("0°C", tooltip);
     }
 
+    [Fact]
+    public void FormatTrayTooltip_WhenGpuIsSleepingAccordingToCmApi_DisplaysSleepEvenIfEcTempIsPositive()
+    {
+        // Even if EC has a residual temperature (e.g. 45°C), when CM API indicates dGPU is in D3Cold (gpuIsAwake = false),
+        // Nitrous must display "Sleep".
+        string tooltip = TrayApplication.FormatTrayTooltip(48, 45, gpuIsAwake: false);
+
+        Assert.Contains("GPU: Sleep", tooltip);
+        Assert.DoesNotContain("45°C", tooltip);
+    }
+
     [Theory]
     [InlineData(35, 42)]
     [InlineData(50, 65)]

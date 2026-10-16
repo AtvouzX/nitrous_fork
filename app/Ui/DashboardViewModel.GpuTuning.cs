@@ -313,17 +313,7 @@ public partial class DashboardViewModel
     {
         try
         {
-            var profile = ActivePowerProfile;
-            int core = SettingsManager.Get($"GpuCore_{profile}", _gpuManager.GetDefaultCore(profile));
-            int mem = SettingsManager.Get($"GpuMemory_{profile}", _gpuManager.GetDefaultMemory(profile));
-
-            if (core == 0 && mem == 0) return;
-
-            int result = await _gpuManager.ApplyPowerProfileOcAsync(profile, true);
-            if (result == 1)
-            {
-                LogManager.Info($"Auto-applied GPU clocks on wake: Core={core} MHz, Memory={mem} MHz", "DashboardVM");
-            }
+            await _gpuManager.AutoApplyClocksAsync(ActivePowerProfile);
         }
         catch (Exception ex)
         {

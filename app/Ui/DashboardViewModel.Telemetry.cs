@@ -496,12 +496,16 @@ public partial class DashboardViewModel
 
                     // Check if discrete GPU is awake before querying NVML
                     bool gpuIsAwake = NvidiaGpuManager.IsGpuAwake();
-                    if (!_wasGpuAwake && gpuIsAwake)
+                    bool isAcOnline = NvidiaGpuManager.IsAcPowerConnected();
+                    int autoApplySetting = SettingsManager.Get("AutoApplyGpuClocks", 1);
+
+                    if (NvidiaGpuManager.ShouldAutoApplyGpuClocks(_wasGpuAwake, gpuIsAwake, isAcOnline, autoApplySetting))
                     {
-                        if (NvidiaGpuManager.IsAcPowerConnected() && SettingsManager.Get("AutoApplyGpuClocks", 1) == 1)
-                        {
-                            _ = AutoApplyGpuClocksAsync();
-                        }
+                        _ = AutoApplyGpuClocksAsync();
+                    }
+                    else if (NvidiaGpuManager.ShouldResetGpuHandle(_wasGpuAwake, gpuIsAwake))
+                    {
+                        _gpuManager.ResetGpuHandle();
                     }
                     _wasGpuAwake = gpuIsAwake;
 

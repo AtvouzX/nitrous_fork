@@ -22,9 +22,9 @@ public partial class TrayApplication : ApplicationContext
     private int _gpuDownstepHoldTicks;
     public const int HysteresisHoldCycles = 2; // 2 cycles * 2s = 4s delay before stepping down
 
-    public static string FormatTrayTooltip(int cpuTemp, int gpuTemp)
+    public static string FormatTrayTooltip(int cpuTemp, int gpuTemp, bool gpuIsAwake = true)
     {
-        string gpuTip = gpuTemp > 0 ? $"{gpuTemp}°C" : "Sleep";
+        string gpuTip = (gpuIsAwake && gpuTemp > 0) ? $"{gpuTemp}°C" : "Sleep";
         string tipText = $"Nitrous | CPU: {cpuTemp}°C  GPU: {gpuTip}";
         return tipText.Length > 63 ? tipText[..63] : tipText;
     }
@@ -42,7 +42,33 @@ public partial class TrayApplication : ApplicationContext
                 {
                     tickCounter++;
 
-                    // 1. Check if the user wants Custom Fan Mode and if the Curve is enabled
+                    // 1. Detect discrete GPU wake state transitions and auto-apply clock offsets on AC.
+                    // Bypassed completely if the user disabled AutoApplyGpuClocks or is on battery (DC) power.
+                    bool isAcOnline = NvidiaGpuManager.IsAcPowerConnected();
+                    int autoApplySetting = SettingsManager.Get("AutoApplyGpuClocks", 1);
+                    bool isAutoApplyActive = isAcOnline && autoApplySetting == 1;
+
+                    if (isAutoApplyActive)
+                    {
+                        bool gpuIsAwake = NvidiaGpuManager.IsGpuAwake();
+                        if (NvidiaGpuManager.ShouldAutoApplyGpuClocks(_wasGpuAwake, gpuIsAwake, isAcOnline, autoApplySetting))
+                        {
+                            var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+                            _ = _gpuManager.AutoApplyClocksAsync(activeMode, isAcOnline);
+                        }
+                        else if (NvidiaGpuManager.ShouldResetGpuHandle(_wasGpuAwake, gpuIsAwake))
+                        {
+                            _gpuManager.ResetGpuHandle();
+                        }
+                        _wasGpuAwake = gpuIsAwake;
+                    }
+                    else if (_wasGpuAwake)
+                    {
+                        _wasGpuAwake = false;
+                        _gpuManager.ResetGpuHandle();
+                    }
+
+                    // 2. Check if the user wants Custom Fan Mode and if the Curve is enabled
                     string currentFanMode = SettingsManager.Get("LastFanMode", "Auto");
                     bool isCurveEnabled = SettingsManager.Get("IsCurveModeEnabled", 0) == 1;
                     bool isCurveActive = currentFanMode == "Medium" && isCurveEnabled;
@@ -65,7 +91,8 @@ public partial class TrayApplication : ApplicationContext
                     {
                         var telemetry = AcerWmiManager.GetSystemTelemetry();
                         int effectiveGpuTemp = telemetry.GpuTemp;
-                        string truncatedTip = FormatTrayTooltip(telemetry.CpuTemp, effectiveGpuTemp);
+                        bool gpuAwakeForTooltip = isAutoApplyActive ? _wasGpuAwake : (effectiveGpuTemp > 0);
+                        string truncatedTip = FormatTrayTooltip(telemetry.CpuTemp, effectiveGpuTemp, gpuAwakeForTooltip);
                         if (trayIcon.Text != truncatedTip)
                         {
                             trayIcon.Text = truncatedTip;

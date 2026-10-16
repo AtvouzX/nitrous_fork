@@ -17,6 +17,8 @@ public partial class TrayApplication : ApplicationContext
     internal NotifyIcon TrayIcon => trayIcon;
     private bool? _wasOnAcPower = null;
     internal bool? WasOnAcPower { get => _wasOnAcPower; set => _wasOnAcPower = value; }
+    private bool _wasGpuAwake;
+    internal bool WasGpuAwake { get => _wasGpuAwake; set => _wasGpuAwake = value; }
     internal PowerProfile? LastOsdProfile { get; set; }
     private int _powerEventId = 0;
 
@@ -76,6 +78,12 @@ public partial class TrayApplication : ApplicationContext
                 {
                     LogManager.SyncSettings();
                     ReloadHotkeys();
+
+                    if (NvidiaGpuManager.IsAcPowerConnected() && SettingsManager.Get("AutoApplyGpuClocks", 1) == 1 && NvidiaGpuManager.IsGpuAwake())
+                    {
+                        var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+                        _ = _gpuManager.AutoApplyClocksAsync(activeMode);
+                    }
                 }, null, Timeout.Infinite, false);
             }
             catch (Exception ex)
