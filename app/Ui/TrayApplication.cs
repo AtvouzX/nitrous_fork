@@ -30,6 +30,8 @@ public partial class TrayApplication : ApplicationContext
 
     private readonly GlobalHotkeyManager _hotkeys = new();
     private readonly OsdForm _osd = new();
+    private string _lastCyclePowerHotkey = string.Empty;
+    private string _lastDashboardHotkey = string.Empty;
 
     private const int HK_CYCLE_POWER = 1;
     private const int HK_DASHBOARD = 99;
@@ -65,6 +67,9 @@ public partial class TrayApplication : ApplicationContext
 
         BuildContextMenu();
 
+        // Ensure _osd handle exists on the UI thread for cross-thread marshalling
+        _ = _osd.Handle;
+
         if (!IsTestHost())
         {
             LogManager.Info("TrayApplication initializing background engine...", "Tray");
@@ -77,13 +82,7 @@ public partial class TrayApplication : ApplicationContext
                 _settingsSyncReg = ThreadPool.RegisterWaitForSingleObject(_settingsSyncEvent, (state, timedOut) =>
                 {
                     LogManager.SyncSettings();
-                    ReloadHotkeys();
-
-                    if (NvidiaGpuManager.IsAcPowerConnected() && SettingsManager.Get("AutoApplyGpuClocks", 1) == 1 && NvidiaGpuManager.IsGpuAwake())
-                    {
-                        var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-                        _ = _gpuManager.AutoApplyClocksAsync(activeMode);
-                    }
+                    ReloadHotkeysIfChanged();
                 }, null, Timeout.Infinite, false);
             }
             catch (Exception ex)
@@ -292,12 +291,42 @@ public partial class TrayApplication : ApplicationContext
 
 
 
-    private void ReloadHotkeys()
+    internal void ReloadHotkeys()
     {
+        _lastCyclePowerHotkey = SettingsManager.Get("Hotkey_CyclePower", "");
+        _lastDashboardHotkey = SettingsManager.Get("Hotkey_Dashboard", "");
+
         _hotkeys.UnregisterAll(HK_CYCLE_POWER, HK_DASHBOARD);
 
         RegisterSavedHotkey("Hotkey_CyclePower", HK_CYCLE_POWER);
         RegisterSavedHotkey("Hotkey_Dashboard", HK_DASHBOARD);
+    }
+
+    internal bool ReloadHotkeysIfChanged()
+    {
+        string cyclePower = SettingsManager.Get("Hotkey_CyclePower", "");
+        string dashboard = SettingsManager.Get("Hotkey_Dashboard", "");
+
+        if (cyclePower == _lastCyclePowerHotkey && dashboard == _lastDashboardHotkey)
+        {
+            return false;
+        }
+
+        if (!_osd.IsDisposed && _osd.IsHandleCreated && _osd.InvokeRequired)
+        {
+            try
+            {
+                _osd.BeginInvoke(new Action(ReloadHotkeys));
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogManager.Debug($"Failed to marshal ReloadHotkeys to UI thread: {ex.Message}", "Tray");
+            }
+        }
+
+        ReloadHotkeys();
+        return true;
     }
 
     private void RegisterSavedHotkey(string settingKey, int id)
@@ -405,6 +434,8 @@ public partial class TrayApplication : ApplicationContext
         TriggerExitFanReset();
 
         // 1. Cancel background loops and unhook events
+        _settingsSyncReg?.Unregister(null);
+        _settingsSyncEvent?.Dispose();
         _engineCts.Cancel();
         _nitroHook?.Dispose();
         SystemEvents.PowerModeChanged -= OnPowerStateChanged;
@@ -416,8 +447,6 @@ public partial class TrayApplication : ApplicationContext
         trayIcon.Dispose();
         _osd.Dispose();
         _gpuManager.Dispose();
-        _settingsSyncReg?.Unregister(null);
-        _settingsSyncEvent?.Dispose();
         _engineCts.Dispose();
         _hotkeys.Dispose();
 

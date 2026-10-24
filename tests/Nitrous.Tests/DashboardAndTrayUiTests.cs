@@ -837,5 +837,50 @@ public class DashboardAndTrayUiTests
             }
         });
     }
+
+    [Fact]
+    public void TrayApplication_ReloadHotkeysIfChanged_WhenUnchanged_DoesNotReload()
+    {
+        RunInSta(() =>
+        {
+            using var tray = new TrayApplication();
+            tray.ReloadHotkeys();
+
+            // When settings are identical to cached, ReloadHotkeysIfChanged must return false
+            bool reloaded = tray.ReloadHotkeysIfChanged();
+            Assert.False(reloaded, "Hotkeys must not be re-registered when settings have not changed.");
+        });
+    }
+
+    [Fact]
+    public void TrayApplication_ReloadHotkeysIfChanged_WhenSettingChanged_TriggersReload()
+    {
+        RunInSta(() =>
+        {
+            string origCycle = SettingsManager.Get("Hotkey_CyclePower", "");
+            try
+            {
+                using var tray = new TrayApplication();
+                tray.ReloadHotkeys();
+
+                // Change hotkey setting
+                SettingsManager.Save("Hotkey_CyclePower", "2|81");
+
+                bool reloaded = tray.ReloadHotkeysIfChanged();
+                Assert.True(reloaded, "Hotkeys must be reloaded when a hotkey setting changes.");
+
+                // Second call with same setting should now return false
+                bool reloadedAgain = tray.ReloadHotkeysIfChanged();
+                Assert.False(reloadedAgain, "Hotkeys must not reload again once synchronized.");
+            }
+            finally
+            {
+                if (string.IsNullOrEmpty(origCycle))
+                    SettingsManager.Delete("Hotkey_CyclePower");
+                else
+                    SettingsManager.Save("Hotkey_CyclePower", origCycle);
+            }
+        });
+    }
 }
 
