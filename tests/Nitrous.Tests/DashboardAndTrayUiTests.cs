@@ -882,5 +882,109 @@ public class DashboardAndTrayUiTests
             }
         });
     }
+
+    [Fact]
+    public void AcerWmiManager_IsTurboModeSupported_CachesResultInStaticField()
+    {
+        try
+        {
+            AcerWmiManager.SetTurboSupportedForTesting(true);
+            Assert.True(AcerWmiManager.IsTurboModeSupported());
+
+            AcerWmiManager.SetTurboSupportedForTesting(false);
+            Assert.False(AcerWmiManager.IsTurboModeSupported());
+        }
+        finally
+        {
+            AcerWmiManager.SetTurboSupportedForTesting(null);
+        }
+    }
+
+    [Fact]
+    public void DashboardViewModel_IsTurboSupported_WhenCachedZero_InitializesAsFalseWithoutFlicker()
+    {
+        RunInSta(() =>
+        {
+            int origTurbo = SettingsManager.Get("IsTurboSupported", -1);
+            int origMode = SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+            try
+            {
+                SettingsManager.Save("IsTurboSupported", 0);
+                SettingsManager.Save("LastPowerMode", (int)PowerProfile.Turbo);
+
+                using var vm = new DashboardViewModel();
+
+                // Must be false immediately on creation, and ActivePowerProfile must fallback from Turbo to Performance
+                Assert.False(vm.IsTurboSupported, "IsTurboSupported must be false immediately when cached as unsupported.");
+                Assert.Equal(PowerProfile.Performance, vm.ActivePowerProfile);
+            }
+            finally
+            {
+                if (origTurbo == -1)
+                    SettingsManager.Delete("IsTurboSupported");
+                else
+                    SettingsManager.Save("IsTurboSupported", origTurbo);
+
+                SettingsManager.Save("LastPowerMode", origMode);
+            }
+        });
+    }
+
+    [Fact]
+    public void DashboardViewModel_IsTurboSupported_WhenCachedOne_InitializesAsTrueImmediately()
+    {
+        RunInSta(() =>
+        {
+            int origTurbo = SettingsManager.Get("IsTurboSupported", -1);
+            try
+            {
+                SettingsManager.Save("IsTurboSupported", 1);
+
+                using var vm = new DashboardViewModel();
+
+                Assert.True(vm.IsTurboSupported, "IsTurboSupported must be true immediately when cached as supported.");
+            }
+            finally
+            {
+                if (origTurbo == -1)
+                    SettingsManager.Delete("IsTurboSupported");
+                else
+                    SettingsManager.Save("IsTurboSupported", origTurbo);
+            }
+        });
+    }
+
+    [Fact]
+    public void DashboardViewModel_SyncSettings_WhenTurboUnsupported_FallsBackToPerformance()
+    {
+        RunInSta(() =>
+        {
+            int origTurbo = SettingsManager.Get("IsTurboSupported", -1);
+            int origMode = SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+            try
+            {
+                SettingsManager.Save("IsTurboSupported", 0);
+                SettingsManager.Save("LastPowerMode", (int)PowerProfile.Performance);
+
+                using var vm = new DashboardViewModel();
+                Assert.Equal(PowerProfile.Performance, vm.ActivePowerProfile);
+
+                // Simulate external change setting mode to Turbo
+                SettingsManager.Save("LastPowerMode", (int)PowerProfile.Turbo);
+                vm.SyncSettings();
+
+                Assert.Equal(PowerProfile.Performance, vm.ActivePowerProfile);
+            }
+            finally
+            {
+                if (origTurbo == -1)
+                    SettingsManager.Delete("IsTurboSupported");
+                else
+                    SettingsManager.Save("IsTurboSupported", origTurbo);
+
+                SettingsManager.Save("LastPowerMode", origMode);
+            }
+        });
+    }
 }
 

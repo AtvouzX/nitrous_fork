@@ -130,23 +130,29 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         // Fast load cached profile to prevent UI blocking
         ActivePowerProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
 
+        // Fast load cached or query Turbo support immediately to prevent UI flicker
+        int cachedTurbo = SettingsManager.Get("IsTurboSupported", -1);
+        if (cachedTurbo != -1)
+        {
+            _isTurboSupported = cachedTurbo == 1;
+        }
+        else
+        {
+            bool isTurbo = AcerWmiManager.IsTurboModeSupported();
+            _isTurboSupported = isTurbo;
+            SettingsManager.Save("IsTurboSupported", isTurbo ? 1 : 0);
+        }
+
+        if (!_isTurboSupported && ActivePowerProfile == PowerProfile.Turbo)
+        {
+            ActivePowerProfile = PowerProfile.Performance;
+        }
+
         if (!IsTestHost())
         {
             Task.Run(() =>
             {
-                try
-                {
-                    // Use 'Processor Information' and '% Processor Utility' to match Task Manager.
-                    // This is notoriously slow on first access and must NOT be on the UI thread!
-                    _cpuUsageCounter = new PerformanceCounter("Processor Information", "% Processor Utility", "_Total", true);
-                }
-                catch (Exception ex)
-                {
-                    LogManager.Debug($"PerformanceCounter init failed: {ex.Message}", "DashboardVM");
-                }
-
                 var actualMode = AcerWmiManager.GetActivePowerMode();
-
                 bool isTurbo = AcerWmiManager.IsTurboModeSupported();
                 bool isTaskEnabled = StartupManager.CheckStartupTask();
                 bool isNitroKeyEnabled = false;
@@ -154,7 +160,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                 int core = 0, memory = 0;
                 bool hasClocks = _gpuManager.IsValid && _gpuManager.GetClocks(out core, out memory);
 
-                // Push results back to the UI thread asynchronously
+                // Push fast results back to the UI thread asynchronously
                 Application.Current?.Dispatcher.InvokeAsync(() =>
                 {
                     if (actualMode.HasValue)
@@ -162,7 +168,16 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                         ActivePowerProfile = actualMode.Value;
                     }
 
-                    IsTurboSupported = isTurbo;
+                    if (IsTurboSupported != isTurbo)
+                    {
+                        IsTurboSupported = isTurbo;
+                        SettingsManager.Save("IsTurboSupported", isTurbo ? 1 : 0);
+                    }
+
+                    if (!isTurbo && ActivePowerProfile == PowerProfile.Turbo)
+                    {
+                        ActivePowerProfile = PowerProfile.Performance;
+                    }
 
                     _runOnStartup = isTaskEnabled;
                     OnPropertyChanged(nameof(RunOnStartup));
@@ -176,6 +191,17 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                         GpuMemoryOffset = memory;
                     }
                 });
+
+                try
+                {
+                    // Use 'Processor Information' and '% Processor Utility' to match Task Manager.
+                    // This is notoriously slow on first access and must NOT be on the UI thread!
+                    _cpuUsageCounter = new PerformanceCounter("Processor Information", "% Processor Utility", "_Total", true);
+                }
+                catch (Exception ex)
+                {
+                    LogManager.Debug($"PerformanceCounter init failed: {ex.Message}", "DashboardVM");
+                }
             });
         }
 
@@ -194,7 +220,18 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
     public void SyncSettings()
     {
+        int cachedTurbo = SettingsManager.Get("IsTurboSupported", -1);
+        if (cachedTurbo != -1 && IsTurboSupported != (cachedTurbo == 1))
+        {
+            IsTurboSupported = cachedTurbo == 1;
+        }
+
         var newPowerProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+        if (!_isTurboSupported && newPowerProfile == PowerProfile.Turbo)
+        {
+            newPowerProfile = PowerProfile.Performance;
+        }
+
         if (_activePowerProfile != newPowerProfile)
         {
             _activePowerProfile = newPowerProfile;

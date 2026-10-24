@@ -66,8 +66,15 @@ public static class AcerWmiManager
         return GetGamingFunctionInstance() != null;
     }
 
+    private static bool? _isTurboSupportedCached;
+
     public static bool IsTurboModeSupported()
     {
+        if (_isTurboSupportedCached.HasValue)
+        {
+            return _isTurboSupportedCached.Value;
+        }
+
         try
         {
             var instance = GetGamingFunctionInstance();
@@ -92,7 +99,9 @@ public static class AcerWmiManager
                             int supportedBitmap = (int)((rawOutput >> 8) & 0xFF);
 
                             // Check if Bit 5 (Turbo Mode) is set in the bitmap
-                            return (supportedBitmap & (1 << 5)) != 0;
+                            bool isSupported = (supportedBitmap & (1 << 5)) != 0;
+                            _isTurboSupportedCached = isSupported;
+                            return isSupported;
                         }
                     }
                 }
@@ -103,7 +112,13 @@ public static class AcerWmiManager
             LogManager.Debug($"IsTurboModeSupported check failed: {ex.Message}", "AcerWmi");
         }
 
+        _isTurboSupportedCached = false;
         return false;
+    }
+
+    internal static void SetTurboSupportedForTesting(bool? value)
+    {
+        _isTurboSupportedCached = value;
     }
 
     public static PowerProfile? GetActivePowerMode()

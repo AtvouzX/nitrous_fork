@@ -36,7 +36,7 @@ public partial class DashboardViewModel
         }
     }
 
-    private bool _isTurboSupported = true;
+    private bool _isTurboSupported;
 
     public bool IsTurboSupported
     {
