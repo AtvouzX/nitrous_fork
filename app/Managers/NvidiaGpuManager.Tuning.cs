@@ -48,9 +48,9 @@ public partial class NvidiaGpuManager
         }
     }
 
-    public int SetClocks(int core, int memory) => SetClocksInternal(core, memory);
+    public int SetClocks(int core, int memory) => SetClocksInternal(core, memory) > 0 ? 1 : 0;
 
-    private int SetClocksInternal(int core, int memory)
+    internal int SetClocksInternal(int core, int memory)
     {
         if (!EnsureInitialized()) return 0;
 
@@ -60,7 +60,7 @@ public partial class NvidiaGpuManager
         GetClocks(out int currentCore, out int currentMemory);
 
         if (Math.Abs(core - currentCore) < 5 && Math.Abs(memory - currentMemory) < 5)
-            return 1;
+            return 2;
 
         try
         {
@@ -77,6 +77,7 @@ public partial class NvidiaGpuManager
             }
 
             LogManager.Info($"Applied GPU offsets: Core={core} MHz, Memory={memory} MHz", "NvidiaGpu");
+            _lastAutoApplyTick = 0;
             return 1;
         }
         catch (Exception ex)
@@ -167,6 +168,12 @@ public partial class NvidiaGpuManager
         GPUApi.SetPerformanceStates20(gpuHandle, request);
     }
 
+    private PowerProfile? _lastAutoAppliedProfile;
+    private int _lastAutoAppliedCore = int.MinValue;
+    private int _lastAutoAppliedMem = int.MinValue;
+    private long _lastAutoApplyTick;
+    public const int AutoApplyCooldownMs = 30000; // 30s cooldown per profile to prevent NvAPI hammering on transient wakes
+
     public async Task<int> AutoApplyClocksAsync(PowerProfile? activeProfile = null, bool? isAcOnline = null)
     {
         bool online = isAcOnline ?? IsAcPowerConnected();
@@ -195,6 +202,16 @@ public partial class NvidiaGpuManager
 
             if (core == 0 && mem == 0) return 0;
 
+            long now = Environment.TickCount64;
+            if (profile == _lastAutoAppliedProfile &&
+                core == _lastAutoAppliedCore &&
+                mem == _lastAutoAppliedMem &&
+                (now - _lastAutoApplyTick) < AutoApplyCooldownMs)
+            {
+                LogManager.Debug($"AutoApplyClocksAsync: Clocks were recently applied for {profile}; cooldown active.", "NvidiaGpu");
+                return 1;
+            }
+
             const int maxAttempts = 5;
             const int delayMs = 1000;
 
@@ -209,7 +226,20 @@ public partial class NvidiaGpuManager
                         int result = SetClocksInternal(core, mem);
                         if (result == 1)
                         {
+                            _lastAutoAppliedProfile = profile;
+                            _lastAutoAppliedCore = core;
+                            _lastAutoAppliedMem = mem;
+                            _lastAutoApplyTick = Environment.TickCount64;
                             LogManager.Info($"Auto-applied GPU clocks: Core={core} MHz, Memory={mem} MHz (Profile: {profile})", "NvidiaGpu");
+                            return 1;
+                        }
+                        if (result == 2)
+                        {
+                            _lastAutoAppliedProfile = profile;
+                            _lastAutoAppliedCore = core;
+                            _lastAutoAppliedMem = mem;
+                            _lastAutoApplyTick = Environment.TickCount64;
+                            LogManager.Debug($"AutoApplyClocksAsync: GPU clocks already in sync: Core={core} MHz, Memory={mem} MHz (Profile: {profile})", "NvidiaGpu");
                             return 1;
                         }
                     }

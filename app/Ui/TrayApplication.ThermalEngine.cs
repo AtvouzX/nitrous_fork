@@ -20,6 +20,8 @@ public partial class TrayApplication : ApplicationContext
     private bool _lastObservedCurveEnabled = false;
     private int _cpuDownstepHoldTicks;
     private int _gpuDownstepHoldTicks;
+    private int _gpuSleepHoldTicks;
+    internal int GpuSleepHoldTicks => _gpuSleepHoldTicks;
     public const int HysteresisHoldCycles = 2; // 2 cycles * 2s = 4s delay before stepping down
 
     public static string FormatTrayTooltip(int cpuTemp, int gpuTemp, bool gpuIsAwake = true)
@@ -44,6 +46,7 @@ public partial class TrayApplication : ApplicationContext
 
                     // 1. Detect discrete GPU wake state transitions and auto-apply clock offsets on AC.
                     // Bypassed completely if the user disabled AutoApplyGpuClocks or is on battery (DC) power.
+                    // Debounced via EvaluateGpuSleepHysteresis to absorb transient 1-2s RTD3 drops and CM API read flickers.
                     bool isAcOnline = NvidiaGpuManager.IsAcPowerConnected();
                     int autoApplySetting = SettingsManager.Get("AutoApplyGpuClocks", 1);
                     bool isAutoApplyActive = isAcOnline && autoApplySetting == 1;
@@ -51,20 +54,26 @@ public partial class TrayApplication : ApplicationContext
                     if (isAutoApplyActive)
                     {
                         bool gpuIsAwake = NvidiaGpuManager.IsGpuAwake();
-                        if (NvidiaGpuManager.ShouldAutoApplyGpuClocks(_wasGpuAwake, gpuIsAwake, isAcOnline, autoApplySetting))
+                        var (newWasAwake, newHoldTicks, shouldAutoApply, shouldResetHandle) =
+                            NvidiaGpuManager.EvaluateGpuSleepHysteresis(_wasGpuAwake, gpuIsAwake, _gpuSleepHoldTicks, HysteresisHoldCycles);
+
+                        _wasGpuAwake = newWasAwake;
+                        _gpuSleepHoldTicks = newHoldTicks;
+
+                        if (shouldAutoApply)
                         {
                             var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
                             _ = _gpuManager.AutoApplyClocksAsync(activeMode, isAcOnline);
                         }
-                        else if (NvidiaGpuManager.ShouldResetGpuHandle(_wasGpuAwake, gpuIsAwake))
+                        else if (shouldResetHandle)
                         {
                             _gpuManager.ResetGpuHandle();
                         }
-                        _wasGpuAwake = gpuIsAwake;
                     }
                     else if (_wasGpuAwake)
                     {
                         _wasGpuAwake = false;
+                        _gpuSleepHoldTicks = 0;
                         _gpuManager.ResetGpuHandle();
                     }
 

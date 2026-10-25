@@ -24,10 +24,13 @@ public partial class NvidiaGpuManager : IDisposable
     private int _isAutoApplyingClocks;
     public bool IsValid => _internalGpu != null || (IsGpuAwake() && EnsureInitialized());
 
+    public const int GpuSleepHysteresisCycles = 2; // 2 cycles * 2s = 4s sustained sleep hold
+
     public void ResetGpuHandle()
     {
         _internalGpu = null;
         _nvmlDeviceHandle = IntPtr.Zero;
+        _lastAutoApplyTick = 0;
         try { NVIDIA.Unload(); } catch { }
         try { NativeNvml.Shutdown(); } catch { }
     }
@@ -40,6 +43,39 @@ public partial class NvidiaGpuManager : IDisposable
     public static bool ShouldResetGpuHandle(bool wasGpuAwake, bool isGpuAwake)
     {
         return wasGpuAwake && !isGpuAwake;
+    }
+
+    /// <summary>
+    /// Pure state evaluator for GPU sleep hysteresis.
+    /// Absorbs transient 1-2s RTD3 drops and CM API read flickers by requiring
+    /// <paramref name="holdCycles"/> consecutive sleep readings before marking the GPU
+    /// as asleep and resetting driver handles.
+    /// Waking up is instantaneous (0 delay).
+    /// </summary>
+    public static (bool newWasGpuAwake, int newHoldTicks, bool shouldAutoApply, bool shouldResetHandle) EvaluateGpuSleepHysteresis(
+        bool wasGpuAwake,
+        bool isGpuAwake,
+        int currentHoldTicks,
+        int holdCycles = GpuSleepHysteresisCycles)
+    {
+        if (isGpuAwake)
+        {
+            bool shouldAutoApply = !wasGpuAwake;
+            return (true, 0, shouldAutoApply, false);
+        }
+        else
+        {
+            if (wasGpuAwake)
+            {
+                int nextHold = currentHoldTicks + 1;
+                if (nextHold >= holdCycles)
+                {
+                    return (false, 0, false, true);
+                }
+                return (true, nextHold, false, false);
+            }
+            return (false, 0, false, false);
+        }
     }
 
     public bool EnsureInitialized()

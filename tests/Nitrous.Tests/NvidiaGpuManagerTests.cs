@@ -206,6 +206,56 @@ public class NvidiaGpuManagerTests
         Assert.True(entryFlags.FieldType == typeof(uint) || entryFlags.FieldType == typeof(int));
         Assert.True(stateFlags.FieldType == typeof(uint) || stateFlags.FieldType == typeof(int));
     }
+
+    [Theory]
+    // Single-tick sleep drop: hold state active, increment hold ticks, no reset, no auto-apply
+    [InlineData(true, false, 0, true, 1, false, false)]
+    // Second sleep tick: hold threshold reached, transition to asleep, reset handle
+    [InlineData(true, false, 1, false, 0, false, true)]
+    // Instant wake after 1-tick flicker: reset hold ticks, preserve awake, no auto-apply
+    [InlineData(true, true, 1, true, 0, false, false)]
+    // Already awake and still awake: zero hold ticks, no auto-apply, no reset
+    [InlineData(true, true, 0, true, 0, false, false)]
+    // Genuine wake from confirmed sleep: transition to awake, trigger auto-apply
+    [InlineData(false, true, 0, true, 0, true, false)]
+    // Confirmed asleep, stays asleep: remain asleep, zero hold ticks, no actions
+    [InlineData(false, false, 0, false, 0, false, false)]
+    public void EvaluateGpuSleepHysteresis_EvaluatesTransitionsCorrectly(
+        bool wasGpuAwake,
+        bool isGpuAwake,
+        int currentHoldTicks,
+        bool expectedNewWasAwake,
+        int expectedNewHoldTicks,
+        bool expectedShouldAutoApply,
+        bool expectedShouldResetHandle)
+    {
+        var (newWasAwake, newHoldTicks, shouldAutoApply, shouldResetHandle) =
+            NvidiaGpuManager.EvaluateGpuSleepHysteresis(wasGpuAwake, isGpuAwake, currentHoldTicks, holdCycles: 2);
+
+        Assert.Equal(expectedNewWasAwake, newWasAwake);
+        Assert.Equal(expectedNewHoldTicks, newHoldTicks);
+        Assert.Equal(expectedShouldAutoApply, shouldAutoApply);
+        Assert.Equal(expectedShouldResetHandle, shouldResetHandle);
+    }
+
+    [Fact]
+    public void HysteresisAndCooldownConstants_AreWithinExpectedRanges()
+    {
+        Assert.Equal(2, NvidiaGpuManager.GpuSleepHysteresisCycles);
+        Assert.Equal(30000, NvidiaGpuManager.AutoApplyCooldownMs);
+    }
+
+    [Theory]
+    [InlineData(300, 0)]    // Exceeds MaxCoreOffset (250)
+    [InlineData(-300, 0)]   // Below MinCoreOffset (-250)
+    [InlineData(0, 1200)]   // Exceeds MaxMemoryOffset (1000)
+    [InlineData(0, -1200)]  // Below MinMemoryOffset (-1000)
+    public void SetClocksInternal_WithOutOfBoundsOffsets_ReturnsZero(int core, int memory)
+    {
+        using var manager = new NvidiaGpuManager();
+        int result = manager.SetClocksInternal(core, memory);
+        Assert.Equal(0, result);
+    }
 }
 
 
