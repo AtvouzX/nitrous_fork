@@ -90,4 +90,26 @@ public class UpdateManagerTests
         bool matches = header.Length >= 2 && header[0] == (byte)'M' && header[1] == (byte)'Z';
         Assert.Equal(isValid, matches);
     }
+
+    [Fact]
+    public void ReleaseAppMutex_DoesNotThrowExceptions()
+    {
+        var ex = Record.Exception(() => Program.ReleaseAppMutex());
+        Assert.Null(ex);
+    }
+
+    [Theory]
+    [InlineData(new string[] { "--updated" }, true)]
+    [InlineData(new string[] { "--restart" }, true)]
+    [InlineData(new string[] { "-d", "--updated" }, true)]
+    [InlineData(new string[] { "--ui" }, false)]
+    [InlineData(new string[] { }, false)]
+    public void IsRestartOrUpdate_DetectsHandoffFlags(string[] args, bool expected)
+    {
+        bool isRestartOrUpdate = Array.Exists(args, a =>
+            string.Equals(a, "--updated", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(a, "--restart", StringComparison.OrdinalIgnoreCase));
+
+        Assert.Equal(expected, isRestartOrUpdate);
+    }
 }

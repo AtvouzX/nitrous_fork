@@ -109,11 +109,10 @@ public static class UpdateManager
                 try
                 {
                     File.Copy(tempExe, currentExe, overwrite: true);
-                    Process.Start(new ProcessStartInfo(currentExe, "--updated") { UseShellExecute = true });
                 }
                 catch
                 {
-                    // Roll back so the application is preserved if copy or process start fails
+                    // Roll back so the application is preserved if copy fails
                     try
                     {
                         if (File.Exists(currentExe)) File.Delete(currentExe);
@@ -134,6 +133,8 @@ public static class UpdateManager
                 catch { }
 
                 exitCallback.Invoke();
+                Program.ReleaseAppMutex();
+                Process.Start(new ProcessStartInfo(currentExe, "--updated") { UseShellExecute = true });
             }
             catch (Exception ex)
             {

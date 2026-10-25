@@ -168,12 +168,37 @@ static class Program
             TrayApplication.TriggerExitFanReset();
         };
 
+        bool isRestartOrUpdate = Array.Exists(args, a =>
+            string.Equals(a, "--updated", StringComparison.OrdinalIgnoreCase) ||
+            string.Equals(a, "--restart", StringComparison.OrdinalIgnoreCase));
+
         mutex = new Mutex(true, AppMutexName, out bool createdNew);
         if (!createdNew)
         {
-            LogManager.Info("Tray engine is already running. Signaling existing dashboard.", "Program");
-            SignalExistingDashboard();
-            return;
+            if (isRestartOrUpdate)
+            {
+                LogManager.Info("Restart/Update detected; waiting for previous instance to exit...", "Program");
+                try
+                {
+                    bool acquired = mutex.WaitOne(TimeSpan.FromSeconds(5), false);
+                    if (!acquired)
+                    {
+                        LogManager.Warn("Timed out waiting for previous Nitrous instance to release mutex.", "Program");
+                        SignalExistingDashboard();
+                        return;
+                    }
+                }
+                catch (AbandonedMutexException)
+                {
+                    LogManager.Info("Previous instance exited (abandoned mutex acquired).", "Program");
+                }
+            }
+            else
+            {
+                LogManager.Info("Tray engine is already running. Signaling existing dashboard.", "Program");
+                SignalExistingDashboard();
+                return;
+            }
         }
 
         UpdateManager.CleanupOldFiles();
@@ -201,8 +226,25 @@ static class Program
         finally
         {
             TrayApplication.TriggerExitFanReset();
-            GC.KeepAlive(mutex);
+            ReleaseAppMutex();
         }
+    }
+
+    public static void ReleaseAppMutex()
+    {
+        try
+        {
+            mutex?.ReleaseMutex();
+        }
+        catch { }
+
+        try
+        {
+            mutex?.Dispose();
+        }
+        catch { }
+
+        mutex = null;
     }
 
     public static void SignalExistingDashboard()

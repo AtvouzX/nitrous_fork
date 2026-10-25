@@ -486,7 +486,8 @@ public partial class TrayApplication : ApplicationContext
     private void Restart(object? sender, EventArgs e)
     {
         CleanupResources();
-        Process.Start(new ProcessStartInfo(Application.ExecutablePath) { UseShellExecute = true });
+        Program.ReleaseAppMutex();
+        Process.Start(new ProcessStartInfo(Application.ExecutablePath, "--restart") { UseShellExecute = true });
         Application.Exit();
     }
 
