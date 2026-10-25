@@ -145,9 +145,23 @@ public class LogManagerTests : IDisposable
         Assert.NotEmpty(report);
         Assert.Contains("NITROUS DIAGNOSTIC HARDWARE DUMP", report);
         Assert.Contains("App Version:", report);
+        Assert.Contains("[SYSTEM & HARDWARE SPECS]", report);
+        Assert.Contains("Laptop Model:", report);
+        Assert.Contains("BIOS Version:", report);
+        Assert.Contains("CPU Model:", report);
+        Assert.Contains("Discrete GPU:", report);
         Assert.Contains("[HARDWARE & ACER EC]", report);
-        Assert.Contains("[DISCRETE GPU]", report);
+        Assert.Contains("[DISCRETE GPU", report);
         Assert.Contains("[POWER & BATTERY]", report);
+        Assert.Contains("Power Source:", report);
+        Assert.Contains("[RECENT DIAGNOSTIC LOGS]", report);
+    }
+
+    [Fact]
+    public void GetRecentLogTail_ReturnsValidStringWithoutThrowing()
+    {
+        string tail = LogManager.GetRecentLogTail(5);
+        Assert.NotNull(tail);
     }
 
     [Fact]

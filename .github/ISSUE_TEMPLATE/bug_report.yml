@@ -1,0 +1,61 @@
+name: Bug Report
+description: Report a bug, crash, UI glitch, or unexpected behavior in Nitrous.
+title: "[Bug]: "
+labels: ["type: bug", "status: needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        **Quick tip:** In Nitrous (Settings -> System Diagnostics), click **"REPORT"** to automatically open this form with your specs pre-filled and diagnostic logs copied!
+
+  - type: input
+    id: version
+    attributes:
+      label: Nitrous Version
+      description: App version (e.g., v0.9.30). Auto-filled if opened from Nitrous.
+      placeholder: v0.9.30
+    validations:
+      required: false
+
+  - type: input
+    id: laptop-model
+    attributes:
+      label: Laptop Model
+      description: Exact model (e.g., Nitro 16 AN16-41). Auto-filled if opened from Nitrous.
+      placeholder: Acer Nitro 16 AN16-41
+    validations:
+      required: false
+
+  - type: textarea
+    id: description
+    attributes:
+      label: What went wrong?
+      description: Describe the issue and steps to reproduce.
+      placeholder: |
+        What happened:
+        (e.g., Custom fan curve does not apply after waking from sleep)
+
+        Steps to reproduce:
+        1. Open Nitrous Dashboard
+        2. Set custom fan curve
+        3. Put laptop to sleep and wake up
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: System Diagnostics Dump
+      description: Paste your clipboard here (Settings -> "COPY" or "REPORT" in Nitrous). This automatically includes your BIOS, CPU, GPU driver, power state, and recent logs.
+      placeholder: Paste diagnostic output here (optional, but helps us fix bugs much faster)...
+      render: shell
+    validations:
+      required: false
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Screenshots or Extra Context
+      description: Paste any screenshots, error messages, or extra notes here (optional).
+    validations:
+      required: false

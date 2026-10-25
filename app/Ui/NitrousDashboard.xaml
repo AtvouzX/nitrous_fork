@@ -978,13 +978,21 @@
 										<TextBlock Text="System Diagnostics &amp; Logs" Foreground="White" FontWeight="Bold" FontSize="12"
 										           VerticalAlignment="Center" />
 									</StackPanel>
-									<TextBlock Text="Open log files or copy a hardware report."
+									<TextBlock Text="Open log files, copy diagnostics, or report a bug on GitHub."
 									           Foreground="#A1A1AA" FontSize="11" TextWrapping="Wrap" />
 								</StackPanel>
 								<StackPanel Grid.Column="1" Orientation="Vertical" HorizontalAlignment="Right" VerticalAlignment="Center">
-									<Button x:Name="BtnCopyDiagnostics" Style="{StaticResource AccentBtn}" Background="#FF4500"
+									<Button x:Name="BtnReportIssue" Style="{StaticResource AccentBtn}" Background="#FF4500"
 									        Width="{Binding ActualWidth, ElementName=BtnAcerServices}" MinWidth="80"
-									        Padding="12,6" Margin="0,0,0,6"
+									        Padding="12,5" Margin="0,0,0,5"
+									        HorizontalContentAlignment="Center"
+									        Command="{Binding ReportIssueCommand}"
+									        ToolTip="Opens the GitHub bug report form in your browser with hardware specs pre-filled, and copies complete diagnostics to clipboard.">
+										<TextBlock Text="REPORT" FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" />
+									</Button>
+									<Button x:Name="BtnCopyDiagnostics" Style="{StaticResource GhostBtn}"
+									        Width="{Binding ActualWidth, ElementName=BtnAcerServices}" MinWidth="80"
+									        Padding="12,5" Margin="0,0,0,5"
 									        HorizontalContentAlignment="Center"
 									        Command="{Binding CopyDiagnosticsCommand}"
 									        ToolTip="Generates an anonymized hardware diagnostics summary and copies it to your clipboard for GitHub issue reports.">
@@ -992,7 +1000,7 @@
 									</Button>
 									<Button x:Name="BtnOpenLogsFolder" Style="{StaticResource GhostBtn}"
 									        Width="{Binding ActualWidth, ElementName=BtnAcerServices}" MinWidth="80"
-									        Padding="12,6"
+									        Padding="12,5"
 									        HorizontalContentAlignment="Center"
 									        Command="{Binding OpenLogsFolderCommand}"
 									        ToolTip="Opens the directory containing Nitrous diagnostic log files in File Explorer.">

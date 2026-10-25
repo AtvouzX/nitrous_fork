@@ -70,9 +70,41 @@ public partial class DashboardViewModel
     public ICommand KillAcerServiceCommand { get; private set; } = null!;
     public ICommand OpenLogsFolderCommand { get; private set; } = null!;
     public ICommand CopyDiagnosticsCommand { get; private set; } = null!;
+    public ICommand ReportIssueCommand { get; private set; } = null!;
 
     private void InitializeServices()
     {
+        ReportIssueCommand = new RelayCommand(_ =>
+        {
+            try
+            {
+                string dump = LogManager.ExportSystemDiagnostics();
+                Clipboard.SetText(dump);
+
+                string repoUrl = "https://github.com/AtvouzX/nitrous_fork/issues/new";
+                string version = $"v{UpdateManager.CurrentVersion}";
+                string model = SystemInfoManager.GetSystemModel();
+
+                string query = $"?template=bug_report.yml" +
+                               $"&version={Uri.EscapeDataString(version)}" +
+                               $"&laptop-model={Uri.EscapeDataString(model)}";
+
+                string issueUrl = $"{repoUrl}{query}";
+
+                Process.Start(new ProcessStartInfo(issueUrl) { UseShellExecute = true });
+
+                ShowGpuAlert(
+                    GpuAlertLevel.Info,
+                    "Issue Form Opened",
+                    "GitHub issue form opened in your browser with hardware specs pre-filled. Complete diagnostics copied to clipboard!",
+                    "M19,3H14.82C14.4,1.84 13.3,1 12,1C10.7,1 9.6,1.84 9.18,3H5A2,2 0 0,0 3,5V19A2,2 0 0,0 5,21H19A2,2 0 0,0 21,19V5A2,2 0 0,0 19,3Z");
+            }
+            catch (Exception ex)
+            {
+                LogManager.Warn($"Failed to launch issue report: {ex.Message}", "DashboardVM");
+            }
+        });
+
         ToggleAcerServicesCommand = new RelayCommand(async _ =>
         {
             AcerServicesActionText = "PLEASE WAIT...";

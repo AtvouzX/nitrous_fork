@@ -1,0 +1,54 @@
+name: Hardware Compatibility / EC Issue
+description: Report unsupported hardware, missing fan control, or broken power modes on a specific Acer laptop model.
+title: "[Hardware]: "
+labels: ["type: bug", "hw: ec-wmi", "status: needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this template if a hardware feature (Turbo mode, fan curves, battery limit, or LCD Overdrive) is missing or broken on your Acer model.
+        **Quick tip:** In Nitrous (Settings -> System Diagnostics), click **"COPY"** to get your complete hardware and EC state on your clipboard.
+
+  - type: input
+    id: laptop-model
+    attributes:
+      label: Laptop Model
+      description: Exact model (e.g., Nitro 16 AN16-41). Optional if pasting diagnostics below.
+      placeholder: Acer Nitro 16 AN16-41
+    validations:
+      required: false
+
+  - type: checkboxes
+    id: affected-features
+    attributes:
+      label: Affected Features
+      description: Which features are not working?
+      options:
+        - label: Power Modes (Quiet / Balanced / Performance / Turbo)
+        - label: Fan Controls & Custom Curves (CPU / GPU fan speed)
+        - label: Discrete GPU Telemetry / Overclocking
+        - label: Battery Charge Limit (80% preservation)
+        - label: Display Refresh Rate / LCD Overdrive
+        - label: Dedicated Nitro / Predator Key
+        - label: Other (describe below)
+    validations:
+      required: true
+
+  - type: textarea
+    id: symptom
+    attributes:
+      label: What is happening?
+      description: Describe what fails when attempting to use the feature. Does original Acer software support it?
+      placeholder: (e.g., Turbo mode cannot be activated; Nitrous reports Turbo Mode Bit 5: Unsupported)
+    validations:
+      required: true
+
+  - type: textarea
+    id: diagnostics
+    attributes:
+      label: System Diagnostics Export
+      description: Paste output from Nitrous Settings -> "COPY" here (provides BIOS, CPU, GPU, and EC registers automatically).
+      placeholder: Paste diagnostic output here (optional, but highly recommended)...
+      render: shell
+    validations:
+      required: false

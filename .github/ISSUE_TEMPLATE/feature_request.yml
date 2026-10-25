@@ -1,0 +1,27 @@
+name: Feature Request
+description: Propose a new feature or improvement for Nitrous.
+title: "[Feature]: "
+labels: ["type: feature", "status: needs-triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Nitrous prioritizes near-zero idle CPU usage, 8–15 MB RAM footprint, and battery preservation. Feature proposals should align with these lightweight principles.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Feature Description
+      description: What feature or improvement would you like to see, and why?
+      placeholder: I would like Nitrous to... because...
+    validations:
+      required: true
+
+  - type: textarea
+    id: details
+    attributes:
+      label: Proposed Solution & Details
+      description: Describe how it could work, or attach mockups/screenshots (optional).
+      placeholder: (Optional) UI ideas, configuration options, or how you envision it working...
+    validations:
+      required: false

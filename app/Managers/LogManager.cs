@@ -213,6 +213,30 @@ public static class LogManager
         sb.AppendLine($"Process Context:     {_processTag ?? $"PID:{Environment.ProcessId}"}");
         sb.AppendLine();
 
+        sb.AppendLine("[SYSTEM & HARDWARE SPECS]");
+        try
+        {
+            string model = SystemInfoManager.GetSystemModel();
+            string mfg = SystemInfoManager.GetSystemManufacturer();
+            string board = SystemInfoManager.GetBaseBoardProduct();
+            sb.AppendLine($"Laptop Model:        {model} ({mfg}, Board: {board})");
+
+            string biosVer = SystemInfoManager.GetBiosVersion();
+            string biosDate = SystemInfoManager.GetBiosReleaseDate();
+            sb.AppendLine($"BIOS Version:        {biosVer} (Date: {biosDate})");
+
+            string cpu = SystemInfoManager.GetCpuModel();
+            sb.AppendLine($"CPU Model:           {cpu}");
+
+            var (gpuName, gpuDriver) = SystemInfoManager.GetDiscreteGpuInfo();
+            sb.AppendLine($"Discrete GPU:        {gpuName} (Driver: {gpuDriver})");
+        }
+        catch (Exception ex)
+        {
+            sb.AppendLine($"Hardware Specs:      Error probing ({ex.Message})");
+        }
+
+        sb.AppendLine();
         sb.AppendLine("[HARDWARE & ACER EC]");
         try
         {
@@ -231,7 +255,7 @@ public static class LogManager
         }
 
         sb.AppendLine();
-        sb.AppendLine("[DISCRETE GPU]");
+        sb.AppendLine("[DISCRETE GPU STATE]");
         try
         {
             bool awake = NvidiaGpuManager.IsGpuAwake();
@@ -247,6 +271,8 @@ public static class LogManager
         try
         {
             var pwr = SystemInformation.PowerStatus;
+            string pwrSource = pwr.PowerLineStatus == PowerLineStatus.Online ? "AC Power (Charger plugged in)" : "Battery (DC Power)";
+            sb.AppendLine($"Power Source:        {pwrSource}");
             sb.AppendLine($"Power Line:          {pwr.PowerLineStatus}");
             sb.AppendLine($"Battery Charge:      {(int)(pwr.BatteryLifePercent * 100)}%");
             sb.AppendLine($"Battery Status:      {pwr.BatteryChargeStatus}");
@@ -259,8 +285,54 @@ public static class LogManager
             sb.AppendLine($"Power Status:        Error reading ({ex.Message})");
         }
 
+        sb.AppendLine();
+        sb.AppendLine("[RECENT DIAGNOSTIC LOGS]");
+        try
+        {
+            sb.AppendLine(GetRecentLogTail(15));
+        }
+        catch (Exception ex)
+        {
+            sb.AppendLine($"Logs:                Error reading ({ex.Message})");
+        }
+
         sb.AppendLine("================================================================================");
         return sb.ToString();
+    }
+
+    public static string GetRecentLogTail(int maxLines = 15)
+    {
+        try
+        {
+            string path = LogFilePath;
+            if (!File.Exists(path))
+            {
+                return "(No active log file found)";
+            }
+
+            using var stream = new FileStream(path, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+            using var reader = new StreamReader(stream, Encoding.UTF8);
+            var lines = new List<string>();
+            string? line;
+            while ((line = reader.ReadLine()) != null)
+            {
+                if (string.IsNullOrWhiteSpace(line)) continue;
+                lines.Add(line);
+                if (lines.Count > maxLines * 3)
+                {
+                    lines.RemoveRange(0, lines.Count - maxLines);
+                }
+            }
+
+            int count = Math.Min(maxLines, lines.Count);
+            if (count == 0) return "(Active log file is empty)";
+            var tail = lines.Skip(lines.Count - count).ToArray();
+            return string.Join(Environment.NewLine, tail);
+        }
+        catch (Exception ex)
+        {
+            return $"(Could not read log tail: {ex.Message})";
+        }
     }
 
     private static bool IsUserAdministrator()
