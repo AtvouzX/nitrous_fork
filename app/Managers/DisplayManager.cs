@@ -37,6 +37,14 @@ public static class DisplayManager
         public int dmPelsHeight;
         public int dmDisplayFlags;
         public int dmDisplayFrequency;
+        public int dmICMMethod;
+        public int dmICMIntent;
+        public int dmMediaType;
+        public int dmDitherType;
+        public int dmReserved1;
+        public int dmReserved2;
+        public int dmPanningWidth;
+        public int dmPanningHeight;
     }
 
     [DllImport("user32.dll", CharSet = CharSet.Unicode)]
@@ -83,6 +91,29 @@ public static class DisplayManager
         return maxHz;
     }
 
+    public static bool IsRefreshSupported(int width, int height, int targetHz)
+    {
+        try
+        {
+            var mode = new DEVMODEW { dmSize = (short)Marshal.SizeOf<DEVMODEW>() };
+            for (int i = 0; EnumDisplaySettingsW(null, i, ref mode); i++)
+            {
+                if (mode.dmPelsWidth == width &&
+                    mode.dmPelsHeight == height &&
+                    mode.dmDisplayFrequency == targetHz)
+                {
+                    return true;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            LogManager.Warn($"IsRefreshSupported check failed: {ex.Message}", "Display");
+        }
+
+        return false;
+    }
+
     public static void ApplyRefreshProfile(RefreshProfile profile, bool isAcPower)
     {
         try
@@ -97,16 +128,28 @@ public static class DisplayManager
             };
 
             var mode = new DEVMODEW { dmSize = (short)Marshal.SizeOf<DEVMODEW>() };
-            if (EnumDisplaySettingsW(null, ENUM_CURRENT_SETTINGS, ref mode) && mode.dmDisplayFrequency != targetHz)
+            if (!EnumDisplaySettingsW(null, ENUM_CURRENT_SETTINGS, ref mode))
             {
-                LogManager.Info($"Switching display refresh rate from {mode.dmDisplayFrequency}Hz to {targetHz}Hz (Profile: {profile}, AC: {isAcPower})", "Display");
-                mode.dmFields = DM_DISPLAYFREQUENCY;
-                mode.dmDisplayFrequency = targetHz;
-                int ret = ChangeDisplaySettingsExW(null, ref mode, IntPtr.Zero, CDS_UPDATEREGISTRY, IntPtr.Zero);
-                if (ret != 0)
-                {
-                    LogManager.Warn($"ChangeDisplaySettingsExW returned error code {ret}", "Display");
-                }
+                LogManager.Warn("Display: could not read current display mode.", "Display");
+                return;
+            }
+
+            if (mode.dmDisplayFrequency == targetHz) return;
+
+            // Do not ask the driver for a mode it did not advertise.
+            if (!IsRefreshSupported(mode.dmPelsWidth, mode.dmPelsHeight, targetHz))
+            {
+                LogManager.Warn($"Display: {targetHz}Hz is not supported at {mode.dmPelsWidth}x{mode.dmPelsHeight}; leaving current mode unchanged.", "Display");
+                return;
+            }
+
+            LogManager.Info($"Switching display refresh rate from {mode.dmDisplayFrequency}Hz to {targetHz}Hz (Profile: {profile}, AC: {isAcPower})", "Display");
+            mode.dmFields = DM_DISPLAYFREQUENCY;
+            mode.dmDisplayFrequency = targetHz;
+            int ret = ChangeDisplaySettingsExW(null, ref mode, IntPtr.Zero, CDS_UPDATEREGISTRY, IntPtr.Zero);
+            if (ret != 0)
+            {
+                LogManager.Warn($"ChangeDisplaySettingsExW returned error code {ret}", "Display");
             }
         }
         catch (Exception ex)

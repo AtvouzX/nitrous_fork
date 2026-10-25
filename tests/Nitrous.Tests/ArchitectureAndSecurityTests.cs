@@ -115,4 +115,11 @@ public class ArchitectureAndSecurityTests
         string explorerPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.Windows), "explorer.exe");
         Assert.True(File.Exists(explorerPath), $"explorer.exe must exist at {explorerPath}");
     }
+
+    [Fact]
+    public void DisplayManager_DevModeW_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<DisplayManager.DEVMODEW>();
+        Assert.Equal(220, size);
+    }
 }
