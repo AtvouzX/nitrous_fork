@@ -81,30 +81,63 @@ public partial class NvidiaGpuManager
         }
         catch (Exception ex)
         {
-            LogManager.Warn($"Failed to apply GPU offsets: {ex.Message}", "NvidiaGpu");
-            ResetGpuHandle();
-            return 0;
+            LogManager.Debug($"Single-domain GPU clock apply failed: {ex.Message}. Falling back to combined request.", "NvidiaGpu");
+            try
+            {
+                var coreClock = new PerformanceStates20ClockEntryV1(PublicClockDomain.Graphics, new PerformanceStates20ParameterDelta(core * 1000));
+                var memoryClock = new PerformanceStates20ClockEntryV1(PublicClockDomain.Memory, new PerformanceStates20ParameterDelta(memory * 1000));
+                var clocks = new[] { coreClock, memoryClock };
+                var performanceState = new PerformanceStates20InfoV1.PerformanceState20(
+                    PerformanceStateId.P0_3DPerformance,
+                    clocks,
+                    Array.Empty<PerformanceStates20BaseVoltageEntryV1>());
+                var overclock = new PerformanceStates20InfoV1(new[] { performanceState }, 2, 0);
+
+                GPUApi.SetPerformanceStates20(_internalGpu!.Handle, overclock);
+                LogManager.Info($"Applied GPU offsets via combined fallback: Core={core} MHz, Memory={memory} MHz", "NvidiaGpu");
+                return 1;
+            }
+            catch (Exception fallbackEx)
+            {
+                LogManager.Warn($"Failed to apply GPU offsets: {fallbackEx.Message}", "NvidiaGpu");
+                ResetGpuHandle();
+                return 0;
+            }
         }
     }
 
     private static PerformanceStates20ClockEntryV1 WithEditableFlag(PerformanceStates20ClockEntryV1 entry)
     {
-        if (ClockEntryFlagsField != null)
+        try
         {
-            object boxed = entry;
-            ClockEntryFlagsField.SetValue(boxed, 1u);
-            return (PerformanceStates20ClockEntryV1)boxed;
+            if (ClockEntryFlagsField != null)
+            {
+                object boxed = entry;
+                ClockEntryFlagsField.SetValue(boxed, 1u);
+                return (PerformanceStates20ClockEntryV1)boxed;
+            }
+        }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"WithEditableFlag(ClockEntry) reflection exception: {ex.Message}", "NvidiaGpu");
         }
         return entry;
     }
 
     private static PerformanceStates20InfoV1.PerformanceState20 WithEditableFlag(PerformanceStates20InfoV1.PerformanceState20 state)
     {
-        if (PerformanceStateFlagsField != null)
+        try
         {
-            object boxed = state;
-            PerformanceStateFlagsField.SetValue(boxed, 1u);
-            return (PerformanceStates20InfoV1.PerformanceState20)boxed;
+            if (PerformanceStateFlagsField != null)
+            {
+                object boxed = state;
+                PerformanceStateFlagsField.SetValue(boxed, 1u);
+                return (PerformanceStates20InfoV1.PerformanceState20)boxed;
+            }
+        }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"WithEditableFlag(PerformanceState) reflection exception: {ex.Message}", "NvidiaGpu");
         }
         return state;
     }

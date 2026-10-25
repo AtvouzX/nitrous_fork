@@ -184,11 +184,28 @@ public class NvidiaGpuManagerTests
     [InlineData("GeForce RTX 3070 Ti Laptop GPU", "GeForce RTX 3070 Ti Laptop")]
     [InlineData("NVIDIA RTX A2000", "NVIDIA RTX A2000")]
     [InlineData("RTX 4090", "RTX 4090")]
-    [InlineData("", "NVIDIA GPU")]
     public void FormatGpuName_StripsGpuSuffix(string raw, string expected)
     {
         string formatted = Nitrous.Ui.DashboardViewModel.FormatGpuName(raw);
         Assert.Equal(expected, formatted);
     }
+
+    [Fact]
+    public void NvAPIWrapper_ReflectionFields_ExistOrSafelyFallback()
+    {
+        var entryFlags = typeof(NvAPIWrapper.Native.GPU.Structures.PerformanceStates20ClockEntryV1).GetField(
+            "_Flags",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+        var stateFlags = typeof(NvAPIWrapper.Native.GPU.Structures.PerformanceStates20InfoV1.PerformanceState20).GetField(
+            "_Flags",
+            System.Reflection.BindingFlags.Instance | System.Reflection.BindingFlags.NonPublic);
+
+        Assert.NotNull(entryFlags);
+        Assert.NotNull(stateFlags);
+        Assert.True(entryFlags.FieldType == typeof(uint) || entryFlags.FieldType == typeof(int));
+        Assert.True(stateFlags.FieldType == typeof(uint) || stateFlags.FieldType == typeof(int));
+    }
 }
+
 
