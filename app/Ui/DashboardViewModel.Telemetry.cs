@@ -494,16 +494,10 @@ public partial class DashboardViewModel
                         LogManager.Debug($"CPU counter read failed: {ex.Message}", "DashboardVM");
                     }
 
-                    // Check if discrete GPU is awake before querying NVML
+                    // Check if discrete GPU is awake before querying NVML.
+                    // Background Tray is the sole owner of auto-apply on wake.
                     bool gpuIsAwake = NvidiaGpuManager.IsGpuAwake();
-                    bool isAcOnline = NvidiaGpuManager.IsAcPowerConnected();
-                    int autoApplySetting = SettingsManager.Get("AutoApplyGpuClocks", 1);
-
-                    if (NvidiaGpuManager.ShouldAutoApplyGpuClocks(_wasGpuAwake, gpuIsAwake, isAcOnline, autoApplySetting))
-                    {
-                        _ = AutoApplyGpuClocksAsync();
-                    }
-                    else if (NvidiaGpuManager.ShouldResetGpuHandle(_wasGpuAwake, gpuIsAwake))
+                    if (NvidiaGpuManager.ShouldResetGpuHandle(_wasGpuAwake, gpuIsAwake))
                     {
                         _gpuManager.ResetGpuHandle();
                     }
