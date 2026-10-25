@@ -166,5 +166,29 @@ public class NvidiaGpuManagerTests
         });
         Assert.Null(ex);
     }
+
+    [Theory]
+    [InlineData(Nitrous.Enums.PowerProfile.Quiet)]
+    [InlineData(Nitrous.Enums.PowerProfile.Balanced)]
+    [InlineData(Nitrous.Enums.PowerProfile.Performance)]
+    [InlineData(Nitrous.Enums.PowerProfile.Turbo)]
+    public void GetDefaultCore_And_GetDefaultMemory_ReturnZeroStockOffsets(Nitrous.Enums.PowerProfile profile)
+    {
+        using var manager = new NvidiaGpuManager();
+        Assert.Equal(0, manager.GetDefaultCore(profile));
+        Assert.Equal(0, manager.GetDefaultMemory(profile));
+    }
+
+    [Theory]
+    [InlineData("NVIDIA GeForce RTX 4060 Laptop GPU", "NVIDIA GeForce RTX 4060 Laptop")]
+    [InlineData("GeForce RTX 3070 Ti Laptop GPU", "GeForce RTX 3070 Ti Laptop")]
+    [InlineData("NVIDIA RTX A2000", "NVIDIA RTX A2000")]
+    [InlineData("RTX 4090", "RTX 4090")]
+    [InlineData("", "NVIDIA GPU")]
+    public void FormatGpuName_StripsGpuSuffix(string raw, string expected)
+    {
+        string formatted = Nitrous.Ui.DashboardViewModel.FormatGpuName(raw);
+        Assert.Equal(expected, formatted);
+    }
 }
 

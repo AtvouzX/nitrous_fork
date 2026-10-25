@@ -3,6 +3,7 @@ using System.Linq;
 using System.Diagnostics;
 using System.Globalization;
 using System.IO;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 using System.Threading;
@@ -162,69 +163,7 @@ public partial class NvidiaGpuManager : IDisposable
         }
     }
 
-    public bool GetClocks(out int core, out int memory)
-    {
-        core = memory = 0;
-        if (!EnsureInitialized()) return false;
 
-        try
-        {
-            IPerformanceStates20Info states = GPUApi.GetPerformanceStates20(_internalGpu!.Handle);
-            var p0Clocks = states.Clocks[PerformanceStateId.P0_3DPerformance];
-
-            var coreClock = p0Clocks.FirstOrDefault(c => c.DomainId == PublicClockDomain.Graphics);
-            var memClock = p0Clocks.FirstOrDefault(c => c.DomainId == PublicClockDomain.Memory);
-
-            core = (coreClock?.FrequencyDeltaInkHz.DeltaValue ?? 0) / 1000;
-            memory = (memClock?.FrequencyDeltaInkHz.DeltaValue ?? 0) / 1000;
-
-            return true;
-        }
-        catch
-        {
-            return false;
-        }
-    }
-
-    public int SetClocks(int core, int memory) => SetClocksInternal(core, memory);
-
-    private int SetClocksInternal(int core, int memory)
-    {
-        if (!EnsureInitialized()) return 0;
-
-        if (core < MinCoreOffset || core > MaxCoreOffset) return 0;
-        if (memory < MinMemoryOffset || memory > MaxMemoryOffset) return 0;
-
-        GetClocks(out int currentCore, out int currentMemory);
-
-        if (Math.Abs(core - currentCore) < 5 && Math.Abs(memory - currentMemory) < 5)
-            return 1;
-
-        var coreClock = new PerformanceStates20ClockEntryV1(PublicClockDomain.Graphics, new PerformanceStates20ParameterDelta(core * 1000));
-        var memoryClock = new PerformanceStates20ClockEntryV1(PublicClockDomain.Memory, new PerformanceStates20ParameterDelta(memory * 1000));
-
-        PerformanceStates20ClockEntryV1[] clocks = { coreClock, memoryClock };
-        PerformanceStates20BaseVoltageEntryV1[] voltages = { };
-
-        PerformanceStates20InfoV1.PerformanceState20[] performanceStates = {
-                new PerformanceStates20InfoV1.PerformanceState20(PerformanceStateId.P0_3DPerformance, clocks, voltages)
-            };
-
-        var overclock = new PerformanceStates20InfoV1(performanceStates, 2, 0);
-
-        try
-        {
-            GPUApi.SetPerformanceStates20(_internalGpu!.Handle, overclock);
-            LogManager.Info($"Applied GPU offsets: Core={core} MHz, Memory={memory} MHz", "NvidiaGpu");
-            return 1;
-        }
-        catch (Exception ex)
-        {
-            LogManager.Warn($"Failed to apply GPU offsets: {ex.Message}", "NvidiaGpu");
-            ResetGpuHandle();
-            return 0;
-        }
-    }
 
     public static bool IsAcPowerConnected()
     {
@@ -238,129 +177,7 @@ public partial class NvidiaGpuManager : IDisposable
         }
     }
 
-    public async Task<int> AutoApplyClocksAsync(PowerProfile? activeProfile = null, bool? isAcOnline = null)
-    {
-        bool online = isAcOnline ?? IsAcPowerConnected();
-        if (!online || !IsGpuAwake())
-        {
-            LogManager.Debug("AutoApplyClocksAsync: dGPU is on battery or asleep; skipping auto-apply.", "NvidiaGpu");
-            return 0;
-        }
 
-        if (SettingsManager.Get("AutoApplyGpuClocks", 1) != 1)
-        {
-            LogManager.Debug("AutoApplyClocksAsync: AutoApplyGpuClocks disabled in settings.", "NvidiaGpu");
-            return 0;
-        }
-
-        if (Interlocked.CompareExchange(ref _isAutoApplyingClocks, 1, 0) != 0)
-        {
-            return 0;
-        }
-
-        try
-        {
-            var profile = activeProfile ?? (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-            int core = SettingsManager.Get($"GpuCore_{profile}", GetDefaultCore(profile));
-            int mem = SettingsManager.Get($"GpuMemory_{profile}", GetDefaultMemory(profile));
-
-            if (core == 0 && mem == 0) return 0;
-
-            const int maxAttempts = 5;
-            const int delayMs = 1000;
-
-            for (int attempt = 1; attempt <= maxAttempts; attempt++)
-            {
-                if (!IsGpuAwake() || !(isAcOnline ?? IsAcPowerConnected())) return 0;
-
-                try
-                {
-                    if (EnsureInitialized())
-                    {
-                        int result = SetClocksInternal(core, mem);
-                        if (result == 1)
-                        {
-                            LogManager.Info($"Auto-applied GPU clocks: Core={core} MHz, Memory={mem} MHz (Profile: {profile})", "NvidiaGpu");
-                            return 1;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LogManager.Debug($"AutoApplyClocksAsync attempt {attempt} failed: {ex.Message}", "NvidiaGpu");
-                }
-
-                if (attempt < maxAttempts)
-                {
-                    ResetGpuHandle();
-                    await Task.Delay(delayMs);
-                }
-            }
-
-            return 0;
-        }
-        finally
-        {
-            Interlocked.Exchange(ref _isAutoApplyingClocks, 0);
-        }
-    }
-
-    public async Task ApplyOnBootAsync(PowerProfile currentProfile, bool? isAcOnline = null)
-    {
-        await AutoApplyClocksAsync(currentProfile, isAcOnline);
-    }
-
-    public async Task<int> ApplyPowerProfileOcAsync(PowerProfile profile, bool? isAcOnline = null)
-    {
-        bool online = isAcOnline ?? IsAcPowerConnected();
-        if (!online || !IsGpuAwake())
-        {
-            // Core Battery Invariant: discrete NVIDIA GPU must remain in D3Cold sleep on battery.
-            // Never invoke NvAPI when on DC power or when the dGPU is asleep.
-            LogManager.Debug($"ApplyPowerProfileOcAsync: dGPU is on battery or asleep; skipping OC for {profile}.", "NvidiaGpu");
-            return 0;
-        }
-
-        return await Task.Run(() =>
-        {
-            int coreOffset = SettingsManager.Get($"GpuCore_{profile}", GetDefaultCore(profile));
-            int memoryOffset = SettingsManager.Get($"GpuMemory_{profile}", GetDefaultMemory(profile));
-
-            return SetClocksInternal(coreOffset, memoryOffset);
-        });
-    }
-
-    // Helpers to track default values per profile
-    public int GetDefaultCore(PowerProfile profile) => profile switch
-    {
-        PowerProfile.Quiet => -100,
-        PowerProfile.Performance => 100,
-        PowerProfile.Turbo => 150,
-        _ => 0
-    };
-
-    public int GetDefaultMemory(PowerProfile profile) => profile switch
-    {
-        PowerProfile.Quiet => -200,
-        PowerProfile.Performance => 150,
-        PowerProfile.Turbo => 300,
-        _ => 0
-    };
-
-    // Saves the user's custom slider values to the active profile
-    public void SaveCustomProfileOc(PowerProfile profile, int core, int memory)
-    {
-        SettingsManager.Save($"GpuCore_{profile}", core);
-        SettingsManager.Save($"GpuMemory_{profile}", memory);
-    }
-
-    // Overwrites the custom save with defaults
-    public async Task ResetProfileToDefaultsAsync(PowerProfile profile)
-    {
-        SettingsManager.Save($"GpuCore_{profile}", GetDefaultCore(profile));
-        SettingsManager.Save($"GpuMemory_{profile}", GetDefaultMemory(profile));
-        await ApplyPowerProfileOcAsync(profile);
-    }
 
     public void Dispose()
     {
