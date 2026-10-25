@@ -9,6 +9,7 @@ namespace Nitrous.Ui;
 public class OsdForm : Form
 {
     private readonly System.Windows.Forms.Timer _fadeTimer;
+    private readonly System.Windows.Forms.Timer _holdTimer;
     private string _profileText = "PROFILE";
     private Color _accentColor = Color.White;
     private PowerProfile _activeProfile = PowerProfile.Balanced;
@@ -43,6 +44,13 @@ public class OsdForm : Form
 
         _fadeTimer = new System.Windows.Forms.Timer { Interval = 30 };
         _fadeTimer.Tick += FadeTimer_Tick;
+
+        _holdTimer = new System.Windows.Forms.Timer { Interval = 1500 };
+        _holdTimer.Tick += (_, _) =>
+        {
+            _holdTimer.Stop();
+            _fadeTimer.Start();
+        };
     }
 
     public PowerProfile ActiveProfile => _activeProfile;
@@ -74,21 +82,8 @@ public class OsdForm : Form
         this.Refresh();
 
         _fadeTimer.Stop();
-        System.Threading.Tasks.Task.Delay(1500).ContinueWith(_ =>
-        {
-            try
-            {
-                if (!this.IsDisposed && this.IsHandleCreated)
-                {
-                    this.BeginInvoke(new Action(() =>
-                    {
-                        if (!this.IsDisposed)
-                            _fadeTimer.Start();
-                    }));
-                }
-            }
-            catch { }
-        });
+        _holdTimer.Stop();
+        _holdTimer.Start();
     }
 
 
@@ -107,7 +102,9 @@ public class OsdForm : Form
     {
         if (disposing)
         {
+            _holdTimer.Stop();
             _fadeTimer.Stop();
+            _holdTimer.Dispose();
             _fadeTimer.Dispose();
         }
         base.Dispose(disposing);
