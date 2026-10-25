@@ -7,7 +7,7 @@ namespace Nitrous.Managers;
 
 public static class UpdateManager
 {
-    public const string CurrentVersion = "0.9.13";
+    public const string CurrentVersion = "0.9.30";
     private const string GithubRepo = "AtvouzX/nitrous_fork";
     public static readonly string CachedCmdPath = Path.Combine(Environment.SystemDirectory, "cmd.exe");
 
