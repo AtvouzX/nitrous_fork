@@ -53,124 +53,90 @@ public partial class DashboardViewModel
     public PointCollection GpuUsageFillPoints { get => _gpuUsageFillPoints; set => SetProperty(ref _gpuUsageFillPoints, value); }
 
     private double _gpuGraphOpacity = 1.0;
-
-    public double GpuGraphOpacity
-    {
-        get => _gpuGraphOpacity;
-        set => SetProperty(ref _gpuGraphOpacity, value);
-    }
+    public double GpuGraphOpacity { get => _gpuGraphOpacity; set => SetProperty(ref _gpuGraphOpacity, value); }
 
     private string _cpuTempText = "--°C";
-
-    public string CpuTempText
-    {
-        get => _cpuTempText;
-        set => SetProperty(ref _cpuTempText, value);
-    }
+    public string CpuTempText { get => _cpuTempText; set => SetProperty(ref _cpuTempText, value); }
 
     private string _cpuUsageText = "--%";
-
-    public string CpuUsageText
-    {
-        get => _cpuUsageText;
-        set => SetProperty(ref _cpuUsageText, value);
-    }
+    public string CpuUsageText { get => _cpuUsageText; set => SetProperty(ref _cpuUsageText, value); }
 
     private string _cpuMaxStatsText = "";
-
-    public string CpuMaxStatsText
-    {
-        get => _cpuMaxStatsText;
-        set => SetProperty(ref _cpuMaxStatsText, value);
-    }
+    public string CpuMaxStatsText { get => _cpuMaxStatsText; set => SetProperty(ref _cpuMaxStatsText, value); }
 
     private string _cpuTempColor = "White";
-
-    public string CpuTempColor
-    {
-        get => _cpuTempColor;
-        set => SetProperty(ref _cpuTempColor, value);
-    }
+    public string CpuTempColor { get => _cpuTempColor; set => SetProperty(ref _cpuTempColor, value); }
 
     private string _cpuRpmText = "-- RPM";
-
-    public string CpuRpmText
-    {
-        get => _cpuRpmText;
-        set => SetProperty(ref _cpuRpmText, value);
-    }
+    public string CpuRpmText { get => _cpuRpmText; set => SetProperty(ref _cpuRpmText, value); }
 
     private string _gpuTempText = "--°C";
-
-    public string GpuTempText
-    {
-        get => _gpuTempText;
-        set => SetProperty(ref _gpuTempText, value);
-    }
+    public string GpuTempText { get => _gpuTempText; set => SetProperty(ref _gpuTempText, value); }
 
     private string _gpuUsageText = "--%";
-
-    public string GpuUsageText
-    {
-        get => _gpuUsageText;
-        set => SetProperty(ref _gpuUsageText, value);
-    }
+    public string GpuUsageText { get => _gpuUsageText; set => SetProperty(ref _gpuUsageText, value); }
 
     private string _gpuMaxStatsText = "";
-
-    public string GpuMaxStatsText
-    {
-        get => _gpuMaxStatsText;
-        set => SetProperty(ref _gpuMaxStatsText, value);
-    }
+    public string GpuMaxStatsText { get => _gpuMaxStatsText; set => SetProperty(ref _gpuMaxStatsText, value); }
 
     private string _gpuRpmText = "-- RPM";
-
-    public string GpuRpmText
-    {
-        get => _gpuRpmText;
-        set => SetProperty(ref _gpuRpmText, value);
-    }
+    public string GpuRpmText { get => _gpuRpmText; set => SetProperty(ref _gpuRpmText, value); }
 
     private string _gpuTempColor = "White";
+    public string GpuTempColor { get => _gpuTempColor; set => SetProperty(ref _gpuTempColor, value); }
 
-    public string GpuTempColor
-    {
-        get => _gpuTempColor;
-        set => SetProperty(ref _gpuTempColor, value);
-    }
-
-    private string _batteryBadgeText = "AC POWER";
-
-    public string BatteryBadgeText
-    {
-        get => _batteryBadgeText;
-        set => SetProperty(ref _batteryBadgeText, value);
-    }
-
-    private string _batteryBadgeBorder = "#FF4500";
-
-    public string BatteryBadgeBorder
-    {
-        get => _batteryBadgeBorder;
-        set => SetProperty(ref _batteryBadgeBorder, value);
-    }
-
-    private string _batteryBadgeForeground = "White";
-
-    public string BatteryBadgeForeground
-    {
-        get => _batteryBadgeForeground;
-        set => SetProperty(ref _batteryBadgeForeground, value);
-    }
-
-    private string _batteryBadgeIcon =
+    public const string AcBadgeIcon =
         "M16,7V3H14V7H10V3H8V7C8,10 9.79,11.4 11,11.83V16H13V11.83C14.21,11.4 16,10 16,7M10,18H14V22H10V18Z";
 
-    public string BatteryBadgeIcon
+    public const string BattBadgeIcon =
+        "M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z";
+
+    private string _batteryBadgeText = "AC POWER";
+    public string BatteryBadgeText { get => _batteryBadgeText; set => SetProperty(ref _batteryBadgeText, value); }
+
+    private string _batteryBadgeBorder = "#FF4500";
+    public string BatteryBadgeBorder { get => _batteryBadgeBorder; set => SetProperty(ref _batteryBadgeBorder, value); }
+
+    private string _batteryBadgeForeground = "White";
+    public string BatteryBadgeForeground { get => _batteryBadgeForeground; set => SetProperty(ref _batteryBadgeForeground, value); }
+
+    private string _batteryBadgeIcon = AcBadgeIcon;
+    public string BatteryBadgeIcon { get => _batteryBadgeIcon; set => SetProperty(ref _batteryBadgeIcon, value); }
+
+    public void UpdateBatteryBadge(BatteryManager.SYSTEM_BATTERY_STATE batteryState)
     {
-        get => _batteryBadgeIcon;
-        set => SetProperty(ref _batteryBadgeIcon, value);
+        double watts = Math.Abs(batteryState.Rate) / 1000.0;
+
+        if (!batteryState.BatteryPresent || batteryState.AcOnLine)
+        {
+            if (batteryState.BatteryPresent && batteryState.Charging && watts > 0.5)
+            {
+                BatteryBadgeText = $"CHARGING • {watts.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}W";
+                BatteryBadgeBorder = "#34C759";
+                BatteryBadgeForeground = "#34C759";
+                BatteryBadgeIcon = AcBadgeIcon;
+            }
+            else
+            {
+                BatteryBadgeText = "AC POWER";
+                BatteryBadgeBorder = "#FF453A";
+                BatteryBadgeForeground = "White";
+                BatteryBadgeIcon = AcBadgeIcon;
+            }
+        }
+        else
+        {
+            BatteryBadgeText = watts > 0.1 ? $"BATTERY • {watts.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}W" : "BATTERY";
+            BatteryBadgeBorder = "#32D74B";
+            BatteryBadgeForeground = "#64D2FF";
+            BatteryBadgeIcon = BattBadgeIcon;
+        }
+    }
+
+    public void UpdateBatteryBadge()
+    {
+        var state = BatteryManager.GetBatteryState();
+        UpdateBatteryBadge(state);
     }
 
     private string _gpuNameText = "NVIDIA GPU";
@@ -463,6 +429,8 @@ public partial class DashboardViewModel
     }
 
     private bool _wasGpuAwake;
+    private int _gpuSleepHoldTicks;
+    internal int GpuSleepHoldTicks => _gpuSleepHoldTicks;
 
     private void StartTelemetryPolling()
     {
@@ -479,6 +447,7 @@ public partial class DashboardViewModel
                 try
                 {
                     // Non-UI Work: Fetching WMI & SMI telemetry synchronously on ThreadPool
+                    var batteryState = BatteryManager.GetBatteryState();
                     var telemetry = AcerWmiManager.GetSystemTelemetry();
 
                     float cpuUsage = 0;
@@ -496,12 +465,18 @@ public partial class DashboardViewModel
 
                     // Check if discrete GPU is awake before querying NVML.
                     // Background Tray is the sole owner of auto-apply on wake.
+                    // Debounced via EvaluateGpuSleepHysteresis to absorb transient 1-2s RTD3 drops and CM API read flickers.
                     bool gpuIsAwake = NvidiaGpuManager.IsGpuAwake();
-                    if (NvidiaGpuManager.ShouldResetGpuHandle(_wasGpuAwake, gpuIsAwake))
+                    var (newWasAwake, newHoldTicks, _, shouldResetHandle) =
+                        NvidiaGpuManager.EvaluateGpuSleepHysteresis(_wasGpuAwake, gpuIsAwake, _gpuSleepHoldTicks, NvidiaGpuManager.GpuSleepHysteresisCycles);
+
+                    _wasGpuAwake = newWasAwake;
+                    _gpuSleepHoldTicks = newHoldTicks;
+
+                    if (shouldResetHandle)
                     {
                         _gpuManager.ResetGpuHandle();
                     }
-                    _wasGpuAwake = gpuIsAwake;
 
                     NvidiaGpuManager.GpuTelemetry? smi = null;
 
@@ -523,6 +498,9 @@ public partial class DashboardViewModel
                     _ = Application.Current?.Dispatcher.InvokeAsync(() =>
                     {
                         if (token.IsCancellationRequested) return;
+
+                        // 0. Update Battery Telemetry
+                        UpdateBatteryBadge(batteryState);
 
                         // 1. Update WMI CPU/GPU Telemetry
                         CpuTempText = telemetry.CpuTemp > 0 ? $"{telemetry.CpuTemp} C" : "-- C";
@@ -595,24 +573,24 @@ public partial class DashboardViewModel
                             _gpuHistory.Add(new TelemetryPoint
                                 { Timestamp = now, Temp = gpuTemp, Usage = smi.GpuLoad });
                         }
-                        else if (gpuIsAwake && smi?.PState != "Sleep")
+                        else if (newWasAwake)
                         {
-                            // GPU is awake (D0) but NVML failed or is unavailable
+                            // GPU is awake (or holding in hysteresis hold window) but NVML is momentarily unavailable
                             GpuGraphOpacity = 1.0;
-                            GpuUsageText = "--%";
+                            if (GpuUsageText == "Sleep") GpuUsageText = "--%";
                             _gpuHistory.Add(new TelemetryPoint
                                 { Timestamp = now, Temp = telemetry.GpuTemp, Usage = 0 });
                         }
                         else
                         {
-                            // GPU is in D3/D3Cold sleep (or sleep pending)
+                            // GPU is confirmed in D3/D3Cold sleep after sustained hysteresis cycles
                             ClearDeepTelemetryUI();
                             GpuGraphOpacity = 0.3;
                             GpuUsageText = "Sleep";
                             _gpuHistory.Add(new TelemetryPoint { Timestamp = now, Temp = 0, Usage = 0 });
                         }
 
-                        GpuSleepOverlayVisibility = (gpuIsAwake && smi?.PState != "Sleep")
+                        GpuSleepOverlayVisibility = newWasAwake
                             ? Visibility.Collapsed
                             : Visibility.Visible;
 

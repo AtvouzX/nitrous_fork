@@ -28,6 +28,8 @@ public partial class NitrousDashboard : Window
         }
         else
         {
+            SystemEvents.PowerModeChanged += OnPowerStateChanged;
+
             System.Threading.Tasks.Task.Run(() =>
             {
                 string modelName = SystemInfoManager.GetSystemModel();
@@ -64,22 +66,6 @@ public partial class NitrousDashboard : Window
 
     private static readonly SolidColorBrush ActiveBrush = CreateFrozenBrush("#FF4500");
     private static readonly SolidColorBrush InactiveBrush = CreateFrozenBrush("#A1A1AA");
-    private static readonly SolidColorBrush AcColorBrush = CreateFrozenBrush("#FF453A");
-    private static readonly SolidColorBrush BattColorBrush = CreateFrozenBrush("#34C759");
-
-    private static readonly Geometry AcGeom =
-        Geometry.Parse(
-            "M16,7V3H14V7H10V3H8V7C8,10 9.79,11.4 11,11.83V16H13V11.83C14.21,11.4 16,10 16,7M10,18H14V22H10V18Z");
-
-    private static readonly Geometry BattGeom =
-        Geometry.Parse(
-            "M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z");
-
-    static NitrousDashboard()
-    {
-        AcGeom.Freeze();
-        BattGeom.Freeze();
-    }
 
     private static SolidColorBrush CreateFrozenBrush(string hex)
     {
@@ -213,6 +199,7 @@ public partial class NitrousDashboard : Window
         {
             // vm.IsCustomFanEnabled = activeFan == FanProfile.Medium;
             vm.ActivePowerProfile = activeMode;
+            vm.UpdateBatteryBadge();
         }
 
         // Refresh Hotkey labels

@@ -360,15 +360,20 @@ public partial class NvidiaGpuManager : IDisposable
                 return t;
             }
 
-            // If we recently unloaded NVML to allow D3Cold sleep, do not re-init NVML immediately
+            // If on battery and we recently unloaded NVML to allow D3Cold sleep, do not re-init NVML immediately
             // while the driver is transitioning to sleep.
-            if (DateTime.UtcNow < _sleepPendingUntil)
+            bool isAcOnline = IsAcPowerConnected();
+            if (!isAcOnline && DateTime.UtcNow < _sleepPendingUntil)
             {
                 t.PState = "Sleep";
                 t.CoreTemp = 0;
                 t.GpuLoad = 0;
                 t.Name = "NVIDIA (Asleep)";
                 return t;
+            }
+            if (isAcOnline)
+            {
+                _sleepPendingUntil = DateTime.MinValue;
             }
 
             // If the application started while the GPU was asleep, the NVML handle might be zero.
@@ -391,38 +396,42 @@ public partial class NvidiaGpuManager : IDisposable
 
             try
             {
-                // Phase 2: Check if Nitrous itself is the only process keeping the GPU awake.
+                // Phase 2: Check if Nitrous itself is the only process keeping the GPU awake on battery.
                 // If so, shut down NVML and NvAPI to allow the GPU to go back to D3Cold sleep.
-                uint graphicsCount = 32;
-                _cachedGraphicsInfos ??= new NvmlProcessInfo[32];
-                bool hasGraphics = NativeNvml.DeviceGetGraphicsRunningProcesses(_nvmlDeviceHandle, ref graphicsCount, _cachedGraphicsInfos) == NvmlReturn.Success;
-
-                uint computeCount = 32;
-                _cachedComputeInfos ??= new NvmlProcessInfo[32];
-                bool hasCompute = NativeNvml.DeviceGetComputeRunningProcesses(_nvmlDeviceHandle, ref computeCount, _cachedComputeInfos) == NvmlReturn.Success;
-
-                if (hasGraphics || hasCompute)
+                // On AC power, the discrete GPU remains active and is never forcibly put to sleep while telemetry is running.
+                if (!isAcOnline)
                 {
-                    bool shouldSleep = IsOnlyNitrousRunningOnGpu(
-                        hasGraphics ? _cachedGraphicsInfos : null, hasGraphics ? graphicsCount : 0,
-                        hasCompute ? _cachedComputeInfos : null, hasCompute ? computeCount : 0,
-                        Environment.ProcessId);
+                    uint graphicsCount = 32;
+                    _cachedGraphicsInfos ??= new NvmlProcessInfo[32];
+                    bool hasGraphics = NativeNvml.DeviceGetGraphicsRunningProcesses(_nvmlDeviceHandle, ref graphicsCount, _cachedGraphicsInfos) == NvmlReturn.Success;
 
-                    if (shouldSleep)
+                    uint computeCount = 32;
+                    _cachedComputeInfos ??= new NvmlProcessInfo[32];
+                    bool hasCompute = NativeNvml.DeviceGetComputeRunningProcesses(_nvmlDeviceHandle, ref computeCount, _cachedComputeInfos) == NvmlReturn.Success;
+
+                    if (hasGraphics || hasCompute)
                     {
-                        LogManager.Info("Only Nitrous is running on the GPU. Unloading NVML to allow sleep.", "NvidiaGpu");
-                        try { NVIDIA.Unload(); } catch { }
-                        try { NativeNvml.Shutdown(); } catch { }
-                        
-                        _nvmlDeviceHandle = IntPtr.Zero;
-                        _internalGpu = null;
-                        _sleepPendingUntil = DateTime.UtcNow.AddSeconds(15);
+                        bool shouldSleep = IsOnlyNitrousRunningOnGpu(
+                            hasGraphics ? _cachedGraphicsInfos : null, hasGraphics ? graphicsCount : 0,
+                            hasCompute ? _cachedComputeInfos : null, hasCompute ? computeCount : 0,
+                            Environment.ProcessId);
 
-                        t.PState = "Sleep";
-                        t.CoreTemp = 0;
-                        t.GpuLoad = 0;
-                        t.Name = "NVIDIA (Asleep)";
-                        return t;
+                        if (shouldSleep)
+                        {
+                            LogManager.Info("Only Nitrous is running on the GPU on battery. Unloading NVML to allow sleep.", "NvidiaGpu");
+                            try { NVIDIA.Unload(); } catch { }
+                            try { NativeNvml.Shutdown(); } catch { }
+                            
+                            _nvmlDeviceHandle = IntPtr.Zero;
+                            _internalGpu = null;
+                            _sleepPendingUntil = DateTime.UtcNow.AddSeconds(15);
+
+                            t.PState = "Sleep";
+                            t.CoreTemp = 0;
+                            t.GpuLoad = 0;
+                            t.Name = "NVIDIA (Asleep)";
+                            return t;
+                        }
                     }
                 }
             }

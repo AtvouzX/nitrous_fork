@@ -129,7 +129,7 @@ public class DashboardAndTrayUiTests
                 // Check binding exists instead of literal text because bindings are async
                 var vm = window.DataContext as DashboardViewModel;
                 Assert.NotNull(vm);
-                Assert.True(vm.BatteryBadgeText == "AC POWER" || vm.BatteryBadgeText == "BATTERY");
+                Assert.True(vm.BatteryBadgeText == "AC POWER" || vm.BatteryBadgeText.StartsWith("BATTERY") || vm.BatteryBadgeText.StartsWith("CHARGING"));
 
                 // Power Profile selection: exactly one button must be active
                 bool powerActive = window.BtnPowerQuiet.IsChecked == true ||
@@ -148,6 +148,78 @@ public class DashboardAndTrayUiTests
             {
                 window.Close();
             }
+        });
+    }
+
+    [Fact]
+    public void DashboardViewModel_UpdateBatteryBadge_UpdatesPropertiesCorrectly()
+    {
+        RunInSta(() =>
+        {
+            var vm = new DashboardViewModel();
+
+            // 1. AC Power (not charging or low rate)
+            var acState = new BatteryManager.SYSTEM_BATTERY_STATE
+            {
+                BatteryPresent = true,
+                AcOnLine = true,
+                Charging = false,
+                Rate = 0
+            };
+            vm.UpdateBatteryBadge(acState);
+            Assert.Equal("AC POWER", vm.BatteryBadgeText);
+            Assert.Equal("#FF453A", vm.BatteryBadgeBorder);
+            Assert.Equal("White", vm.BatteryBadgeForeground);
+            Assert.Equal(DashboardViewModel.AcBadgeIcon, vm.BatteryBadgeIcon);
+
+            // 2. AC Power & Charging with wattage
+            var chargingState = new BatteryManager.SYSTEM_BATTERY_STATE
+            {
+                BatteryPresent = true,
+                AcOnLine = true,
+                Charging = true,
+                Rate = 45000 // 45W
+            };
+            vm.UpdateBatteryBadge(chargingState);
+            Assert.Equal("CHARGING • 45.0W", vm.BatteryBadgeText);
+            Assert.Equal("#34C759", vm.BatteryBadgeBorder);
+            Assert.Equal("#34C759", vm.BatteryBadgeForeground);
+            Assert.Equal(DashboardViewModel.AcBadgeIcon, vm.BatteryBadgeIcon);
+
+            // 3. Battery Power with discharge rate
+            var batteryState = new BatteryManager.SYSTEM_BATTERY_STATE
+            {
+                BatteryPresent = true,
+                AcOnLine = false,
+                Discharging = true,
+                Rate = -20500 // -20.5W
+            };
+            vm.UpdateBatteryBadge(batteryState);
+            Assert.Equal("BATTERY • 20.5W", vm.BatteryBadgeText);
+            Assert.Equal("#32D74B", vm.BatteryBadgeBorder);
+            Assert.Equal("#64D2FF", vm.BatteryBadgeForeground);
+            Assert.Equal(DashboardViewModel.BattBadgeIcon, vm.BatteryBadgeIcon);
+
+            // 4. Battery Power with 0 rate
+            var batteryNoRate = new BatteryManager.SYSTEM_BATTERY_STATE
+            {
+                BatteryPresent = true,
+                AcOnLine = false,
+                Rate = 0
+            };
+            vm.UpdateBatteryBadge(batteryNoRate);
+            Assert.Equal("BATTERY", vm.BatteryBadgeText);
+            Assert.Equal(DashboardViewModel.BattBadgeIcon, vm.BatteryBadgeIcon);
+
+            // 5. Desktop / No battery present
+            var desktopState = new BatteryManager.SYSTEM_BATTERY_STATE
+            {
+                BatteryPresent = false,
+                AcOnLine = false
+            };
+            vm.UpdateBatteryBadge(desktopState);
+            Assert.Equal("AC POWER", vm.BatteryBadgeText);
+            Assert.Equal(DashboardViewModel.AcBadgeIcon, vm.BatteryBadgeIcon);
         });
     }
 
@@ -984,6 +1056,27 @@ public class DashboardAndTrayUiTests
 
                 SettingsManager.Save("LastPowerMode", origMode);
             }
+        });
+    }
+
+    [Fact]
+    public void DashboardViewModel_ResumePolling_WhenGpuAsleep_InitializesSleepStateImmediately()
+    {
+        RunInSta(() =>
+        {
+            using var vm = new DashboardViewModel();
+            // Simulate that the GPU was previously awake
+            vm.GpuSleepOverlayVisibility = Visibility.Collapsed;
+            vm.GpuUsageText = "45%";
+            vm.GpuGraphOpacity = 1.0;
+
+            // In testhost, IsTestHost() causes IsGpuAwake check in ResumePolling to resolve safely as false
+            vm.ResumePolling();
+
+            Assert.Equal(Visibility.Visible, vm.GpuSleepOverlayVisibility);
+            Assert.Equal("Sleep", vm.GpuUsageText);
+            Assert.Equal(0.3, vm.GpuGraphOpacity);
+            Assert.Equal("NVIDIA GPU (SLEEPING)", vm.GpuNameText);
         });
     }
 }

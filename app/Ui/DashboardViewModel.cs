@@ -148,6 +148,9 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             ActivePowerProfile = PowerProfile.Performance;
         }
 
+        UpdateBatteryBadge();
+        InitializeGpuTelemetryState();
+
         if (!IsTestHost())
         {
             Task.Run(() =>
@@ -158,7 +161,18 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                 bool isNitroKeyEnabled = false;
 
                 int core = 0, memory = 0;
-                bool hasClocks = _gpuManager.IsValid && _gpuManager.GetClocks(out core, out memory);
+                bool hasClocks = false;
+                if (NvidiaGpuManager.IsGpuAwake())
+                {
+                    hasClocks = _gpuManager.IsValid && _gpuManager.GetClocks(out core, out memory);
+                }
+
+                if (!hasClocks)
+                {
+                    core = SettingsManager.Get($"GpuCore_{ActivePowerProfile}", _gpuManager.GetDefaultCore(ActivePowerProfile));
+                    memory = SettingsManager.Get($"GpuMemory_{ActivePowerProfile}", _gpuManager.GetDefaultMemory(ActivePowerProfile));
+                    hasClocks = true;
+                }
 
                 // Push fast results back to the UI thread asynchronously
                 Application.Current?.Dispatcher.InvokeAsync(() =>
@@ -208,6 +222,26 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         StartTelemetryPolling();
     }
 
+    private void InitializeGpuTelemetryState()
+    {
+        bool isAwake = !IsTestHost() && NvidiaGpuManager.IsGpuAwake();
+        _wasGpuAwake = isAwake;
+        _gpuSleepHoldTicks = 0;
+        if (isAwake)
+        {
+            _gpuSleepOverlayVisibility = Visibility.Collapsed;
+            _gpuUsageText = "--%";
+            _gpuGraphOpacity = 1.0;
+        }
+        else
+        {
+            _gpuSleepOverlayVisibility = Visibility.Visible;
+            _gpuUsageText = "Sleep";
+            _gpuGraphOpacity = 0.3;
+            ClearDeepTelemetryUI();
+        }
+    }
+
     public void PausePolling()
     {
         _pollingCts?.Cancel();
@@ -215,6 +249,29 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
     public void ResumePolling()
     {
+        bool isGpuAwake = !IsTestHost() && NvidiaGpuManager.IsGpuAwake();
+        _wasGpuAwake = isGpuAwake;
+        _gpuSleepHoldTicks = 0;
+        if (!isGpuAwake)
+        {
+            _gpuSleepOverlayVisibility = Visibility.Visible;
+            _gpuUsageText = "Sleep";
+            _gpuGraphOpacity = 0.3;
+            ClearDeepTelemetryUI();
+            OnPropertyChanged(nameof(GpuSleepOverlayVisibility));
+            OnPropertyChanged(nameof(GpuUsageText));
+            OnPropertyChanged(nameof(GpuGraphOpacity));
+        }
+        else
+        {
+            _gpuSleepOverlayVisibility = Visibility.Collapsed;
+            _gpuGraphOpacity = 1.0;
+            if (GpuUsageText == "Sleep") GpuUsageText = "--%";
+            OnPropertyChanged(nameof(GpuSleepOverlayVisibility));
+            OnPropertyChanged(nameof(GpuUsageText));
+            OnPropertyChanged(nameof(GpuGraphOpacity));
+        }
+
         StartTelemetryPolling();
     }
 

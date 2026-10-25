@@ -43,6 +43,8 @@ public static class BatteryManager
         if (ret != 0)
         {
             LogManager.Warn($"CallNtPowerInformation failed with NTSTATUS 0x{ret:X}", "Battery");
+            state.AcOnLine = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
+                             System.Windows.Forms.PowerLineStatus.Online;
         }
         return state;
     }
