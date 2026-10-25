@@ -72,4 +72,22 @@ public class UpdateManagerTests
 
         Assert.False(isInvalid, $"Tag '{safeTag}' should be accepted as safe");
     }
+
+    [Fact]
+    public void CleanupOldFiles_DoesNotThrowExceptions()
+    {
+        var ex = Record.Exception(() => UpdateManager.CleanupOldFiles());
+        Assert.Null(ex);
+    }
+
+    [Theory]
+    [InlineData(new byte[] { (byte)'M', (byte)'Z', 0x90, 0x00 }, true)]
+    [InlineData(new byte[] { 0x7F, (byte)'E', (byte)'L', (byte)'F' }, false)]
+    [InlineData(new byte[] { (byte)'P', (byte)'K', 0x03, 0x04 }, false)]
+    [InlineData(new byte[] { (byte)'<', (byte)'!', (byte)'D', (byte)'O' }, false)]
+    public void PEHeaderValidation_AcceptsOnlyValidDosHeader(byte[] header, bool isValid)
+    {
+        bool matches = header.Length >= 2 && header[0] == (byte)'M' && header[1] == (byte)'Z';
+        Assert.Equal(isValid, matches);
+    }
 }

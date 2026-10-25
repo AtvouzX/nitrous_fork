@@ -81,6 +81,7 @@ public static class UpdateManager
             string dlUrl = $"https://github.com/{GithubRepo}/releases/download/{tag}/Nitrous.exe";
             string tempExe = Path.Combine(Path.GetTempPath(), $"Nitrous_update_{Guid.NewGuid():N}.exe");
             string currentExe = Application.ExecutablePath;
+            string backupExe = currentExe + ".old";
 
             using var client = CreateHttpClient();
             byte[] data = await client.GetByteArrayAsync(dlUrl);
@@ -89,24 +90,75 @@ public static class UpdateManager
                 throw new InvalidDataException("Downloaded update payload is corrupt or incomplete.");
             }
 
+            // Verify Windows PE executable header ('M', 'Z')
+            if (data[0] != (byte)'M' || data[1] != (byte)'Z')
+            {
+                throw new InvalidDataException("Downloaded file is not a valid Windows executable.");
+            }
+
             await File.WriteAllBytesAsync(tempExe, data);
-            LogManager.Info($"Update binary downloaded successfully ({data.Length} bytes). Spawning replacement process.", "Update");
+            LogManager.Info($"Update binary downloaded successfully ({data.Length} bytes). Performing in-process replacement.", "Update");
 
-            // Escape paths for cmd.exe invocation
-            string sanitizedTemp = tempExe.Replace("\"", "");
-            string sanitizedCurrent = currentExe.Replace("\"", "");
-            string cmd =
-                $"/c timeout /t 2 /nobreak & move /y \"{sanitizedTemp}\" \"{sanitizedCurrent}\" & start \"\" \"{sanitizedCurrent}\"";
+            try
+            {
+                if (File.Exists(backupExe)) File.Delete(backupExe);
 
-            using var p = Process.Start(new ProcessStartInfo(CachedCmdPath, cmd)
-                { CreateNoWindow = true, UseShellExecute = false });
+                // Windows permits renaming a running executable, but not overwriting it in place
+                File.Move(currentExe, backupExe);
 
-            exitCallback.Invoke();
+                try
+                {
+                    File.Copy(tempExe, currentExe, overwrite: true);
+                    Process.Start(new ProcessStartInfo(currentExe, "--updated") { UseShellExecute = true });
+                }
+                catch
+                {
+                    // Roll back so the application is preserved if copy or process start fails
+                    try
+                    {
+                        if (File.Exists(currentExe)) File.Delete(currentExe);
+                        File.Move(backupExe, currentExe);
+                    }
+                    catch (Exception rollbackEx)
+                    {
+                        LogManager.Error($"Rollback failed: {rollbackEx.Message}", rollbackEx, "Update");
+                    }
+
+                    throw;
+                }
+
+                try
+                {
+                    if (File.Exists(tempExe)) File.Delete(tempExe);
+                }
+                catch { }
+
+                exitCallback.Invoke();
+            }
+            catch (Exception ex)
+            {
+                LogManager.Error($"Update installation failed: {ex.Message}", ex, "Update");
+                MessageBox.Show($"Update failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
         catch (Exception ex)
         {
-            LogManager.Error($"Update installation failed: {ex.Message}", ex, "Update");
+            LogManager.Error($"Update download failed: {ex.Message}", ex, "Update");
             MessageBox.Show($"Update failed: {ex.Message}", "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+        }
+    }
+
+    /// <summary>Removes the previous executable (.old) left behind by an in-place update.</summary>
+    public static void CleanupOldFiles()
+    {
+        try
+        {
+            var oldExe = Application.ExecutablePath + ".old";
+            if (File.Exists(oldExe)) File.Delete(oldExe);
+        }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"CleanupOldFiles: could not remove old executable: {ex.Message}", "Update");
         }
     }
 }

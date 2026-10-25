@@ -176,6 +176,8 @@ static class Program
             return;
         }
 
+        UpdateManager.CleanupOldFiles();
+
         Application.SetUnhandledExceptionMode(UnhandledExceptionMode.CatchException);
         Application.ThreadException += (s, e) =>
         {
