@@ -1014,14 +1014,19 @@
 						        ToolTip="Live NVIDIA GPU telemetry via NVML. Statistics update while dashboard is active.">
 							<StackPanel>
 								<!-- GPU Name Header -->
-								<StackPanel Orientation="Horizontal" Margin="0,0,0,16">
-									<Path Fill="#FF4500" Stretch="Uniform" Width="12" Height="12" Margin="0,0,6,0"
+								<Grid Margin="0,0,0,16">
+									<Grid.ColumnDefinitions>
+										<ColumnDefinition Width="Auto" />
+										<ColumnDefinition Width="*" />
+										<ColumnDefinition Width="Auto" />
+									</Grid.ColumnDefinitions>
+									<Path Grid.Column="0" Fill="#FF4500" Stretch="Uniform" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center"
 									      Data="M22,9V7H20V5A2,2 0 0,0 18,3H4A2,2 0 0,0 2,5V19A2,2 0 0,0 4,21H18A2,2 0 0,0 20,19V17H22V15H20V13H22V11H20V9H22M18,19H4V5H18V19M6,13H11V17H6V13M12,7H16V10H12V7M6,7H11V12H6V7M12,11H16V17H12V11Z" />
-									<TextBlock Text="{Binding GpuNameText}" Foreground="White" FontSize="12" FontWeight="Bold"
+									<TextBlock Grid.Column="1" Text="{Binding GpuNameText}" Foreground="White" FontSize="12" FontWeight="Bold"
+									           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Margin="0,0,8,0" ToolTip="{Binding GpuNameText}" />
+									<TextBlock Grid.Column="2" Text="{Binding GpuArchText}" Foreground="#A1A1AA" FontSize="11"
 									           VerticalAlignment="Center" />
-									<TextBlock Text="{Binding GpuArchText}" Foreground="#A1A1AA" FontSize="11" Margin="6,0,0,0"
-									           VerticalAlignment="Center" />
-								</StackPanel>
+								</Grid>
 								<!-- 2-Column Stats Grid -->
 								<Grid>
 									<Grid.ColumnDefinitions>

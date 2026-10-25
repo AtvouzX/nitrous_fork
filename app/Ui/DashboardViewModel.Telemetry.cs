@@ -549,7 +549,7 @@ public partial class DashboardViewModel
                                 GpuTempColor = smi.CoreTemp >= 85 ? "#FF453A" : "White";
                             }
 
-                            GpuNameText = smi.Name;
+                            GpuNameText = FormatGpuName(smi.Name);
                             GpuArchText = smi.Architecture;
 
                             GpuLoadText = $"{smi.GpuLoad}%";
@@ -657,5 +657,15 @@ public partial class DashboardViewModel
                 }
             }
         }, token);
+    }
+
+    public static string FormatGpuName(string name)
+    {
+        var display = name.Trim();
+
+        if (display.EndsWith(" GPU", StringComparison.OrdinalIgnoreCase))
+            display = display[..^" GPU".Length].TrimEnd();
+
+        return string.IsNullOrWhiteSpace(display) ? "NVIDIA GPU" : display;
     }
 }
