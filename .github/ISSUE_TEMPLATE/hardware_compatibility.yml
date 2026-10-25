@@ -39,7 +39,7 @@ body:
     attributes:
       label: What is happening?
       description: Describe what fails when attempting to use the feature. Does original Acer software support it?
-      placeholder: (e.g., Turbo mode cannot be activated; Nitrous reports Turbo Mode Bit 5: Unsupported)
+      placeholder: "(e.g., Turbo mode cannot be activated; Nitrous reports Turbo Mode Bit 5: Unsupported)"
     validations:
       required: true
 
