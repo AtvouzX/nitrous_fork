@@ -7,6 +7,7 @@ using System.Windows;
 using System.Windows.Media;
 using Nitrous.Enums;
 using Nitrous.Helpers;
+using Nitrous.Interop;
 using Nitrous.Managers;
 using Point = System.Windows.Point;
 using Application = System.Windows.Application;
@@ -103,7 +104,7 @@ public partial class DashboardViewModel
     private string _batteryBadgeIcon = AcBadgeIcon;
     public string BatteryBadgeIcon { get => _batteryBadgeIcon; set => SetProperty(ref _batteryBadgeIcon, value); }
 
-    public void UpdateBatteryBadge(BatteryManager.SYSTEM_BATTERY_STATE batteryState)
+    public void UpdateBatteryBadge(Powrprof.SYSTEM_BATTERY_STATE batteryState)
     {
         double watts = Math.Abs(batteryState.Rate) / 1000.0;
 
@@ -262,170 +263,6 @@ public partial class DashboardViewModel
     {
         get => _gpuSleepOverlayVisibility;
         set => SetProperty(ref _gpuSleepOverlayVisibility, value);
-    }
-
-    // --- CPU HOVER ---
-    private Visibility _cpuHoverVisibility = Visibility.Collapsed;
-
-    public Visibility CpuHoverVisibility
-    {
-        get => _cpuHoverVisibility;
-        set => SetProperty(ref _cpuHoverVisibility, value);
-    }
-
-    private Thickness _cpuHoverMargin;
-
-    public Thickness CpuHoverMargin
-    {
-        get => _cpuHoverMargin;
-        set => SetProperty(ref _cpuHoverMargin, value);
-    }
-
-    private Thickness _cpuTooltipMargin;
-
-    public Thickness CpuTooltipMargin
-    {
-        get => _cpuTooltipMargin;
-        set => SetProperty(ref _cpuTooltipMargin, value);
-    }
-
-    private string _cpuHoverTime = "";
-
-    public string CpuHoverTime
-    {
-        get => _cpuHoverTime;
-        set => SetProperty(ref _cpuHoverTime, value);
-    }
-
-    private string _cpuHoverTempStr = "--";
-
-    public string CpuHoverTempStr
-    {
-        get => _cpuHoverTempStr;
-        set => SetProperty(ref _cpuHoverTempStr, value);
-    }
-
-    private string _cpuHoverUsageStr = "--";
-
-    public string CpuHoverUsageStr
-    {
-        get => _cpuHoverUsageStr;
-        set => SetProperty(ref _cpuHoverUsageStr, value);
-    }
-
-    // --- GPU HOVER ---
-    private Visibility _gpuHoverVisibility = Visibility.Collapsed;
-
-    public Visibility GpuHoverVisibility
-    {
-        get => _gpuHoverVisibility;
-        set => SetProperty(ref _gpuHoverVisibility, value);
-    }
-
-    private Visibility _gpuHoverStatsVisibility = Visibility.Visible;
-
-    public Visibility GpuHoverStatsVisibility
-    {
-        get => _gpuHoverStatsVisibility;
-        set => SetProperty(ref _gpuHoverStatsVisibility, value);
-    }
-
-    private Visibility _gpuHoverSleepVisibility = Visibility.Collapsed;
-
-    public Visibility GpuHoverSleepVisibility
-    {
-        get => _gpuHoverSleepVisibility;
-        set => SetProperty(ref _gpuHoverSleepVisibility, value);
-    }
-
-    private Thickness _gpuHoverMargin;
-
-    public Thickness GpuHoverMargin
-    {
-        get => _gpuHoverMargin;
-        set => SetProperty(ref _gpuHoverMargin, value);
-    }
-
-    private Thickness _gpuTooltipMargin;
-
-    public Thickness GpuTooltipMargin
-    {
-        get => _gpuTooltipMargin;
-        set => SetProperty(ref _gpuTooltipMargin, value);
-    }
-
-    private string _gpuHoverTime = "";
-
-    public string GpuHoverTime
-    {
-        get => _gpuHoverTime;
-        set => SetProperty(ref _gpuHoverTime, value);
-    }
-
-    private string _gpuHoverTempStr = "--";
-
-    public string GpuHoverTempStr
-    {
-        get => _gpuHoverTempStr;
-        set => SetProperty(ref _gpuHoverTempStr, value);
-    }
-
-    private string _gpuHoverUsageStr = "--";
-
-    public string GpuHoverUsageStr
-    {
-        get => _gpuHoverUsageStr;
-        set => SetProperty(ref _gpuHoverUsageStr, value);
-    }
-
-    public void UpdateCpuHover(double pixelX, double actualWidth)
-    {
-        long now = Environment.TickCount64;
-        var (found, point, diff) = GraphGeometryHelper.FindHoverPoint(_cpuHistory, pixelX, actualWidth, now);
-
-        if (found)
-        {
-            CpuHoverVisibility = Visibility.Visible;
-            CpuHoverMargin = new Thickness(pixelX, 0, 0, 0);
-            CpuTooltipMargin = new Thickness(pixelX > (actualWidth / 2) ? pixelX - 85 : pixelX + 5, 5, 0, 0);
-            CpuHoverTime = $"-{(int)diff.TotalMinutes}m {(int)diff.Seconds}s";
-            CpuHoverTempStr = $"{point.Temp}°C";
-            CpuHoverUsageStr = $"{point.Usage:0}%";
-        }
-        else
-        {
-            CpuHoverVisibility = Visibility.Collapsed;
-        }
-    }
-
-    public void UpdateGpuHover(double pixelX, double actualWidth)
-    {
-        long now = Environment.TickCount64;
-        var (found, point, diff) = GraphGeometryHelper.FindHoverPoint(_gpuHistory, pixelX, actualWidth, now);
-
-        if (found)
-        {
-            GpuHoverVisibility = Visibility.Visible;
-            GpuHoverMargin = new Thickness(pixelX, 0, 0, 0);
-            GpuTooltipMargin = new Thickness(pixelX > (actualWidth / 2) ? pixelX - 85 : pixelX + 5, 5, 0, 0);
-            GpuHoverTime = $"-{(int)diff.TotalMinutes}m {(int)diff.Seconds}s";
-            GpuHoverTempStr = $"{point.Temp}°C";
-            GpuHoverUsageStr = $"{point.Usage:0}%";
-            if (point.Temp == 0)
-            {
-                GpuHoverStatsVisibility = Visibility.Collapsed;
-                GpuHoverSleepVisibility = Visibility.Visible;
-            }
-            else
-            {
-                GpuHoverStatsVisibility = Visibility.Visible;
-                GpuHoverSleepVisibility = Visibility.Collapsed;
-            }
-        }
-        else
-        {
-            GpuHoverVisibility = Visibility.Collapsed;
-        }
     }
 
     private bool _wasGpuAwake;
@@ -594,16 +431,33 @@ public partial class DashboardViewModel
                             ? Visibility.Collapsed
                             : Visibility.Visible;
 
-                        // Prune > 5 mins (300,000 ms)
-                        _cpuHistory.RemoveAll(p => now - p.Timestamp > 300000);
-                        _gpuHistory.RemoveAll(p => now - p.Timestamp > 300000);
+                        // Prune > 5 mins (300,000 ms) with zero allocations from monotonically increasing history
+                        long cutoff = now - 300000;
+                        while (_cpuHistory.Count > 0 && _cpuHistory[0].Timestamp < cutoff)
+                        {
+                            _cpuHistory.RemoveAt(0);
+                        }
+                        while (_gpuHistory.Count > 0 && _gpuHistory[0].Timestamp < cutoff)
+                        {
+                            _gpuHistory.RemoveAt(0);
+                        }
 
-                        var maxCpuTemp = _cpuHistory.Count > 0 ? _cpuHistory.Max(p => p.Temp) : 0;
-                        var maxCpuUsage = _cpuHistory.Count > 0 ? _cpuHistory.Max(p => p.Usage) : 0;
+                        double maxCpuTemp = 0;
+                        double maxCpuUsage = 0;
+                        for (int i = 0; i < _cpuHistory.Count; i++)
+                        {
+                            if (_cpuHistory[i].Temp > maxCpuTemp) maxCpuTemp = _cpuHistory[i].Temp;
+                            if (_cpuHistory[i].Usage > maxCpuUsage) maxCpuUsage = _cpuHistory[i].Usage;
+                        }
                         CpuMaxStatsText = $"Max: {maxCpuTemp}°C  {maxCpuUsage:0}%";
 
-                        var maxGpuTemp = _gpuHistory.Count > 0 ? _gpuHistory.Max(p => p.Temp) : 0;
-                        var maxGpuUsage = _gpuHistory.Count > 0 ? _gpuHistory.Max(p => p.Usage) : 0;
+                        double maxGpuTemp = 0;
+                        double maxGpuUsage = 0;
+                        for (int i = 0; i < _gpuHistory.Count; i++)
+                        {
+                            if (_gpuHistory[i].Temp > maxGpuTemp) maxGpuTemp = _gpuHistory[i].Temp;
+                            if (_gpuHistory[i].Usage > maxGpuUsage) maxGpuUsage = _gpuHistory[i].Usage;
+                        }
                         GpuMaxStatsText = $"Max: {maxGpuTemp}°C  {maxGpuUsage:0}%";
 
                         CpuTempPoints = GraphGeometryHelper.GenerateGraphPoints(_cpuHistory, true, now);
