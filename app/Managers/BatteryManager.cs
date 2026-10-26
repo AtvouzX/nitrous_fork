@@ -2,44 +2,17 @@ using System;
 using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Management;
+using Nitrous.Interop;
 
 namespace Nitrous.Managers;
 
 public static class BatteryManager
 {
-    [StructLayout(LayoutKind.Sequential)]
-    public struct SYSTEM_BATTERY_STATE
-    {
-        [MarshalAs(UnmanagedType.I1)] public bool AcOnLine;
-        [MarshalAs(UnmanagedType.I1)] public bool BatteryPresent;
-        [MarshalAs(UnmanagedType.I1)] public bool Charging;
-        [MarshalAs(UnmanagedType.I1)] public bool Discharging;
-        public byte Spare1_1;
-        public byte Spare1_2;
-        public byte Spare1_3;
-        public byte Spare1_4;
-        public uint MaxCapacity;        // mWh
-        public uint RemainingCapacity;  // mWh
-        public int Rate;               // mW (negative when discharging)
-        public uint EstimatedTime;     // seconds
-        public uint DefaultAlert1;
-        public uint DefaultAlert2;
-    }
-
-    [DllImport("powrprof.dll", SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern uint CallNtPowerInformation(
-        int InformationLevel,
-        IntPtr InputBuffer,
-        uint InputBufferSize,
-        out SYSTEM_BATTERY_STATE OutputBuffer,
-        uint OutputBufferSize);
-
-    public static SYSTEM_BATTERY_STATE GetBatteryState()
+    public static Powrprof.SYSTEM_BATTERY_STATE GetBatteryState()
     {
         const int SystemBatteryStateLevel = 5;
-        SYSTEM_BATTERY_STATE state = default;
-        uint ret = CallNtPowerInformation(SystemBatteryStateLevel, IntPtr.Zero, 0, out state, (uint)Marshal.SizeOf<SYSTEM_BATTERY_STATE>());
+        Powrprof.SYSTEM_BATTERY_STATE state = default;
+        uint ret = Powrprof.CallNtPowerInformation(SystemBatteryStateLevel, IntPtr.Zero, 0, out state, (uint)Marshal.SizeOf<Powrprof.SYSTEM_BATTERY_STATE>());
         if (ret != 0)
         {
             LogManager.Warn($"CallNtPowerInformation failed with NTSTATUS 0x{ret:X}", "Battery");

@@ -117,9 +117,23 @@ public class ArchitectureAndSecurityTests
     }
 
     [Fact]
-    public void DisplayManager_DevModeW_StructSize_MatchesWin32Standard()
+    public void Display_DevModeW_StructSize_MatchesWin32Standard()
     {
-        int size = Marshal.SizeOf<DisplayManager.DEVMODEW>();
+        int size = Marshal.SizeOf<Nitrous.Interop.User32.DEVMODEW>();
         Assert.Equal(220, size);
+    }
+
+    [Fact]
+    public void Powrprof_SystemBatteryState_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.Powrprof.SYSTEM_BATTERY_STATE>();
+        Assert.Equal(32, size);
+    }
+
+    [Fact]
+    public void User32_KbdllHookStruct_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.User32.KBDLLHOOKSTRUCT>();
+        Assert.Equal(24, size);
     }
 }

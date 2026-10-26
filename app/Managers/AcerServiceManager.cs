@@ -5,6 +5,7 @@ using System.Linq;
 using System.Runtime.InteropServices;
 using System.ServiceProcess;
 using System.Threading.Tasks;
+using Nitrous.Interop;
 
 namespace Nitrous.Managers;
 
@@ -24,24 +25,7 @@ public class AcerServiceSummary
 
 public static class AcerServiceManager
 {
-    [DllImport("advapi32.dll", SetLastError = true, CharSet = CharSet.Auto)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern bool ChangeServiceConfig(
-        IntPtr hService,
-        uint dwServiceType,
-        uint dwStartType,
-        uint dwErrorControl,
-        string? lpBinaryPathName,
-        string? lpLoadOrderGroup,
-        IntPtr lpdwTagId,
-        string? lpDependencies,
-        string? lpServiceStartName,
-        string? lpPassword,
-        string? lpDisplayName);
 
-    private const uint SERVICE_NO_CHANGE = 0xFFFFFFFF;
-    private const uint SERVICE_DISABLED = 0x00000004;
-    private const uint SERVICE_AUTO_START = 0x00000002;
 
     public static readonly string[] TargetServices = new[]
     {
@@ -172,7 +156,7 @@ public static class AcerServiceManager
                     try
                     {
                         LogManager.Info($"Stopping and disabling Acer service: {svc.ServiceName}", "AcerService");
-                        ChangeServiceStartType(svc, SERVICE_DISABLED);
+                        ChangeServiceStartType(svc, Advapi32.SERVICE_DISABLED);
 
                         if (svc.Status != ServiceControllerStatus.Stopped && svc.Status != ServiceControllerStatus.StopPending)
                         {
@@ -206,7 +190,7 @@ public static class AcerServiceManager
                 {
                     try
                     {
-                        ChangeServiceStartType(svc, SERVICE_DISABLED);
+                        ChangeServiceStartType(svc, Advapi32.SERVICE_DISABLED);
 
                         if (svc.Status != ServiceControllerStatus.Stopped && svc.Status != ServiceControllerStatus.StopPending)
                         {
@@ -243,7 +227,7 @@ public static class AcerServiceManager
                     try
                     {
                         LogManager.Info($"Restoring and starting Acer service: {svc.ServiceName}", "AcerService");
-                        ChangeServiceStartType(svc, SERVICE_AUTO_START);
+                        ChangeServiceStartType(svc, Advapi32.SERVICE_AUTO_START);
 
                         if (svc.Status != ServiceControllerStatus.Running && svc.Status != ServiceControllerStatus.StartPending)
                         {
@@ -268,11 +252,11 @@ public static class AcerServiceManager
     {
         try
         {
-            bool success = ChangeServiceConfig(
+            bool success = Advapi32.ChangeServiceConfig(
                 svc.ServiceHandle.DangerousGetHandle(),
-                SERVICE_NO_CHANGE,
+                Advapi32.SERVICE_NO_CHANGE,
                 startType,
-                SERVICE_NO_CHANGE,
+                Advapi32.SERVICE_NO_CHANGE,
                 null,
                 null,
                 IntPtr.Zero,

@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using Nitrous.Interop;
 using Nitrous.Managers;
 using Xunit;
 
@@ -9,7 +10,7 @@ public class BatteryManagerTests
     [Fact]
     public void SystemBatteryState_SizeIs32()
     {
-        int size = Marshal.SizeOf<BatteryManager.SYSTEM_BATTERY_STATE>();
+        int size = Marshal.SizeOf<Powrprof.SYSTEM_BATTERY_STATE>();
         Assert.Equal(32, size);
     }
 

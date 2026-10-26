@@ -1,60 +1,12 @@
 using System;
 using System.Runtime.InteropServices;
 using Nitrous.Enums;
+using Nitrous.Interop;
 
 namespace Nitrous.Managers;
 
 public static class DisplayManager
 {
-    public const int ENUM_CURRENT_SETTINGS = -1;
-    public const int DM_DISPLAYFREQUENCY = 0x00400000;
-    public const int CDS_UPDATEREGISTRY = 0x00000001;
-
-    [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Unicode)]
-    public struct DEVMODEW
-    {
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
-        public string dmDeviceName;
-        public short dmSpecVersion;
-        public short dmDriverVersion;
-        public short dmSize;
-        public short dmDriverExtra;
-        public int dmFields;
-        public int dmPositionX;
-        public int dmPositionY;
-        public int dmDisplayOrientation;
-        public int dmDisplayFixedOutput;
-        public short dmColor;
-        public short dmDuplex;
-        public short dmYResolution;
-        public short dmTTOption;
-        public short dmCollate;
-        [MarshalAs(UnmanagedType.ByValTStr, SizeConst = 32)]
-        public string dmFormName;
-        public short dmLogPixels;
-        public int dmBitsPerPel;
-        public int dmPelsWidth;
-        public int dmPelsHeight;
-        public int dmDisplayFlags;
-        public int dmDisplayFrequency;
-        public int dmICMMethod;
-        public int dmICMIntent;
-        public int dmMediaType;
-        public int dmDitherType;
-        public int dmReserved1;
-        public int dmReserved2;
-        public int dmPanningWidth;
-        public int dmPanningHeight;
-    }
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern bool EnumDisplaySettingsW(string? lpszDeviceName, int iModeNum, ref DEVMODEW lpDevMode);
-
-    [DllImport("user32.dll", CharSet = CharSet.Unicode)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern int ChangeDisplaySettingsExW(string? lpszDeviceName, ref DEVMODEW lpDevMode, IntPtr hwnd, uint dwFlags, IntPtr lParam);
-
     private static int _cachedMaxRefreshRate = 0;
 
     public static int GetPrimaryMaxRefreshRate()
@@ -64,15 +16,15 @@ public static class DisplayManager
         int maxHz = 60;
         try
         {
-            var mode = new DEVMODEW { dmSize = (short)Marshal.SizeOf<DEVMODEW>() };
-            if (EnumDisplaySettingsW(null, ENUM_CURRENT_SETTINGS, ref mode))
+            var mode = new User32.DEVMODEW { dmSize = (short)Marshal.SizeOf<User32.DEVMODEW>() };
+            if (User32.EnumDisplaySettingsW(null, User32.ENUM_CURRENT_SETTINGS, ref mode))
             {
                 int currentWidth = mode.dmPelsWidth;
                 int currentHeight = mode.dmPelsHeight;
                 int i = 0;
 
-                var testMode = new DEVMODEW { dmSize = (short)Marshal.SizeOf<DEVMODEW>() };
-                while (EnumDisplaySettingsW(null, i++, ref testMode))
+                var testMode = new User32.DEVMODEW { dmSize = (short)Marshal.SizeOf<User32.DEVMODEW>() };
+                while (User32.EnumDisplaySettingsW(null, i++, ref testMode))
                 {
                     if (testMode.dmPelsWidth == currentWidth && testMode.dmPelsHeight == currentHeight)
                     {
@@ -95,8 +47,8 @@ public static class DisplayManager
     {
         try
         {
-            var mode = new DEVMODEW { dmSize = (short)Marshal.SizeOf<DEVMODEW>() };
-            for (int i = 0; EnumDisplaySettingsW(null, i, ref mode); i++)
+            var mode = new User32.DEVMODEW { dmSize = (short)Marshal.SizeOf<User32.DEVMODEW>() };
+            for (int i = 0; User32.EnumDisplaySettingsW(null, i, ref mode); i++)
             {
                 if (mode.dmPelsWidth == width &&
                     mode.dmPelsHeight == height &&
@@ -127,8 +79,8 @@ public static class DisplayManager
                 _ => 60
             };
 
-            var mode = new DEVMODEW { dmSize = (short)Marshal.SizeOf<DEVMODEW>() };
-            if (!EnumDisplaySettingsW(null, ENUM_CURRENT_SETTINGS, ref mode))
+            var mode = new User32.DEVMODEW { dmSize = (short)Marshal.SizeOf<User32.DEVMODEW>() };
+            if (!User32.EnumDisplaySettingsW(null, User32.ENUM_CURRENT_SETTINGS, ref mode))
             {
                 LogManager.Warn("Display: could not read current display mode.", "Display");
                 return;
@@ -144,9 +96,9 @@ public static class DisplayManager
             }
 
             LogManager.Info($"Switching display refresh rate from {mode.dmDisplayFrequency}Hz to {targetHz}Hz (Profile: {profile}, AC: {isAcPower})", "Display");
-            mode.dmFields = DM_DISPLAYFREQUENCY;
+            mode.dmFields = User32.DM_DISPLAYFREQUENCY;
             mode.dmDisplayFrequency = targetHz;
-            int ret = ChangeDisplaySettingsExW(null, ref mode, IntPtr.Zero, CDS_UPDATEREGISTRY, IntPtr.Zero);
+            int ret = User32.ChangeDisplaySettingsExW(null, ref mode, IntPtr.Zero, User32.CDS_UPDATEREGISTRY, IntPtr.Zero);
             if (ret != 0)
             {
                 LogManager.Warn($"ChangeDisplaySettingsExW returned error code {ret}", "Display");

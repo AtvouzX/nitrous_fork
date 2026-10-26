@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading;
 using System.Windows.Forms;
+using Nitrous.Interop;
 using Nitrous.Managers;
 using Nitrous.Ui;
 
@@ -18,23 +19,6 @@ static class Program
     public const string DashboardEventName = @"Local\Nitrous_ShowDashboard_Event";
     public const string SettingsChangedEventName = @"Local\Nitrous_SettingsChanged_Event";
 
-    [DllImport("user32.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-
-    [DllImport("user32.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-    [DllImport("user32.dll", EntryPoint = "FindWindow", SetLastError = true, CharSet = CharSet.Unicode)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern IntPtr FindWindow(string? lpClassName, string lpWindowName);
-
-    [DllImport("user32.dll")]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern bool AllowSetForegroundWindow(int dwProcessId);
-
-    private const int ASFW_ANY = -1;
 
     [STAThread]
     static void Main(string[] args)
@@ -251,7 +235,7 @@ static class Program
     {
         try
         {
-            AllowSetForegroundWindow(ASFW_ANY);
+            User32.AllowSetForegroundWindow(User32.ASFW_ANY);
         }
         catch (Exception ex)
         {
@@ -296,12 +280,11 @@ static class Program
         try
         {
             // Fast Win32 lookup by Dashboard window title
-            IntPtr hWnd = FindWindow(null, "Nitrous Dashboard");
+            IntPtr hWnd = User32.FindWindow(null, "Nitrous Dashboard");
             if (hWnd != IntPtr.Zero)
             {
-                const int SW_RESTORE = 9;
-                ShowWindow(hWnd, SW_RESTORE);
-                SetForegroundWindow(hWnd);
+                User32.ShowWindow(hWnd, User32.SW_RESTORE);
+                User32.SetForegroundWindow(hWnd);
                 return true;
             }
 
@@ -313,9 +296,8 @@ static class Program
                 {
                     if (p.Id != cur.Id && p.MainWindowHandle != IntPtr.Zero)
                     {
-                        const int SW_RESTORE = 9;
-                        ShowWindow(p.MainWindowHandle, SW_RESTORE);
-                        SetForegroundWindow(p.MainWindowHandle);
+                        User32.ShowWindow(p.MainWindowHandle, User32.SW_RESTORE);
+                        User32.SetForegroundWindow(p.MainWindowHandle);
                         return true;
                     }
                 }

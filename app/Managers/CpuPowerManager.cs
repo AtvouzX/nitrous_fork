@@ -4,6 +4,7 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using Nitrous.Enums;
+using Nitrous.Interop;
 
 namespace Nitrous.Managers;
 
@@ -17,35 +18,6 @@ public static class CpuPowerManager
     public static readonly Guid GUID_PROCTHROTTLEMAX = new("bc5038f7-23e0-4960-96da-33abaf5935ec");
     public static readonly Guid GUID_PERFBOOSTMODE = new("be337238-0d82-4146-a110-4a477b471251");
 
-    [DllImport("powrprof.dll", SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern uint PowerGetActiveScheme(IntPtr UserRootPowerKey, out IntPtr ActivePolicyGuid);
-
-    [DllImport("powrprof.dll", SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern uint PowerWriteACValueIndex(
-        IntPtr RootPowerKey,
-        ref Guid SchemeGuid,
-        ref Guid SubGroupOfPowerSettingsGuid,
-        ref Guid PowerSettingGuid,
-        uint AcValueIndex);
-
-    [DllImport("powrprof.dll", SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern uint PowerWriteDCValueIndex(
-        IntPtr RootPowerKey,
-        ref Guid SchemeGuid,
-        ref Guid SubGroupOfPowerSettingsGuid,
-        ref Guid PowerSettingGuid,
-        uint DcValueIndex);
-
-    [DllImport("powrprof.dll", SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern uint PowerSetActiveScheme(IntPtr UserRootPowerKey, ref Guid SchemeGuid);
-
-    [DllImport("kernel32.dll", SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern IntPtr LocalFree(IntPtr hMem);
 
     private static readonly object _cacheLock = new();
 
@@ -200,7 +172,7 @@ public static class CpuPowerManager
 
     private static bool ApplyInProcessLimits(int acMin, int acMax, int acBoost, int dcMin, int dcMax, int dcBoost)
     {
-        uint ret = PowerGetActiveScheme(IntPtr.Zero, out IntPtr activeGuidPtr);
+        uint ret = Powrprof.PowerGetActiveScheme(IntPtr.Zero, out IntPtr activeGuidPtr);
         if (ret != 0 || activeGuidPtr == IntPtr.Zero) return false;
 
         try
@@ -212,17 +184,17 @@ public static class CpuPowerManager
             Guid setBoost = GUID_PERFBOOSTMODE;
 
             // Apply AC settings
-            PowerWriteACValueIndex(IntPtr.Zero, ref activeScheme, ref subGroup, ref setMin, (uint)acMin);
-            PowerWriteACValueIndex(IntPtr.Zero, ref activeScheme, ref subGroup, ref setMax, (uint)acMax);
-            PowerWriteACValueIndex(IntPtr.Zero, ref activeScheme, ref subGroup, ref setBoost, (uint)acBoost);
+            Powrprof.PowerWriteACValueIndex(IntPtr.Zero, ref activeScheme, ref subGroup, ref setMin, (uint)acMin);
+            Powrprof.PowerWriteACValueIndex(IntPtr.Zero, ref activeScheme, ref subGroup, ref setMax, (uint)acMax);
+            Powrprof.PowerWriteACValueIndex(IntPtr.Zero, ref activeScheme, ref subGroup, ref setBoost, (uint)acBoost);
 
             // Apply DC settings
-            PowerWriteDCValueIndex(IntPtr.Zero, ref activeScheme, ref subGroup, ref setMin, (uint)dcMin);
-            PowerWriteDCValueIndex(IntPtr.Zero, ref activeScheme, ref subGroup, ref setMax, (uint)dcMax);
-            PowerWriteDCValueIndex(IntPtr.Zero, ref activeScheme, ref subGroup, ref setBoost, (uint)dcBoost);
+            Powrprof.PowerWriteDCValueIndex(IntPtr.Zero, ref activeScheme, ref subGroup, ref setMin, (uint)dcMin);
+            Powrprof.PowerWriteDCValueIndex(IntPtr.Zero, ref activeScheme, ref subGroup, ref setMax, (uint)dcMax);
+            Powrprof.PowerWriteDCValueIndex(IntPtr.Zero, ref activeScheme, ref subGroup, ref setBoost, (uint)dcBoost);
 
             // Flush and commit settings instantly
-            PowerSetActiveScheme(IntPtr.Zero, ref activeScheme);
+            Powrprof.PowerSetActiveScheme(IntPtr.Zero, ref activeScheme);
             return true;
         }
         catch (Exception ex)
@@ -232,7 +204,7 @@ public static class CpuPowerManager
         }
         finally
         {
-            LocalFree(activeGuidPtr);
+            Kernel32.LocalFree(activeGuidPtr);
         }
     }
 

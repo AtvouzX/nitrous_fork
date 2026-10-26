@@ -4,6 +4,7 @@ using Nitrous.Enums;
 using Nitrous.Hooks;
 using Nitrous.Managers;
 using Nitrous.Helpers;
+using Nitrous.Interop;
 
 namespace Nitrous.Ui;
 
@@ -126,30 +127,11 @@ public partial class TrayApplication : ApplicationContext
     }
 
 
-
-    [System.Runtime.InteropServices.DllImport("user32.dll", EntryPoint = "FindWindow", SetLastError = true, CharSet = System.Runtime.InteropServices.CharSet.Unicode)]
-    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
-    private static extern IntPtr FindWindow(string? lpClassName, string lpWindowName);
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
-    private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
-    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath.System32)]
-    private static extern bool AllowSetForegroundWindow(int dwProcessId);
-
-    private const int ASFW_ANY = -1;
-
     private void ShowDashboard()
     {
         try
         {
-            AllowSetForegroundWindow(ASFW_ANY);
+            User32.AllowSetForegroundWindow(User32.ASFW_ANY);
         }
         catch (Exception ex)
         {
@@ -190,12 +172,11 @@ public partial class TrayApplication : ApplicationContext
         }
 
         // 3. Fallback Win32 check by window title
-        IntPtr existingHwnd = FindWindow(null, "Nitrous Dashboard");
+        IntPtr existingHwnd = User32.FindWindow(null, "Nitrous Dashboard");
         if (existingHwnd != IntPtr.Zero)
         {
-            const int SW_RESTORE = 9;
-            ShowWindow(existingHwnd, SW_RESTORE);
-            SetForegroundWindow(existingHwnd);
+            User32.ShowWindow(existingHwnd, User32.SW_RESTORE);
+            User32.SetForegroundWindow(existingHwnd);
             return;
         }
 

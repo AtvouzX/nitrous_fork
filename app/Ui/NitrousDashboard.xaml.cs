@@ -5,6 +5,7 @@ using System.Windows.Media;
 using Microsoft.Win32;
 using Nitrous.Managers;
 using Nitrous.Enums;
+using Nitrous.Interop;
 
 namespace Nitrous.Ui;
 
@@ -247,15 +248,6 @@ public partial class NitrousDashboard : Window
         }
     }
 
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath
-        .System32)]
-    private static extern bool SetForegroundWindow(IntPtr hWnd);
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    [System.Runtime.InteropServices.DefaultDllImportSearchPaths(System.Runtime.InteropServices.DllImportSearchPath
-        .System32)]
-    private static extern bool ShowWindow(IntPtr hWnd, int nCmdShow);
 
     public void RestoreAndActivate()
     {
@@ -274,9 +266,8 @@ public partial class NitrousDashboard : Window
         var helper = new System.Windows.Interop.WindowInteropHelper(this);
         if (helper.Handle != IntPtr.Zero)
         {
-            const int SW_RESTORE = 9;
-            ShowWindow(helper.Handle, SW_RESTORE);
-            SetForegroundWindow(helper.Handle);
+            User32.ShowWindow(helper.Handle, User32.SW_RESTORE);
+            User32.SetForegroundWindow(helper.Handle);
         }
 
         if (_activeCurveWindow != null && _activeCurveWindow.IsLoaded)

@@ -3,6 +3,7 @@ using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Media;
 using Nitrous.Enums;
+using Nitrous.Interop;
 using Nitrous.Managers;
 using Nitrous.Ui;
 using Xunit;
@@ -159,7 +160,7 @@ public class DashboardAndTrayUiTests
             var vm = new DashboardViewModel();
 
             // 1. AC Power (not charging or low rate)
-            var acState = new BatteryManager.SYSTEM_BATTERY_STATE
+            var acState = new Powrprof.SYSTEM_BATTERY_STATE
             {
                 BatteryPresent = true,
                 AcOnLine = true,
@@ -173,7 +174,7 @@ public class DashboardAndTrayUiTests
             Assert.Equal(DashboardViewModel.AcBadgeIcon, vm.BatteryBadgeIcon);
 
             // 2. AC Power & Charging with wattage
-            var chargingState = new BatteryManager.SYSTEM_BATTERY_STATE
+            var chargingState = new Powrprof.SYSTEM_BATTERY_STATE
             {
                 BatteryPresent = true,
                 AcOnLine = true,
@@ -187,7 +188,7 @@ public class DashboardAndTrayUiTests
             Assert.Equal(DashboardViewModel.AcBadgeIcon, vm.BatteryBadgeIcon);
 
             // 3. Battery Power with discharge rate
-            var batteryState = new BatteryManager.SYSTEM_BATTERY_STATE
+            var batteryState = new Powrprof.SYSTEM_BATTERY_STATE
             {
                 BatteryPresent = true,
                 AcOnLine = false,
@@ -201,7 +202,7 @@ public class DashboardAndTrayUiTests
             Assert.Equal(DashboardViewModel.BattBadgeIcon, vm.BatteryBadgeIcon);
 
             // 4. Battery Power with 0 rate
-            var batteryNoRate = new BatteryManager.SYSTEM_BATTERY_STATE
+            var batteryNoRate = new Powrprof.SYSTEM_BATTERY_STATE
             {
                 BatteryPresent = true,
                 AcOnLine = false,
@@ -212,7 +213,7 @@ public class DashboardAndTrayUiTests
             Assert.Equal(DashboardViewModel.BattBadgeIcon, vm.BatteryBadgeIcon);
 
             // 5. Desktop / No battery present
-            var desktopState = new BatteryManager.SYSTEM_BATTERY_STATE
+            var desktopState = new Powrprof.SYSTEM_BATTERY_STATE
             {
                 BatteryPresent = false,
                 AcOnLine = false
