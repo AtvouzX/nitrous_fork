@@ -545,23 +545,22 @@ public partial class FanCurveWindow : Window
         double newTemp = XToTemp(pos.X);
         double newSpeed = YToSpeed(pos.Y);
 
-        newSpeed = Math.Max(MinSpeed, Math.Min(MaxSpeed, newSpeed));
+        newSpeed = FanCurveGraphHelper.ConstrainSpeed(newSpeed, MinSpeed, MaxSpeed);
 
         // 1. Apply Snap to Grid logic (Rounds to nearest 5)
         if (TogSnapToGrid.IsChecked == true)
         {
-            newTemp = Math.Round(newTemp / 5.0) * 5.0;
-            newSpeed = Math.Round(newSpeed / 5.0) * 5.0;
+            newTemp = FanCurveGraphHelper.SnapToGrid(newTemp, 5.0);
+            newSpeed = FanCurveGraphHelper.SnapToGrid(newSpeed, 5.0);
         }
 
         // 2. Constrain X (Temperature) dynamically based on neighbors
         // Ensure nodes can never overlap. If snapping is on, enforce a 5-degree gap, otherwise 2-degree.
         double minGap = TogSnapToGrid.IsChecked == true ? 5.0 : 2.0;
+        double? prevTemp = _draggingIndex > 0 ? ActivePoints[_draggingIndex - 1].X : null;
+        double? nextTemp = _draggingIndex < ActivePoints.Count - 1 ? ActivePoints[_draggingIndex + 1].X : null;
 
-        double prevTemp = _draggingIndex > 0 ? ActivePoints[_draggingIndex - 1].X + minGap : MinTemp;
-        double nextTemp = _draggingIndex < ActivePoints.Count - 1 ? ActivePoints[_draggingIndex + 1].X - minGap : MaxTemp;
-
-        newTemp = Math.Max(prevTemp, Math.Min(nextTemp, newTemp));
+        newTemp = FanCurveGraphHelper.ConstrainTemperature(newTemp, prevTemp, nextTemp, MinTemp, MaxTemp, minGap);
 
         ActivePoints[_draggingIndex] = new Point(newTemp, newSpeed);
 
@@ -601,9 +600,9 @@ public partial class FanCurveWindow : Window
     }
 
     // --- Coordinate Math Helpers ---
-    private double TempToX(double temp) => ((temp - MinTemp) / (MaxTemp - MinTemp)) * GraphCanvas.ActualWidth;
-    private double XToTemp(double x) => (x / GraphCanvas.ActualWidth) * (MaxTemp - MinTemp) + MinTemp;
+    private double TempToX(double temp) => FanCurveGraphHelper.TempToCanvasX(temp, GraphCanvas.ActualWidth, MinTemp, MaxTemp);
+    private double XToTemp(double x) => FanCurveGraphHelper.CanvasXToTemp(x, GraphCanvas.ActualWidth, MinTemp, MaxTemp);
 
-    private double SpeedToY(double speed) => GraphCanvas.ActualHeight - (((speed - MinSpeed) / (MaxSpeed - MinSpeed)) * GraphCanvas.ActualHeight);
-    private double YToSpeed(double y) => ((GraphCanvas.ActualHeight - y) / GraphCanvas.ActualHeight) * (MaxSpeed - MinSpeed) + MinSpeed;
+    private double SpeedToY(double speed) => FanCurveGraphHelper.SpeedToCanvasY(speed, GraphCanvas.ActualHeight, MinSpeed, MaxSpeed);
+    private double YToSpeed(double y) => FanCurveGraphHelper.CanvasYToSpeed(y, GraphCanvas.ActualHeight, MinSpeed, MaxSpeed);
 }
