@@ -6,7 +6,10 @@
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
         Topmost="True"
         IsVisibleChanged="Window_IsVisibleChanged"
+        Loaded="Window_Loaded"
+        SizeChanged="Window_SizeChanged"
         UseLayoutRounding="True"
+        SnapsToDevicePixels="True"
         TextOptions.TextFormattingMode="Display"
         RenderOptions.ClearTypeHint="Enabled"
         Deactivated="Window_Deactivated">
@@ -17,80 +20,156 @@
 			</ResourceDictionary.MergedDictionaries>
 		</ResourceDictionary>
 	</Window.Resources>
-	<!-- Outer Frame with Rounded Corners -->
-	<Border Background="#0C0C0E" CornerRadius="16" BorderBrush="#222226" BorderThickness="1">
-		<Grid>
+
+	<!-- Outer Window Container Clipped to Chamfer Shape (10px Top-Left & Bottom-Right cut, 0 radius non-chamfered) -->
+	<Grid x:Name="WindowRoot" Background="Transparent">
+		<!-- Chamfered Shell Border and Background -->
+		<Path x:Name="WindowShellFrame"
+		      Stroke="{StaticResource Steel600Brush}"
+		      StrokeThickness="1"
+		      Fill="{StaticResource Steel900Brush}"
+		      SnapsToDevicePixels="True" />
+
+		<!-- Main Layout Grid inside Chamfer Shell -->
+		<Grid x:Name="WindowContentGrid" Margin="1">
 			<Grid.RowDefinitions>
-				<RowDefinition Height="50" />
+				<RowDefinition Height="40" />
 				<RowDefinition Height="*" />
-				<RowDefinition Height="54" />
+				<RowDefinition Height="46" />
 			</Grid.RowDefinitions>
-			<!-- Title Bar -->
-			<Grid Grid.Row="0" MouseLeftButtonDown="TitleBar_MouseDown" Background="Transparent">
-				<StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="20,0,0,0">
-					<TextBlock x:Name="SystemModelText" Text="NITROUS ON SYSTEM" Foreground="White" FontSize="13" FontWeight="Bold"
+
+			<!-- 1. Title Bar (Recessed Deep Steel950 with 1px Bottom Border) -->
+			<Grid Grid.Row="0" MouseLeftButtonDown="TitleBar_MouseDown" Background="{StaticResource Steel950Brush}">
+				<Border VerticalAlignment="Bottom" Height="1" Background="{StaticResource Steel700Brush}" />
+
+				<StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
+					<!-- Nitro Flame / Emblem -->
+					<Border Width="14" Height="14" Background="{StaticResource Ember500Brush}" Margin="0,0,8,0" VerticalAlignment="Center">
+						<Border Width="6" Height="6" Background="{StaticResource Steel950Brush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+					</Border>
+
+					<!-- System Model -->
+					<TextBlock x:Name="SystemModelText"
+					           Text="NITROUS"
+					           Foreground="{StaticResource Steel100Brush}"
+					           FontFamily="{StaticResource MonoFontFamily}"
+					           FontSize="12.5"
+					           FontWeight="Bold"
+					           VerticalAlignment="Center"
 					           Margin="0,0,8,0" />
-					<TextBlock Text="•" Foreground="#55555C" FontSize="13" Margin="0,0,8,0" VerticalAlignment="Center" />
-					<Path x:Name="DashPowerPillIcon" Fill="{Binding BatteryBadgeForeground}" Stretch="Uniform" Width="10" Height="10"
-					      VerticalAlignment="Center" Margin="0,0,4,0" Data="{Binding BatteryBadgeIcon}" />
-					<TextBlock x:Name="DashPowerPillText" Text="{Binding BatteryBadgeText}"
-					           Foreground="{Binding BatteryBadgeForeground}" FontSize="10" FontWeight="Bold"
-					           VerticalAlignment="Center" />
+
+					<!-- Power Pill Badge -->
+					<Border Background="{StaticResource Steel850Brush}"
+					        BorderBrush="{StaticResource Steel700Brush}"
+					        BorderThickness="1"
+					        Padding="6,1.5"
+					        Margin="4,0,0,0"
+					        VerticalAlignment="Center">
+						<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+							<Path x:Name="DashPowerPillIcon"
+							      Fill="{Binding BatteryBadgeForeground}"
+							      Stretch="Uniform"
+							      Width="9" Height="9"
+							      VerticalAlignment="Center"
+							      Margin="0,0,4,0"
+							      Data="{Binding BatteryBadgeIcon}" />
+							<TextBlock x:Name="DashPowerPillText"
+							           Text="{Binding BatteryBadgeText}"
+							           Foreground="{Binding BatteryBadgeForeground}"
+							           FontFamily="{StaticResource MonoFontFamily}"
+							           FontSize="10.5"
+							           FontWeight="Bold"
+							           VerticalAlignment="Center" />
+						</StackPanel>
+					</Border>
 				</StackPanel>
+
 				<!-- Right Side: Pin to Top & Close -->
-				<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,20,0">
-					<!-- 2. Pin to Top Toggle -->
+				<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,16,0">
+					<!-- Pin to Top Toggle (Anvil Box) -->
 					<ToggleButton x:Name="BtnPinTop"
 					              Cursor="Hand"
-					              Margin="0,0,12,0"
+					              Margin="0,0,4,0"
+					              Width="24" Height="24"
 					              ToolTip="Keeps the Nitrous window floating above all other applications."
 					              IsChecked="{Binding Topmost, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}">
 						<ToggleButton.Template>
 							<ControlTemplate TargetType="ToggleButton">
-								<Grid Background="Transparent">
+								<Border x:Name="PinBorder"
+								        Background="{StaticResource Steel850Brush}"
+								        BorderBrush="{StaticResource Steel700Brush}"
+								        BorderThickness="1"
+								        SnapsToDevicePixels="True">
 									<Path x:Name="PinIcon"
-									      Fill="#A1A1AA"
+									      Fill="{StaticResource Steel400Brush}"
 									      Stretch="Uniform"
-									      Width="13"
-									      Height="13"
+									      Width="11" Height="11"
 									      Data="M16,12V4H17V2H7V4H8V12L6,14V16H11.2V22H12.8V16H18V14L16,12Z"
+									      HorizontalAlignment="Center"
 									      VerticalAlignment="Center" />
-								</Grid>
+								</Border>
 								<ControlTemplate.Triggers>
-									<!-- Hover state: Brightens up like the close button -->
 									<Trigger Property="IsMouseOver" Value="True">
-										<Setter TargetName="PinIcon" Property="Fill" Value="#E0E0E0" />
+										<Setter TargetName="PinBorder" Property="Background" Value="{StaticResource Steel800Brush}" />
+										<Setter TargetName="PinBorder" Property="BorderBrush" Value="{StaticResource Steel600Brush}" />
+										<Setter TargetName="PinIcon" Property="Fill" Value="{StaticResource Steel100Brush}" />
 									</Trigger>
-									<!-- Checked state: Lights up with your purple accent color -->
 									<Trigger Property="IsChecked" Value="True">
-										<Setter TargetName="PinIcon" Property="Fill" Value="#FF4500" />
+										<Setter TargetName="PinBorder" Property="BorderBrush" Value="{StaticResource Ember700Brush}" />
+										<Setter TargetName="PinIcon" Property="Fill" Value="{StaticResource Ember500Brush}" />
 									</Trigger>
 								</ControlTemplate.Triggers>
 							</ControlTemplate>
 						</ToggleButton.Template>
 					</ToggleButton>
-					<!-- 3. Close Button -->
-					<Button Content="✕" Foreground="#A1A1AA" Background="Transparent" BorderThickness="0" FontSize="14"
-					        FontWeight="Bold" Click="CloseBtn_Click" Cursor="Hand"
+
+					<!-- Close Button (Anvil Box) -->
+					<Button Width="24" Height="24"
+					        Click="CloseBtn_Click"
+					        Cursor="Hand"
 					        ToolTip="Close dashboard window. Nitrous continues running silently in the system tray.">
 						<Button.Template>
 							<ControlTemplate TargetType="Button">
-								<TextBlock Text="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" />
+								<Border x:Name="CloseBorder"
+								        Background="{StaticResource Steel850Brush}"
+								        BorderBrush="{StaticResource Steel700Brush}"
+								        BorderThickness="1"
+								        SnapsToDevicePixels="True">
+									<Path x:Name="CloseIcon"
+									      Data="M6,18L18,6M6,6L18,18"
+									      Stroke="{StaticResource Steel400Brush}"
+									      StrokeThickness="1.5"
+									      Stretch="Uniform"
+									      Width="10" Height="10"
+									      HorizontalAlignment="Center"
+									      VerticalAlignment="Center" />
+								</Border>
+								<ControlTemplate.Triggers>
+									<Trigger Property="IsMouseOver" Value="True">
+										<Setter TargetName="CloseBorder" Property="Background" Value="{StaticResource Steel800Brush}" />
+										<Setter TargetName="CloseBorder" Property="BorderBrush" Value="{StaticResource Steel600Brush}" />
+										<Setter TargetName="CloseIcon" Property="Stroke" Value="{StaticResource Steel100Brush}" />
+									</Trigger>
+								</ControlTemplate.Triggers>
 							</ControlTemplate>
 						</Button.Template>
 					</Button>
 				</StackPanel>
-				<Border VerticalAlignment="Bottom" Height="1" Background="#222226" />
 			</Grid>
-			<!-- PAGES -->
-			<Grid Grid.Row="1">
+
+			<!-- 2. Pages Content Area (Steel900 Main Surface) -->
+			<Grid Grid.Row="1" Background="{StaticResource Steel900Brush}">
 				<views:DashboardPageView x:Name="DashPage" Visibility="Visible" />
 				<views:GpuTuningPageView x:Name="GpuPage" Visibility="Collapsed" />
 				<views:KeyboardPageView x:Name="KeyboardPage" Visibility="Collapsed" />
 				<views:SettingsPageView x:Name="SettingsPage" Visibility="Collapsed" />
 			</Grid>
-			<!-- Bottom Navigation -->
-			<Border Grid.Row="2" Background="#151518" CornerRadius="0,0,15,15">
+
+			<!-- 3. Bottom Navigation Rail (Steel950 with 1px Top & Vertical Dividers) -->
+			<Border Grid.Row="2"
+			        Background="{StaticResource Steel950Brush}"
+			        BorderBrush="{StaticResource Steel700Brush}"
+			        BorderThickness="0,1,0,0">
 				<Grid>
 					<Grid.ColumnDefinitions>
 						<ColumnDefinition Width="*" />
@@ -98,56 +177,68 @@
 						<ColumnDefinition Width="*" />
 						<ColumnDefinition Width="*" />
 					</Grid.ColumnDefinitions>
+
+					<!-- Vertical Column Dividers -->
+					<Border Grid.Column="0" BorderThickness="0,0,1,0" BorderBrush="{StaticResource Steel700Brush}" />
+					<Border Grid.Column="1" BorderThickness="0,0,1,0" BorderBrush="{StaticResource Steel700Brush}" />
+					<Border Grid.Column="2" BorderThickness="0,0,1,0" BorderBrush="{StaticResource Steel700Brush}" />
+
 					<!-- Dash Nav -->
-					<Button x:Name="NavDashBtn" Tag="0,0,0,15" Style="{StaticResource NavButtonStyle}" Grid.Column="0"
+					<Button x:Name="NavDashBtn" Style="{StaticResource NavButtonStyle}" Grid.Column="0"
 					        Click="NavDashBtn_Click"
 					        ToolTip="Dashboard: Power modes, fan controls, and thermal monitors.">
-						<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
+						<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
 							<Path x:Name="NavDashIcon" Data="M3,3H11V11H3V3M13,3H21V11H13V3M3,13H11V21H3V13M13,13H21V21H13V13Z"
-							      Fill="#FF4500" Stretch="Uniform" Width="15" Height="15" HorizontalAlignment="Center" />
-							<TextBlock x:Name="NavDashText" Text="DASH" Foreground="#FF4500" FontSize="10" FontWeight="Bold"
-							           Margin="0,4,0,0" HorizontalAlignment="Center" />
+							      Fill="{StaticResource Ember500Brush}" Stretch="Uniform" Width="14" Height="14" HorizontalAlignment="Center" />
+							<TextBlock x:Name="NavDashText" Text="DASH" Foreground="{StaticResource Ember500Brush}"
+							           FontFamily="{StaticResource MonoFontFamily}" FontSize="10.5" FontWeight="Bold"
+							           Margin="0,3,0,0" HorizontalAlignment="Center" />
 						</StackPanel>
 					</Button>
+
 					<!-- GPU Nav -->
-					<Button x:Name="NavGpuBtn" Tag="0,0,0,0" Style="{StaticResource NavButtonStyle}" Grid.Column="1"
+					<Button x:Name="NavGpuBtn" Style="{StaticResource NavButtonStyle}" Grid.Column="1"
 					        Click="NavGpuBtn_Click"
 					        ToolTip="GPU Tuning: Clock offsets, live wattage, and VRAM telemetry.">
-						<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
+						<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
 							<Path x:Name="NavGpuIcon"
 							      Data="M22,9V7H20V5A2,2 0 0,0 18,3H4A2,2 0 0,0 2,5V19A2,2 0 0,0 4,21H18A2,2 0 0,0 20,19V17H22V15H20V13H22V11H20V9H22M18,19H4V5H18V19"
-							      Fill="#A1A1AA" Stretch="Uniform" Width="15" Height="15" HorizontalAlignment="Center" />
-							<TextBlock x:Name="NavGpuText" Text="GPU" Foreground="#A1A1AA" FontSize="10" FontWeight="Bold" Margin="0,4,0,0"
-							           HorizontalAlignment="Center" />
+							      Fill="{StaticResource Steel400Brush}" Stretch="Uniform" Width="14" Height="14" HorizontalAlignment="Center" />
+							<TextBlock x:Name="NavGpuText" Text="GPU" Foreground="{StaticResource Steel400Brush}"
+							           FontFamily="{StaticResource MonoFontFamily}" FontSize="10.5" FontWeight="Bold"
+							           Margin="0,3,0,0" HorizontalAlignment="Center" />
 						</StackPanel>
 					</Button>
+
 					<!-- Keyboard Nav -->
-					<Button x:Name="NavKeyboardBtn" Tag="0,0,0,0" Style="{StaticResource NavButtonStyle}" Grid.Column="2"
+					<Button x:Name="NavKeyboardBtn" Style="{StaticResource NavButtonStyle}" Grid.Column="2"
 					        Click="NavKeyboardBtn_Click"
 					        ToolTip="Keyboard: Global hotkeys and physical Nitro button integration.">
-						<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
+						<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
 							<Path x:Name="NavKeyboardIcon"
 							      Data="M19,10H17V8H19M19,13H17V11H19M16,10H14V8H16M16,13H14V11H16M13,10H11V8H13M13,13H11V11H13M8,10H6V8H8M8,13H6V11H8M5,10H3V8H5M5,13H3V11H5M4,17H20V15H4M22,5H2A2,2 0 0,0 0,7V17A2,2 0 0,0 2,19H22A2,2 0 0,0 24,17V7A2,2 0 0,0 22,5Z"
-							      Fill="#A1A1AA" Stretch="Uniform" Width="16" Height="16" HorizontalAlignment="Center" />
-							<TextBlock x:Name="NavKeyboardText" Text="KB" Foreground="#A1A1AA" FontSize="10" FontWeight="Bold"
-							           Margin="0,4,0,0" HorizontalAlignment="Center" />
+							      Fill="{StaticResource Steel400Brush}" Stretch="Uniform" Width="15" Height="15" HorizontalAlignment="Center" />
+							<TextBlock x:Name="NavKeyboardText" Text="KB" Foreground="{StaticResource Steel400Brush}"
+							           FontFamily="{StaticResource MonoFontFamily}" FontSize="10.5" FontWeight="Bold"
+							           Margin="0,3,0,0" HorizontalAlignment="Center" />
 						</StackPanel>
 					</Button>
+
 					<!-- Settings Nav -->
-					<Button x:Name="NavSetBtn" Tag="0,0,15,0" Style="{StaticResource NavButtonStyle}" Grid.Column="3"
+					<Button x:Name="NavSetBtn" Style="{StaticResource NavButtonStyle}" Grid.Column="3"
 					        Click="NavSetBtn_Click"
 					        ToolTip="Setup: Power schemes, battery charge limit, and startup settings.">
-						<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center" Margin="0,4,0,0">
+						<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
 							<Path x:Name="NavSetIcon"
 							      Data="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.98C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.98L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.98Z"
-							      Fill="#A1A1AA" Stretch="Uniform" Width="15" Height="15" HorizontalAlignment="Center" />
-							<TextBlock x:Name="NavSetText" Text="SETUP" Foreground="#A1A1AA" FontSize="10" FontWeight="Bold"
-							           Margin="0,4,0,0" HorizontalAlignment="Center" />
+							      Fill="{StaticResource Steel400Brush}" Stretch="Uniform" Width="14" Height="14" HorizontalAlignment="Center" />
+							<TextBlock x:Name="NavSetText" Text="SETUP" Foreground="{StaticResource Steel400Brush}"
+							           FontFamily="{StaticResource MonoFontFamily}" FontSize="10.5" FontWeight="Bold"
+							           Margin="0,3,0,0" HorizontalAlignment="Center" />
 						</StackPanel>
 					</Button>
 				</Grid>
 			</Border>
 		</Grid>
-	</Border>
+	</Grid>
 </Window>
-

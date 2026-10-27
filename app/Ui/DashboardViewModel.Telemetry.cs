@@ -252,8 +252,8 @@ public partial class DashboardViewModel
         GpuDeepTempText = "-- C";
         GpuDeepTempColor = "#888890";
         GpuPStateText = "--";
-        GpuCoreClockText = "-- MHz";
-        GpuMemClockText = "-- MHz";
+        GpuCoreClockText = "-- MHZ";
+        GpuMemClockText = "-- MHZ";
         GpuPowerText = "-- W";
     }
 
@@ -358,8 +358,8 @@ public partial class DashboardViewModel
                                 GpuTempColor = smi.CoreTemp >= 85 ? "#FF453A" : "White";
                             }
 
-                            GpuNameText = FormatGpuName(smi.Name);
-                            GpuArchText = smi.Architecture;
+                            GpuNameText = FormatGpuName(smi.Name).ToUpperInvariant();
+                            GpuArchText = smi.Architecture?.ToUpperInvariant() ?? "";
 
                             GpuLoadText = $"{smi.GpuLoad}%";
                             GpuLoadColor = smi.GpuLoad >= 95
@@ -373,8 +373,8 @@ public partial class DashboardViewModel
                                 smi.CoreTemp >= 85 ? "#FF453A" : (smi.CoreTemp >= 78 ? "#FF9F0A" : "White");
 
                             GpuPStateText = smi.PState;
-                            GpuCoreClockText = $"{smi.CurrentCoreClock} MHz";
-                            GpuMemClockText = $"{smi.CurrentMemoryClock} MHz";
+                            GpuCoreClockText = $"{smi.CurrentCoreClock} MHZ";
+                            GpuMemClockText = $"{smi.CurrentMemoryClock} MHZ";
 
                             if (smi.EnforcedPowerLimitW > 0 && smi.MaxPowerLimitW > 0)
                             {
@@ -414,7 +414,7 @@ public partial class DashboardViewModel
                         {
                             // GPU is awake (or holding in hysteresis hold window) but NVML is momentarily unavailable
                             GpuGraphOpacity = 1.0;
-                            if (GpuUsageText == "Sleep") GpuUsageText = "--%";
+                            if (GpuUsageText == "SLEEP" || GpuUsageText == "Sleep") GpuUsageText = "--%";
                             _gpuHistory.Add(new TelemetryPoint
                                 { Timestamp = now, Temp = telemetry.GpuTemp, Usage = 0 });
                         }
@@ -423,7 +423,7 @@ public partial class DashboardViewModel
                             // GPU is confirmed in D3/D3Cold sleep after sustained hysteresis cycles
                             ClearDeepTelemetryUI();
                             GpuGraphOpacity = 0.3;
-                            GpuUsageText = "Sleep";
+                            GpuUsageText = "SLEEP";
                             _gpuHistory.Add(new TelemetryPoint { Timestamp = now, Temp = 0, Usage = 0 });
                         }
 
@@ -449,7 +449,7 @@ public partial class DashboardViewModel
                             if (_cpuHistory[i].Temp > maxCpuTemp) maxCpuTemp = _cpuHistory[i].Temp;
                             if (_cpuHistory[i].Usage > maxCpuUsage) maxCpuUsage = _cpuHistory[i].Usage;
                         }
-                        CpuMaxStatsText = $"Max: {maxCpuTemp}°C  {maxCpuUsage:0}%";
+                        CpuMaxStatsText = $"MAX: {maxCpuTemp}°C  {maxCpuUsage:0}%";
 
                         double maxGpuTemp = 0;
                         double maxGpuUsage = 0;
@@ -458,7 +458,7 @@ public partial class DashboardViewModel
                             if (_gpuHistory[i].Temp > maxGpuTemp) maxGpuTemp = _gpuHistory[i].Temp;
                             if (_gpuHistory[i].Usage > maxGpuUsage) maxGpuUsage = _gpuHistory[i].Usage;
                         }
-                        GpuMaxStatsText = $"Max: {maxGpuTemp}°C  {maxGpuUsage:0}%";
+                        GpuMaxStatsText = $"MAX: {maxGpuTemp}°C  {maxGpuUsage:0}%";
 
                         CpuTempPoints = GraphGeometryHelper.GenerateGraphPoints(_cpuHistory, true, now);
                         CpuTempFillPoints = GraphGeometryHelper.GenerateGraphFillPoints(_cpuHistory, true, now);

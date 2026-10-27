@@ -116,7 +116,7 @@ public partial class DashboardViewModel
             CpuHoverVisibility = Visibility.Visible;
             CpuHoverMargin = new Thickness(pixelX, 0, 0, 0);
             CpuTooltipMargin = new Thickness(pixelX > (actualWidth / 2) ? pixelX - 85 : pixelX + 5, 5, 0, 0);
-            CpuHoverTime = $"-{(int)diff.TotalMinutes}m {(int)diff.Seconds}s";
+            CpuHoverTime = $"-{(int)diff.TotalMinutes}M {(int)diff.Seconds}S";
             CpuHoverTempStr = $"{point.Temp}°C";
             CpuHoverUsageStr = $"{point.Usage:0}%";
         }
@@ -136,7 +136,7 @@ public partial class DashboardViewModel
             GpuHoverVisibility = Visibility.Visible;
             GpuHoverMargin = new Thickness(pixelX, 0, 0, 0);
             GpuTooltipMargin = new Thickness(pixelX > (actualWidth / 2) ? pixelX - 85 : pixelX + 5, 5, 0, 0);
-            GpuHoverTime = $"-{(int)diff.TotalMinutes}m {(int)diff.Seconds}s";
+            GpuHoverTime = $"-{(int)diff.TotalMinutes}M {(int)diff.Seconds}S";
             GpuHoverTempStr = $"{point.Temp}°C";
             GpuHoverUsageStr = $"{point.Usage:0}%";
             if (point.Temp == 0)

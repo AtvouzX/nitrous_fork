@@ -102,8 +102,8 @@ public class PerformanceAuditTests
         vm.GpuLoadText = "85 %";
         vm.GpuDeepTempText = "68 C";
         vm.GpuPStateText = "P0";
-        vm.GpuCoreClockText = "2450 MHz";
-        vm.GpuMemClockText = "8000 MHz";
+        vm.GpuCoreClockText = "2450 MHZ";
+        vm.GpuMemClockText = "8000 MHZ";
         vm.GpuPowerText = "115.0 W";
 
         // Invoke ClearDeepTelemetryUI
@@ -114,8 +114,8 @@ public class PerformanceAuditTests
         Assert.Equal("-- %", vm.GpuLoadText);
         Assert.Equal("-- C", vm.GpuDeepTempText);
         Assert.Equal("--", vm.GpuPStateText);
-        Assert.Equal("-- MHz", vm.GpuCoreClockText);
-        Assert.Equal("-- MHz", vm.GpuMemClockText);
+        Assert.Equal("-- MHZ", vm.GpuCoreClockText);
+        Assert.Equal("-- MHZ", vm.GpuMemClockText);
         Assert.Equal("-- W", vm.GpuPowerText);
     }
 

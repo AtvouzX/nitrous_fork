@@ -16,7 +16,7 @@ namespace Nitrous.Ui;
 
 public partial class DashboardViewModel
 {
-    private string _acerServicesStatusText = "Scanning...";
+    private string _acerServicesStatusText = "SCANNING...";
 
     public string AcerServicesStatusText
     {
@@ -42,7 +42,7 @@ public partial class DashboardViewModel
         set => SetProperty(ref _acerServicesListVisibility, value);
     }
 
-    private string _batteryHealthText = "Evaluating...";
+    private string _batteryHealthText = "EVALUATING...";
 
     public string BatteryHealthText
     {
@@ -58,7 +58,7 @@ public partial class DashboardViewModel
         set => SetProperty(ref _batteryHealthPercentText, value);
     }
 
-    private string _batteryCycleText = "-- cycles";
+    private string _batteryCycleText = "-- CYCLES";
 
     public string BatteryCycleText
     {
@@ -180,7 +180,7 @@ public partial class DashboardViewModel
         {
             if (summary.TotalFound == 0)
             {
-                AcerServicesStatusText = "No Acer services found.";
+                AcerServicesStatusText = "NO ACER SERVICES FOUND.";
                 AcerServicesActionText = "N/A";
                 AcerServicesList.Clear();
                 AcerServicesListVisibility = Visibility.Collapsed;
@@ -189,12 +189,12 @@ public partial class DashboardViewModel
             {
                 if (summary.RunningCount > 0)
                 {
-                    AcerServicesStatusText = $"{summary.RunningCount} OEM services running";
+                    AcerServicesStatusText = $"{summary.RunningCount} OEM SERVICES RUNNING";
                     AcerServicesActionText = "STOP & DISABLE";
                 }
                 else
                 {
-                    AcerServicesStatusText = "All Acer services stopped & disabled";
+                    AcerServicesStatusText = "ALL ACER SERVICES STOPPED & DISABLED";
                     AcerServicesActionText = "RESTORE";
                 }
 
@@ -225,15 +225,15 @@ public partial class DashboardViewModel
             if (health != null && health.Value.DesignedCapacity > 0)
             {
                 var val = health.Value;
-                BatteryHealthText = $"{val.FullChargedCapacity:N0} / {val.DesignedCapacity:N0} mWh";
+                BatteryHealthText = $"{val.FullChargedCapacity:N0} / {val.DesignedCapacity:N0} MWH";
                 BatteryHealthPercentText = $"{val.HealthPercent:0.0}%";
-                BatteryCycleText = $"{val.CycleCount} cycles";
+                BatteryCycleText = $"{val.CycleCount} CYCLES";
             }
             else
             {
-                BatteryHealthText = "ACPI Data Missing";
-                BatteryHealthPercentText = "Unknown Health";
-                BatteryCycleText = "Unknown Cycles";
+                BatteryHealthText = "ACPI DATA MISSING";
+                BatteryHealthPercentText = "UNKNOWN HEALTH";
+                BatteryCycleText = "UNKNOWN CYCLES";
             }
         });
     }

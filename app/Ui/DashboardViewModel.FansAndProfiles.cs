@@ -194,7 +194,7 @@ public partial class DashboardViewModel
         });
     }
 
-    public string MaxRefreshText { get; private set; } = "60Hz";
+    public string MaxRefreshText { get; private set; } = "60HZ";
 
     public ICommand SetPowerCommand { get; private set; } = null!;
     public ICommand SetFanCommand { get; private set; } = null!;
@@ -214,7 +214,7 @@ public partial class DashboardViewModel
         IsCustomFanEnabled = activeFan == FanProfile.Medium;
 
         int maxHz = DisplayManager.GetPrimaryMaxRefreshRate();
-        MaxRefreshText = $"{maxHz}Hz";
+        MaxRefreshText = $"{maxHz}HZ";
 
         SetPowerCommand = new RelayCommand(async param =>
         {

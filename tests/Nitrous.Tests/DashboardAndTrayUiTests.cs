@@ -331,6 +331,46 @@ public class DashboardAndTrayUiTests
     }
 
     [Fact]
+    public void Dashboard_PowerModeCard_HasExpectedStructureTooltipsAndStyling()
+    {
+        RunInSta(() =>
+        {
+            var window = new NitrousDashboard();
+            try
+            {
+                Assert.NotNull(window.BtnPowerQuiet);
+                Assert.NotNull(window.BtnPowerBal);
+                Assert.NotNull(window.BtnPowerPerf);
+                Assert.NotNull(window.BtnPowerTurbo);
+
+                Assert.Equal("QUIET", window.BtnPowerQuiet.Content?.ToString());
+                Assert.Equal("BALANCED", window.BtnPowerBal.Content?.ToString());
+                Assert.Equal("PERFORMANCE", window.BtnPowerPerf.Content?.ToString());
+                Assert.Equal("TURBO", window.BtnPowerTurbo.Content?.ToString());
+
+                Assert.Equal("Power", window.BtnPowerQuiet.GroupName);
+                Assert.Equal("Power", window.BtnPowerBal.GroupName);
+                Assert.Equal("Power", window.BtnPowerPerf.GroupName);
+                Assert.Equal("Power", window.BtnPowerTurbo.GroupName);
+
+                Assert.Equal("Quiet", window.BtnPowerQuiet.CommandParameter?.ToString());
+                Assert.Equal("Balanced", window.BtnPowerBal.CommandParameter?.ToString());
+                Assert.Equal("Performance", window.BtnPowerPerf.CommandParameter?.ToString());
+                Assert.Equal("Turbo", window.BtnPowerTurbo.CommandParameter?.ToString());
+
+                Assert.False(string.IsNullOrWhiteSpace(window.BtnPowerQuiet.ToolTip?.ToString()));
+                Assert.False(string.IsNullOrWhiteSpace(window.BtnPowerBal.ToolTip?.ToString()));
+                Assert.False(string.IsNullOrWhiteSpace(window.BtnPowerPerf.ToolTip?.ToString()));
+                Assert.False(string.IsNullOrWhiteSpace(window.BtnPowerTurbo.ToolTip?.ToString()));
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
     public void Dashboard_MinimizationAndRestoration_ControlsPollingLifecycle()
     {
         RunInSta(() =>
@@ -1148,5 +1188,65 @@ public class DashboardAndTrayUiTests
             Assert.Equal("NVIDIA GPU (SLEEPING)", vm.GpuNameText);
         });
     }
+
+    [Fact]
+    public void Dashboard_ChamferedShell_InitializesWithChamferClipAndPaletteTokens()
+    {
+        RunInSta(() =>
+        {
+            var window = new NitrousDashboard();
+            try
+            {
+                // Verify chamfer clip is assigned and is a valid PathGeometry
+                Assert.NotNull(window.WindowRoot.Clip);
+                var rootClip = Assert.IsType<PathGeometry>(window.WindowRoot.Clip);
+                Assert.Single(rootClip.Figures);
+                Assert.True(rootClip.Figures[0].IsClosed);
+
+                // Verify shell frame has chamfer geometry and Steel600 stroke
+                Assert.NotNull(window.WindowShellFrame.Data);
+                Assert.IsType<PathGeometry>(window.WindowShellFrame.Data);
+
+                // Verify palette tokens are resolvable
+                string[] igniteTokens =
+                {
+                    "Steel950Brush",
+                    "Steel900Brush",
+                    "Steel850Brush",
+                    "Steel700Brush",
+                    "Steel600Brush",
+                    "Steel400Brush",
+                    "Steel100Brush",
+                    "Ember500Brush",
+                    "Ember400Brush",
+                    "BrandAccentBrush",
+                    "SurfaceDeepBrush",
+                    "BorderShellBrush"
+                };
+
+                foreach (var token in igniteTokens)
+                {
+                    var res = window.TryFindResource(token);
+                    Assert.True(res != null, $"Expected ignite token '{token}' to be defined in DashboardStyles.");
+                }
+
+                // Verify resizing updates the chamfer geometry
+                window.Width = 400;
+                window.Height = 700;
+                window.UpdateChamferGeometry();
+
+                var updatedClip = Assert.IsType<PathGeometry>(window.WindowRoot.Clip);
+                var seg0 = Assert.IsType<LineSegment>(updatedClip.Figures[0].Segments[0]);
+                Assert.Equal(390.0, seg0.Point.X);
+                var seg1 = Assert.IsType<LineSegment>(updatedClip.Figures[0].Segments[1]);
+                Assert.Equal(400.0, seg1.Point.X);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
 }
+
 

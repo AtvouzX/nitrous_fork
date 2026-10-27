@@ -6,6 +6,7 @@ using Microsoft.Win32;
 using Nitrous.Managers;
 using Nitrous.Enums;
 using Nitrous.Interop;
+using Nitrous.Helpers;
 
 namespace Nitrous.Ui;
 
@@ -38,11 +39,14 @@ public partial class NitrousDashboard : Window
 
         DataContext = new DashboardViewModel();
 
+        UpdateChamferGeometry();
+        NavDashBtn.Background = NavActiveBgBrush;
+
         LogManager.Info("NitrousDashboard initialized.", "UI");
 
         if (IsTestHost())
         {
-            SystemModelText.Text = "Acer Nitro Test Unit";
+            SystemModelText.Text = "ACER NITRO TEST UNIT";
         }
         else
         {
@@ -51,7 +55,7 @@ public partial class NitrousDashboard : Window
             System.Threading.Tasks.Task.Run(() =>
             {
                 string modelName = SystemInfoManager.GetSystemModel();
-                Dispatcher.Invoke(() => SystemModelText.Text = $"{modelName}");
+                Dispatcher.Invoke(() => SystemModelText.Text = $"{modelName.ToUpperInvariant()}");
             });
 
             this.Loaded += (s, e) =>
@@ -62,6 +66,28 @@ public partial class NitrousDashboard : Window
                     Nitrous.Helpers.MemoryHelper.TrimWorkingSet();
                 }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
             };
+        }
+    }
+
+    private void Window_Loaded(object sender, RoutedEventArgs e) => UpdateChamferGeometry();
+
+    private void Window_SizeChanged(object sender, SizeChangedEventArgs e) => UpdateChamferGeometry();
+
+    public void UpdateChamferGeometry()
+    {
+        double w = ActualWidth > 0 ? ActualWidth : Width;
+        double h = ActualHeight > 0 ? ActualHeight : Height;
+        if (w <= 0 || double.IsNaN(w)) w = 375;
+        if (h <= 0 || double.IsNaN(h)) h = 660;
+
+        var shellGeom = ChamferGeometryHelper.CreateChamferPathGeometry(w, h, ChamferGeometryHelper.DefaultWindowChamfer);
+        WindowRoot.Clip = shellGeom;
+        WindowShellFrame.Data = shellGeom;
+
+        if (w > 2 && h > 2)
+        {
+            var innerGeom = ChamferGeometryHelper.CreateChamferPathGeometry(w - 2, h - 2, ChamferGeometryHelper.DefaultWindowChamfer - 0.4);
+            WindowContentGrid.Clip = innerGeom;
         }
     }
 
@@ -82,8 +108,10 @@ public partial class NitrousDashboard : Window
         if (e.ChangedButton == MouseButton.Left) DragMove();
     }
 
-    private static readonly SolidColorBrush ActiveBrush = CreateFrozenBrush("#FF4500");
-    private static readonly SolidColorBrush InactiveBrush = CreateFrozenBrush("#A1A1AA");
+    private static readonly SolidColorBrush ActiveBrush = CreateFrozenBrush("#D94E1F");
+    private static readonly SolidColorBrush InactiveBrush = CreateFrozenBrush("#8A8A96");
+    private static readonly SolidColorBrush NavActiveBgBrush = CreateFrozenBrush("#121215");
+    private static readonly SolidColorBrush NavInactiveBgBrush = CreateFrozenBrush("#00000000");
 
     private static SolidColorBrush CreateFrozenBrush(string hex)
     {
@@ -104,15 +132,19 @@ public partial class NitrousDashboard : Window
 
         NavDashIcon.Fill = ActiveBrush;
         NavDashText.Foreground = ActiveBrush;
+        NavDashBtn.Background = NavActiveBgBrush;
 
         NavGpuIcon.Fill = InactiveBrush;
         NavGpuText.Foreground = InactiveBrush;
+        NavGpuBtn.Background = NavInactiveBgBrush;
 
         NavKeyboardIcon.Fill = InactiveBrush;
         NavKeyboardText.Foreground = InactiveBrush;
+        NavKeyboardBtn.Background = NavInactiveBgBrush;
 
         NavSetIcon.Fill = InactiveBrush;
         NavSetText.Foreground = InactiveBrush;
+        NavSetBtn.Background = NavInactiveBgBrush;
     }
 
     private void NavGpuBtn_Click(object sender, RoutedEventArgs e)
@@ -124,15 +156,19 @@ public partial class NitrousDashboard : Window
 
         NavDashIcon.Fill = InactiveBrush;
         NavDashText.Foreground = InactiveBrush;
+        NavDashBtn.Background = NavInactiveBgBrush;
 
         NavGpuIcon.Fill = ActiveBrush;
         NavGpuText.Foreground = ActiveBrush;
+        NavGpuBtn.Background = NavActiveBgBrush;
 
         NavKeyboardIcon.Fill = InactiveBrush;
         NavKeyboardText.Foreground = InactiveBrush;
+        NavKeyboardBtn.Background = NavInactiveBgBrush;
 
         NavSetIcon.Fill = InactiveBrush;
         NavSetText.Foreground = InactiveBrush;
+        NavSetBtn.Background = NavInactiveBgBrush;
     }
 
     private void NavKeyboardBtn_Click(object sender, RoutedEventArgs e)
@@ -144,15 +180,19 @@ public partial class NitrousDashboard : Window
 
         NavDashIcon.Fill = InactiveBrush;
         NavDashText.Foreground = InactiveBrush;
+        NavDashBtn.Background = NavInactiveBgBrush;
 
         NavGpuIcon.Fill = InactiveBrush;
         NavGpuText.Foreground = InactiveBrush;
+        NavGpuBtn.Background = NavInactiveBgBrush;
 
         NavKeyboardIcon.Fill = ActiveBrush;
         NavKeyboardText.Foreground = ActiveBrush;
+        NavKeyboardBtn.Background = NavActiveBgBrush;
 
         NavSetIcon.Fill = InactiveBrush;
         NavSetText.Foreground = InactiveBrush;
+        NavSetBtn.Background = NavInactiveBgBrush;
     }
 
     private void NavSetBtn_Click(object sender, RoutedEventArgs e)
@@ -164,15 +204,19 @@ public partial class NitrousDashboard : Window
 
         NavDashIcon.Fill = InactiveBrush;
         NavDashText.Foreground = InactiveBrush;
+        NavDashBtn.Background = NavInactiveBgBrush;
 
         NavGpuIcon.Fill = InactiveBrush;
         NavGpuText.Foreground = InactiveBrush;
+        NavGpuBtn.Background = NavInactiveBgBrush;
 
         NavKeyboardIcon.Fill = InactiveBrush;
         NavKeyboardText.Foreground = InactiveBrush;
+        NavKeyboardBtn.Background = NavInactiveBgBrush;
 
         NavSetIcon.Fill = ActiveBrush;
         NavSetText.Foreground = ActiveBrush;
+        NavSetBtn.Background = NavActiveBgBrush;
     }
 
     internal void NavigateToDashboard() => NavDashBtn_Click(this, new RoutedEventArgs());
