@@ -56,6 +56,74 @@ public class DashboardAndTrayUiTests
     // =========================================================================
 
     [Fact]
+    public void Dashboard_PageViews_AreInstantiatedAsDedicatedComponents()
+    {
+        RunInSta(() =>
+        {
+            var window = new NitrousDashboard();
+            try
+            {
+                Assert.IsAssignableFrom<FrameworkElement>(window.DashPage);
+                Assert.IsAssignableFrom<FrameworkElement>(window.GpuPage);
+                Assert.IsAssignableFrom<FrameworkElement>(window.SettingsPage);
+                Assert.IsAssignableFrom<FrameworkElement>(window.KeyboardPage);
+
+                Assert.Equal("KeyboardPageView", window.KeyboardPage.GetType().Name);
+                Assert.Equal("GpuTuningPageView", window.GpuPage.GetType().Name);
+                Assert.Equal("SettingsPageView", window.SettingsPage.GetType().Name);
+                Assert.Equal("DashboardPageView", window.DashPage.GetType().Name);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void DashboardStyles_AllSharedStyles_AreCentralizedInResourceDictionaryAndResolvable()
+    {
+        RunInSta(() =>
+        {
+            var window = new NitrousDashboard();
+            try
+            {
+                // Verify merged dictionary contains DashboardStyles
+                Assert.True(window.Resources.MergedDictionaries.Count > 0, "NitrousDashboard must include MergedDictionaries.");
+
+                // Assert that all core styles are cleanly resolvable from the centralized dictionary
+                string[] requiredStyleKeys =
+                {
+                    "CachedAppLogo",
+                    "ActionButtonStyle",
+                    "ModernToggleStyle",
+                    "ModernSliderStyle",
+                    "SquareCheckBoxStyle",
+                    "NavButtonStyle",
+                    "GhostBtn",
+                    "AccentBtn",
+                    "HotkeyTextBoxStyle",
+                    "BoolToVis"
+                };
+
+                foreach (var key in requiredStyleKeys)
+                {
+                    var resource = window.TryFindResource(key);
+                    Assert.True(resource != null, $"Expected resource '{key}' to be defined and resolvable in DashboardStyles.");
+                }
+
+                // Verify ToolTip default style
+                var tooltipStyle = window.TryFindResource(typeof(System.Windows.Controls.ToolTip));
+                Assert.NotNull(tooltipStyle);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
     public void Dashboard_InitializesWithCorrectVersionAndActiveDashboardPage()
     {
         RunInSta(() =>

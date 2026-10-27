@@ -1,0 +1,57 @@
+<UserControl x:Class="Nitrous.Ui.Views.KeyboardPageView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+	<UserControl.Resources>
+		<ResourceDictionary>
+			<ResourceDictionary.MergedDictionaries>
+				<ResourceDictionary Source="../Styles/DashboardStyles.xaml" />
+			</ResourceDictionary.MergedDictionaries>
+		</ResourceDictionary>
+	</UserControl.Resources>
+	<StackPanel Margin="20,10,20,0">
+		<!-- Custom Hotkeys Setup -->
+		<Border Background="#151518" CornerRadius="10" Margin="0,0,0,10" BorderBrush="#222226" BorderThickness="1"
+		        Padding="15">
+			<StackPanel>
+				<TextBlock
+					Text="Click a box and press a key combination to bind. Press ESC to clear. Restart Nitrous to apply changes."
+					Foreground="#A1A1AA" FontSize="11" Margin="0,0,0,15" TextWrapping="Wrap" />
+				<Grid Margin="0,0,0,8">
+					<TextBlock Text="Cycle Power Mode" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+					<TextBox x:Name="TxtHkCycle" Style="{StaticResource HotkeyTextBoxStyle}" Width="120"
+					         HorizontalAlignment="Right" IsReadOnly="True" TextAlignment="Center"
+					         PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_CyclePower"
+					         ToolTip="Click and press any key combination to bind a global hotkey for cycling power profiles with on-screen display." />
+				</Grid>
+				<Grid>
+					<TextBlock Text="Open Dashboard" Foreground="White" FontSize="12" VerticalAlignment="Center" />
+					<TextBox x:Name="TxtHkDash" Style="{StaticResource HotkeyTextBoxStyle}" Width="120" HorizontalAlignment="Right"
+					         IsReadOnly="True" TextAlignment="Center" PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_Dashboard"
+					         ToolTip="Click and press any key combination to bind a global hotkey to summon or hide the Nitrous dashboard." />
+				</Grid>
+			</StackPanel>
+		</Border>
+
+		<!-- Physical Nitro Button Integration (Currently Disabled) -->
+		<Border Visibility="Collapsed" Background="#151518" CornerRadius="10" Margin="0,0,0,10" BorderBrush="#222226"
+		        BorderThickness="1" Padding="15"
+		        ToolTip="Hooks Acer Sense launchers via Windows IFEO so pressing the physical keyboard Nitro/Predator button opens Nitrous even when the app is completely closed.">
+			<Grid>
+				<Grid.ColumnDefinitions>
+					<ColumnDefinition Width="*" />
+					<ColumnDefinition Width="Auto" />
+				</Grid.ColumnDefinitions>
+				<StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,15,0">
+					<TextBlock Text="Nitro Key Integration" Foreground="White" FontWeight="SemiBold" FontSize="13" />
+					<TextBlock
+						Text="Intercepts the physical Nitro button to launch Nitrous, even when the app is completely closed."
+						Foreground="#A1A1AA" FontSize="11" Margin="0,4,0,0" TextWrapping="Wrap" />
+				</StackPanel>
+				<CheckBox Grid.Column="1" x:Name="TogNitroKey" Style="{StaticResource ModernToggleStyle}"
+				          HorizontalAlignment="Right"
+				          IsChecked="{Binding IsNitroKeyIntegrated, UpdateSourceTrigger=PropertyChanged}"
+				          ToolTip="Hooks Acer Sense launchers via Windows IFEO so pressing the physical keyboard Nitro/Predator button opens Nitrous even when the app is completely closed." />
+			</Grid>
+		</Border>
+	</StackPanel>
+</UserControl>

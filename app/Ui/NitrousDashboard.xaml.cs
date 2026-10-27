@@ -14,13 +14,30 @@ public partial class NitrousDashboard : Window
     private bool _isDialogOpen = false;
     private long _lastActivationTick = Environment.TickCount64;
 
+    public System.Windows.Controls.RadioButton BtnPowerQuiet => DashPage.BtnPowerQuiet;
+    public System.Windows.Controls.RadioButton BtnPowerBal => DashPage.BtnPowerBal;
+    public System.Windows.Controls.RadioButton BtnPowerPerf => DashPage.BtnPowerPerf;
+    public System.Windows.Controls.RadioButton BtnPowerTurbo => DashPage.BtnPowerTurbo;
+
+    public System.Windows.Controls.RadioButton BtnFanAuto => DashPage.BtnFanAuto;
+    public System.Windows.Controls.RadioButton BtnFanMax => DashPage.BtnFanMax;
+    public System.Windows.Controls.RadioButton BtnFanCustom => DashPage.BtnFanCustom;
+
+    public System.Windows.Controls.RadioButton BtnRefreshAuto => DashPage.BtnRefreshAuto;
+    public System.Windows.Controls.RadioButton BtnRefresh60 => DashPage.BtnRefresh60;
+    public System.Windows.Controls.RadioButton BtnRefreshMax => DashPage.BtnRefreshMax;
+
+    public System.Windows.Controls.CheckBox TogDebugging => SettingsPage.TogDebugging;
+    public System.Windows.Controls.Button BtnOpenLogsFolder => SettingsPage.BtnOpenLogsFolder;
+    public System.Windows.Controls.Button BtnCopyDiagnostics => SettingsPage.BtnCopyDiagnostics;
+    public System.Windows.Controls.CheckBox TogAutoApplyClocks => SettingsPage.TogAutoApplyClocks;
+
     public NitrousDashboard()
     {
         InitializeComponent();
 
         DataContext = new DashboardViewModel();
 
-        SettingsVersionText.Text = $"Nitrous {UpdateManager.CurrentVersion}";
         LogManager.Info("NitrousDashboard initialized.", "UI");
 
         if (IsTestHost())
@@ -198,17 +215,12 @@ public partial class NitrousDashboard : Window
 
         if (DataContext is DashboardViewModel vm)
         {
-            // vm.IsCustomFanEnabled = activeFan == FanProfile.Medium;
             vm.ActivePowerProfile = activeMode;
             vm.UpdateBatteryBadge();
         }
 
-        // Refresh Hotkey labels
-        if (TxtHkCycle != null)
-        {
-            TxtHkCycle.Text = FormatHotkeyLabel(SettingsManager.Get("Hotkey_CyclePower", ""));
-            TxtHkDash.Text = FormatHotkeyLabel(SettingsManager.Get("Hotkey_Dashboard", ""));
-        }
+        // Refresh Hotkey labels in keyboard view
+        KeyboardPage?.RefreshHotkeys();
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -247,7 +259,6 @@ public partial class NitrousDashboard : Window
             (DataContext as DashboardViewModel)?.ResumePolling();
         }
     }
-
 
     public void RestoreAndActivate()
     {
@@ -289,7 +300,7 @@ public partial class NitrousDashboard : Window
 
     private FanCurveWindow? _activeCurveWindow;
 
-    private void OpenCurveEditor_Click(object sender, RoutedEventArgs e)
+    internal void OpenCurveEditor()
     {
         // If the window is already open, just bring it to the front
         if (_activeCurveWindow != null && _activeCurveWindow.IsLoaded)
@@ -327,90 +338,5 @@ public partial class NitrousDashboard : Window
         _isDialogOpen = true;
         _activeCurveWindow.Show();
     }
-
-    private void Hotkey_PreviewKeyDown(object sender, System.Windows.Input.KeyEventArgs e)
-    {
-        e.Handled = true; // Prevent standard typing
-
-        if (sender is not System.Windows.Controls.TextBox txt || txt.Tag == null) return;
-
-        // Ignore modifier keys pressed on their own
-        if (e.Key == Key.LeftCtrl || e.Key == Key.RightCtrl ||
-            e.Key == Key.LeftShift || e.Key == Key.RightShift ||
-            e.Key == Key.LeftAlt || e.Key == Key.RightAlt || e.Key == Key.System)
-            return;
-
-        string settingKey = (string)txt.Tag;
-
-        // ESC clears the hotkey
-        if (e.Key == Key.Escape)
-        {
-            txt.Text = "None";
-            SettingsManager.Save(settingKey, "");
-            Keyboard.ClearFocus();
-            return;
-        }
-
-        // Extract actual key (handle System keys like Alt+Key)
-        Key key = (e.Key == Key.System ? e.SystemKey : e.Key);
-        uint vk = (uint)KeyInterop.VirtualKeyFromKey(key);
-
-        // Calculate modifiers
-        uint modifiers = 0;
-        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Alt)) modifiers |= 0x0001;
-        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Control)) modifiers |= 0x0002;
-        if (Keyboard.Modifiers.HasFlag(ModifierKeys.Shift)) modifiers |= 0x0004;
-
-        // Require at least one modifier to prevent binding simple letters like "W"
-        if (modifiers == 0) return;
-
-        // Save as "Modifiers|VirtualKey"
-        string savedValue = $"{modifiers}|{vk}";
-        SettingsManager.Save(settingKey, savedValue);
-
-        txt.Text = FormatHotkeyLabel(savedValue);
-        Keyboard.ClearFocus();
-    }
-
-    private string FormatHotkeyLabel(string savedValue)
-    {
-        if (string.IsNullOrEmpty(savedValue)) return "None";
-        try
-        {
-            var parts = savedValue.Split('|');
-            uint mods = uint.Parse(parts[0]);
-            uint vk = uint.Parse(parts[1]);
-
-            string label = "";
-            if ((mods & 0x0002) != 0) label += "Ctrl + ";
-            if ((mods & 0x0004) != 0) label += "Shift + ";
-            if ((mods & 0x0001) != 0) label += "Alt + ";
-
-            label += KeyInterop.KeyFromVirtualKey((int)vk).ToString();
-            return label;
-        }
-        catch
-        {
-            return "None";
-        }
-    }
-
-    private void Graph_MouseMove(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        if (DataContext is DashboardViewModel vm && sender is System.Windows.FrameworkElement fe)
-        {
-            var pos = e.GetPosition(fe);
-            if (fe.Name == "CpuGraphGrid") vm.UpdateCpuHover(pos.X, fe.ActualWidth);
-            else if (fe.Name == "GpuGraphGrid") vm.UpdateGpuHover(pos.X, fe.ActualWidth);
-        }
-    }
-
-    private void Graph_MouseLeave(object sender, System.Windows.Input.MouseEventArgs e)
-    {
-        if (DataContext is DashboardViewModel vm && sender is System.Windows.FrameworkElement fe)
-        {
-            if (fe.Name == "CpuGraphGrid") vm.CpuHoverVisibility = Visibility.Collapsed;
-            else if (fe.Name == "GpuGraphGrid") vm.GpuHoverVisibility = Visibility.Collapsed;
-        }
-    }
 }
+
