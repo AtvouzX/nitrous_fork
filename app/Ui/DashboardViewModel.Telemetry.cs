@@ -56,6 +56,58 @@ public partial class DashboardViewModel
     private double _gpuGraphOpacity = 1.0;
     public double GpuGraphOpacity { get => _gpuGraphOpacity; set => SetProperty(ref _gpuGraphOpacity, value); }
 
+    private double _cpuGraphWidth = GraphGeometryHelper.DefaultGraphWidth;
+    public double CpuGraphWidth { get => _cpuGraphWidth; set => SetProperty(ref _cpuGraphWidth, value); }
+
+    private double _cpuGraphHeight = GraphGeometryHelper.DefaultGraphHeight;
+    public double CpuGraphHeight { get => _cpuGraphHeight; set => SetProperty(ref _cpuGraphHeight, value); }
+
+    private double _gpuGraphWidth = GraphGeometryHelper.DefaultGraphWidth;
+    public double GpuGraphWidth { get => _gpuGraphWidth; set => SetProperty(ref _gpuGraphWidth, value); }
+
+    private double _gpuGraphHeight = GraphGeometryHelper.DefaultGraphHeight;
+    public double GpuGraphHeight { get => _gpuGraphHeight; set => SetProperty(ref _gpuGraphHeight, value); }
+
+    public void UpdateCpuGraphDimensions(double width, double height)
+    {
+        if (width <= 0 || height <= 0) return;
+        if (Math.Abs(_cpuGraphWidth - width) > 0.1 || Math.Abs(_cpuGraphHeight - height) > 0.1)
+        {
+            _cpuGraphWidth = width;
+            _cpuGraphHeight = height;
+            RegenerateCpuGraphPoints();
+        }
+    }
+
+    public void UpdateGpuGraphDimensions(double width, double height)
+    {
+        if (width <= 0 || height <= 0) return;
+        if (Math.Abs(_gpuGraphWidth - width) > 0.1 || Math.Abs(_gpuGraphHeight - height) > 0.1)
+        {
+            _gpuGraphWidth = width;
+            _gpuGraphHeight = height;
+            RegenerateGpuGraphPoints();
+        }
+    }
+
+    public void RegenerateCpuGraphPoints(long now = 0)
+    {
+        if (now == 0) now = Environment.TickCount64;
+        CpuTempPoints = GraphGeometryHelper.GenerateGraphPoints(_cpuHistory, true, now, _cpuGraphWidth, _cpuGraphHeight);
+        CpuTempFillPoints = GraphGeometryHelper.GenerateGraphFillPoints(_cpuHistory, true, now, _cpuGraphWidth, _cpuGraphHeight);
+        CpuUsagePoints = GraphGeometryHelper.GenerateGraphPoints(_cpuHistory, false, now, _cpuGraphWidth, _cpuGraphHeight);
+        CpuUsageFillPoints = GraphGeometryHelper.GenerateGraphFillPoints(_cpuHistory, false, now, _cpuGraphWidth, _cpuGraphHeight);
+    }
+
+    public void RegenerateGpuGraphPoints(long now = 0)
+    {
+        if (now == 0) now = Environment.TickCount64;
+        GpuTempPoints = GraphGeometryHelper.GenerateGraphPoints(_gpuHistory, true, now, _gpuGraphWidth, _gpuGraphHeight);
+        GpuTempFillPoints = GraphGeometryHelper.GenerateGraphFillPoints(_gpuHistory, true, now, _gpuGraphWidth, _gpuGraphHeight);
+        GpuUsagePoints = GraphGeometryHelper.GenerateGraphPoints(_gpuHistory, false, now, _gpuGraphWidth, _gpuGraphHeight);
+        GpuUsageFillPoints = GraphGeometryHelper.GenerateGraphFillPoints(_gpuHistory, false, now, _gpuGraphWidth, _gpuGraphHeight);
+    }
+
     private string _cpuTempText = "--°C";
     public string CpuTempText { get => _cpuTempText; set => SetProperty(ref _cpuTempText, value); }
 
@@ -496,14 +548,8 @@ public partial class DashboardViewModel
                         }
                         GpuMaxStatsText = $"MAX: {maxGpuTemp}°C  {maxGpuUsage:0}%";
 
-                        CpuTempPoints = GraphGeometryHelper.GenerateGraphPoints(_cpuHistory, true, now);
-                        CpuTempFillPoints = GraphGeometryHelper.GenerateGraphFillPoints(_cpuHistory, true, now);
-                        CpuUsagePoints = GraphGeometryHelper.GenerateGraphPoints(_cpuHistory, false, now);
-                        CpuUsageFillPoints = GraphGeometryHelper.GenerateGraphFillPoints(_cpuHistory, false, now);
-                        GpuTempPoints = GraphGeometryHelper.GenerateGraphPoints(_gpuHistory, true, now);
-                        GpuTempFillPoints = GraphGeometryHelper.GenerateGraphFillPoints(_gpuHistory, true, now);
-                        GpuUsagePoints = GraphGeometryHelper.GenerateGraphPoints(_gpuHistory, false, now);
-                        GpuUsageFillPoints = GraphGeometryHelper.GenerateGraphFillPoints(_gpuHistory, false, now);
+                        RegenerateCpuGraphPoints(now);
+                        RegenerateGpuGraphPoints(now);
                     }, System.Windows.Threading.DispatcherPriority.Background);
 
                     // Wait asynchronously for the next 2-second interval tick

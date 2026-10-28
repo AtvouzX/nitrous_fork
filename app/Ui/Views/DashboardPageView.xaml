@@ -46,7 +46,7 @@
 						           HorizontalAlignment="Right" VerticalAlignment="Center" />
 					</Grid>
 					<Grid Grid.Row="1" x:Name="CpuGraphGrid" Background="Transparent" MouseMove="Graph_MouseMove"
-					      MouseLeave="Graph_MouseLeave">
+					      MouseLeave="Graph_MouseLeave" SizeChanged="Graph_SizeChanged">
 						<Polygon Points="{Binding CpuTempFillPoints}" Fill="#FF4500" Opacity="0.15" />
 						<Polygon Points="{Binding CpuUsageFillPoints}" Fill="#FFFFFF" Opacity="0.10" />
 						<Polyline Points="{Binding CpuTempPoints}" Stroke="#FF4500" StrokeThickness="1.5" />
@@ -103,7 +103,7 @@
 						           HorizontalAlignment="Right" VerticalAlignment="Center" />
 					</Grid>
 					<Grid Grid.Row="1" x:Name="GpuGraphGrid" Background="Transparent" MouseMove="Graph_MouseMove"
-					      MouseLeave="Graph_MouseLeave">
+					      MouseLeave="Graph_MouseLeave" SizeChanged="Graph_SizeChanged">
 						<Polygon Points="{Binding GpuTempFillPoints}" Fill="#FF4500" Opacity="0.15" />
 						<Polygon Points="{Binding GpuUsageFillPoints}" Fill="#FFFFFF" Opacity="0.10" />
 						<Polyline Points="{Binding GpuTempPoints}" Stroke="#FF4500" StrokeThickness="1.5" />

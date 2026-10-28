@@ -109,13 +109,14 @@ public partial class DashboardViewModel
     public void UpdateCpuHover(double pixelX, double actualWidth)
     {
         long now = Environment.TickCount64;
-        var (found, point, diff) = GraphGeometryHelper.FindHoverPoint(_cpuHistory, pixelX, actualWidth, now);
+        double clampedX = Math.Clamp(pixelX, 0, Math.Max(0, actualWidth - 1));
+        var (found, point, diff) = GraphGeometryHelper.FindHoverPoint(_cpuHistory, clampedX, actualWidth, now);
 
         if (found)
         {
             CpuHoverVisibility = Visibility.Visible;
-            CpuHoverMargin = new Thickness(pixelX, 0, 0, 0);
-            CpuTooltipMargin = new Thickness(pixelX > (actualWidth / 2) ? pixelX - 85 : pixelX + 5, 5, 0, 0);
+            CpuHoverMargin = new Thickness(clampedX, 0, 0, 0);
+            CpuTooltipMargin = new Thickness(clampedX > (actualWidth / 2) ? clampedX - 85 : clampedX + 5, 5, 0, 0);
             CpuHoverTime = $"-{(int)diff.TotalMinutes}M {(int)diff.Seconds}S";
             CpuHoverTempStr = $"{point.Temp}°C";
             CpuHoverUsageStr = $"{point.Usage:0}%";
@@ -129,13 +130,14 @@ public partial class DashboardViewModel
     public void UpdateGpuHover(double pixelX, double actualWidth)
     {
         long now = Environment.TickCount64;
-        var (found, point, diff) = GraphGeometryHelper.FindHoverPoint(_gpuHistory, pixelX, actualWidth, now);
+        double clampedX = Math.Clamp(pixelX, 0, Math.Max(0, actualWidth - 1));
+        var (found, point, diff) = GraphGeometryHelper.FindHoverPoint(_gpuHistory, clampedX, actualWidth, now);
 
         if (found)
         {
             GpuHoverVisibility = Visibility.Visible;
-            GpuHoverMargin = new Thickness(pixelX, 0, 0, 0);
-            GpuTooltipMargin = new Thickness(pixelX > (actualWidth / 2) ? pixelX - 85 : pixelX + 5, 5, 0, 0);
+            GpuHoverMargin = new Thickness(clampedX, 0, 0, 0);
+            GpuTooltipMargin = new Thickness(clampedX > (actualWidth / 2) ? clampedX - 85 : clampedX + 5, 5, 0, 0);
             GpuHoverTime = $"-{(int)diff.TotalMinutes}M {(int)diff.Seconds}S";
             GpuHoverTempStr = $"{point.Temp}°C";
             GpuHoverUsageStr = $"{point.Usage:0}%";

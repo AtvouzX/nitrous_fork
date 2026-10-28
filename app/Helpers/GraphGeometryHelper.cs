@@ -13,8 +13,8 @@ namespace Nitrous.Helpers;
 /// </summary>
 public static class GraphGeometryHelper
 {
-    public const double DefaultGraphWidth = 140.5;
-    public const double DefaultGraphHeight = 74.0;
+    public const double DefaultGraphWidth = 144.5;
+    public const double DefaultGraphHeight = 94.0;
     public const long DefaultWindowDurationMs = 300000; // 5 minutes
 
     /// <summary>
@@ -29,7 +29,7 @@ public static class GraphGeometryHelper
         long windowDurationMs = DefaultWindowDurationMs)
     {
         var points = new PointCollection();
-        if (history.Count == 0)
+        if (history.Count == 0 || history.All(p => (isTemp ? p.Temp : p.Usage) <= 0))
         {
             points.Freeze();
             return points;
@@ -62,7 +62,7 @@ public static class GraphGeometryHelper
         long windowDurationMs = DefaultWindowDurationMs)
     {
         var points = new PointCollection();
-        if (history.Count == 0)
+        if (history.Count == 0 || history.All(p => (isTemp ? p.Temp : p.Usage) <= 0))
         {
             points.Freeze();
             return points;
@@ -107,7 +107,8 @@ public static class GraphGeometryHelper
             return (false, default, TimeSpan.Zero);
         }
 
-        long targetTime = now - windowDurationMs + (long)((pixelX / actualWidth) * windowDurationMs);
+        double clampedX = Math.Clamp(pixelX, 0, actualWidth);
+        long targetTime = now - windowDurationMs + (long)((clampedX / actualWidth) * windowDurationMs);
         var point = history.OrderBy(p => Math.Abs(p.Timestamp - targetTime)).FirstOrDefault();
 
         if (point.Timestamp > 0 && Math.Abs(point.Timestamp - targetTime) < maxToleranceMs)

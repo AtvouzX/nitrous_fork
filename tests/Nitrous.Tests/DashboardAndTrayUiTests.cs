@@ -463,11 +463,14 @@ public class DashboardAndTrayUiTests
 
                 // Show window so HWND is created and OnStateChanged fires on minimization
                 window.Show();
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
                 window.WindowState = WindowState.Minimized;
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
                 Assert.False(vm.IsPollingActive, "Polling should be paused on minimization.");
 
                 // Restoring to Normal should resume polling
                 window.WindowState = WindowState.Normal;
+                System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
                 Assert.True(vm.IsPollingActive, "Polling should resume on restoration.");
             }
             finally
@@ -1386,6 +1389,7 @@ public class DashboardAndTrayUiTests
             {
                 window.Show();
                 var vm = Assert.IsType<DashboardViewModel>(window.DataContext);
+                vm.IsCurveModeEnabled = false;
                 vm.IsCustomFanEnabled = true;
                 Assert.True(vm.IsManualSliderEnabled);
 

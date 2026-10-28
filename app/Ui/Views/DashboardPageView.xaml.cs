@@ -39,4 +39,13 @@ public partial class DashboardPageView : UserControl
             else if (fe.Name == "GpuGraphGrid") vm.GpuHoverVisibility = Visibility.Collapsed;
         }
     }
+
+    private void Graph_SizeChanged(object sender, SizeChangedEventArgs e)
+    {
+        if (DataContext is DashboardViewModel vm && sender is FrameworkElement fe && e.NewSize.Width > 0 && e.NewSize.Height > 0)
+        {
+            if (fe.Name == "CpuGraphGrid") vm.UpdateCpuGraphDimensions(e.NewSize.Width, e.NewSize.Height);
+            else if (fe.Name == "GpuGraphGrid") vm.UpdateGpuGraphDimensions(e.NewSize.Width, e.NewSize.Height);
+        }
+    }
 }
