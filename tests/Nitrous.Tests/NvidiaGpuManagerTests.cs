@@ -247,14 +247,41 @@ public class NvidiaGpuManagerTests
 
     [Theory]
     [InlineData(300, 0)]    // Exceeds MaxCoreOffset (250)
-    [InlineData(-300, 0)]   // Below MinCoreOffset (-250)
+    [InlineData(-250, 0)]   // Fatal undervolt below safe MinCoreOffset (-150)
+    [InlineData(-300, 0)]   // Below MinCoreOffset
     [InlineData(0, 1200)]   // Exceeds MaxMemoryOffset (1000)
-    [InlineData(0, -1200)]  // Below MinMemoryOffset (-1000)
+    [InlineData(0, -1000)]  // Fatal GDDR downclock below safe MinMemoryOffset (-200)
+    [InlineData(0, -1200)]  // Below MinMemoryOffset
     public void SetClocksInternal_WithOutOfBoundsOffsets_ReturnsZero(int core, int memory)
     {
         using var manager = new NvidiaGpuManager();
         int result = manager.SetClocksInternal(core, memory);
         Assert.Equal(0, result);
+    }
+
+    [Theory]
+    [InlineData(-250, -150)]
+    [InlineData(-300, -150)]
+    [InlineData(0, 0)]
+    [InlineData(100, 100)]
+    [InlineData(300, 250)]
+    public void ClampCoreOffset_ClampsToSafeOperatingRange(int input, int expected)
+    {
+        using var manager = new NvidiaGpuManager();
+        Assert.Equal(expected, manager.ClampCoreOffset(input));
+    }
+
+    [Theory]
+    [InlineData(-1000, -200)]
+    [InlineData(-500, -200)]
+    [InlineData(-100, -100)]
+    [InlineData(0, 0)]
+    [InlineData(500, 500)]
+    [InlineData(1200, 1000)]
+    public void ClampMemoryOffset_ClampsToSafeOperatingRange(int input, int expected)
+    {
+        using var manager = new NvidiaGpuManager();
+        Assert.Equal(expected, manager.ClampMemoryOffset(input));
     }
 }
 

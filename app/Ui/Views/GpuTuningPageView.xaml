@@ -91,14 +91,14 @@
 							         Foreground="#FF4500" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0"
 							         MaxLength="4" Width="36" TextAlignment="Right" VerticalContentAlignment="Center"
 							         CaretBrush="#FF4500"
-							         ToolTip="Directly input discrete GPU core clock frequency offset in MHz (-250 to +250)." />
+							         ToolTip="Directly input discrete GPU core clock frequency offset in MHz (-150 to +250)." />
 							<TextBlock Text=" MHZ" Foreground="#FF4500" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
 						</StackPanel>
 					</Grid>
-					<Slider x:Name="GpuCoreSlider" Style="{StaticResource ModernSliderStyle}" Minimum="-250" Maximum="250"
+					<Slider x:Name="GpuCoreSlider" Style="{StaticResource ModernSliderStyle}" Minimum="-150" Maximum="250"
 					        Value="{Binding GpuCoreOffset, UpdateSourceTrigger=PropertyChanged}" IsSnapToTickEnabled="True"
 					        TickFrequency="5" Margin="0,0,0,12"
-					        ToolTip="Applies a frequency offset (-250 MHz to +250 MHz) to discrete GPU core clocks via NVML." />
+					        ToolTip="Applies a frequency offset (-150 MHz to +250 MHz) to discrete GPU core clocks via NVML." />
 					<!-- Memory Slider -->
 					<Grid Margin="0,0,0,4">
 						<TextBlock Text="MEMORY CLOCK" Foreground="White" FontSize="11" FontWeight="SemiBold"
@@ -108,14 +108,14 @@
 							         Foreground="#FF4500" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0"
 							         MaxLength="5" Width="36" TextAlignment="Right" VerticalContentAlignment="Center"
 							         CaretBrush="#FF4500"
-							         ToolTip="Directly input discrete GPU video memory (VRAM) frequency offset in MHz (-1000 to +1000)." />
+							         ToolTip="Directly input discrete GPU video memory (VRAM) frequency offset in MHz (-200 to +1000)." />
 							<TextBlock Text=" MHZ" Foreground="#FF4500" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
 						</StackPanel>
 					</Grid>
-					<Slider x:Name="GpuMemorySlider" Style="{StaticResource ModernSliderStyle}" Minimum="-1000" Maximum="1000"
+					<Slider x:Name="GpuMemorySlider" Style="{StaticResource ModernSliderStyle}" Minimum="-200" Maximum="1000"
 					        Value="{Binding GpuMemoryOffset, UpdateSourceTrigger=PropertyChanged}" IsSnapToTickEnabled="True"
 					        TickFrequency="10"
-					        ToolTip="Applies a frequency offset (-1000 MHz to +1000 MHz) to discrete GPU video memory (VRAM)." />
+					        ToolTip="Applies a frequency offset (-200 MHz to +1000 MHz) to discrete GPU video memory (VRAM)." />
 				</StackPanel>
 			</controls:ChamferCard>
 			<!-- ACTION BUTTONS -->

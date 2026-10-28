@@ -201,8 +201,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
                     if (hasClocks)
                     {
-                        GpuCoreOffset = core;
-                        GpuMemoryOffset = memory;
+                        GpuCoreOffset = _gpuManager.ClampCoreOffset(core);
+                        GpuMemoryOffset = _gpuManager.ClampMemoryOffset(memory);
                     }
                 });
 
@@ -296,13 +296,13 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
             if (_gpuManager.GetClocks(out int c, out int m))
             {
-                GpuCoreOffset = c;
-                GpuMemoryOffset = m;
+                GpuCoreOffset = _gpuManager.ClampCoreOffset(c);
+                GpuMemoryOffset = _gpuManager.ClampMemoryOffset(m);
             }
             else
             {
-                GpuCoreOffset = SettingsManager.Get($"GpuCore_{newPowerProfile}", _gpuManager.GetDefaultCore(newPowerProfile));
-                GpuMemoryOffset = SettingsManager.Get($"GpuMemory_{newPowerProfile}", _gpuManager.GetDefaultMemory(newPowerProfile));
+                GpuCoreOffset = _gpuManager.ClampCoreOffset(SettingsManager.Get($"GpuCore_{newPowerProfile}", _gpuManager.GetDefaultCore(newPowerProfile)));
+                GpuMemoryOffset = _gpuManager.ClampMemoryOffset(SettingsManager.Get($"GpuMemory_{newPowerProfile}", _gpuManager.GetDefaultMemory(newPowerProfile)));
             }
         }
 

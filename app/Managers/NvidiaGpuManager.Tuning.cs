@@ -197,8 +197,10 @@ public partial class NvidiaGpuManager
         try
         {
             var profile = activeProfile ?? (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-            int core = SettingsManager.Get($"GpuCore_{profile}", GetDefaultCore(profile));
-            int mem = SettingsManager.Get($"GpuMemory_{profile}", GetDefaultMemory(profile));
+            int rawCore = SettingsManager.Get($"GpuCore_{profile}", GetDefaultCore(profile));
+            int rawMem = SettingsManager.Get($"GpuMemory_{profile}", GetDefaultMemory(profile));
+            int core = ClampCoreOffset(rawCore);
+            int mem = ClampMemoryOffset(rawMem);
 
             if (core == 0 && mem == 0) return 0;
 
@@ -282,8 +284,10 @@ public partial class NvidiaGpuManager
 
         return await Task.Run(() =>
         {
-            int coreOffset = SettingsManager.Get($"GpuCore_{profile}", GetDefaultCore(profile));
-            int memoryOffset = SettingsManager.Get($"GpuMemory_{profile}", GetDefaultMemory(profile));
+            int rawCore = SettingsManager.Get($"GpuCore_{profile}", GetDefaultCore(profile));
+            int rawMem = SettingsManager.Get($"GpuMemory_{profile}", GetDefaultMemory(profile));
+            int coreOffset = ClampCoreOffset(rawCore);
+            int memoryOffset = ClampMemoryOffset(rawMem);
 
             return SetClocksInternal(coreOffset, memoryOffset);
         });
@@ -297,8 +301,8 @@ public partial class NvidiaGpuManager
     // Saves the user's custom slider values to the active profile
     public void SaveCustomProfileOc(PowerProfile profile, int core, int memory)
     {
-        SettingsManager.Save($"GpuCore_{profile}", core);
-        SettingsManager.Save($"GpuMemory_{profile}", memory);
+        SettingsManager.Save($"GpuCore_{profile}", ClampCoreOffset(core));
+        SettingsManager.Save($"GpuMemory_{profile}", ClampMemoryOffset(memory));
     }
 
     // Overwrites the custom save with defaults

@@ -95,9 +95,13 @@ public partial class NvidiaGpuManager : IDisposable
     }
 
     public int MaxCoreOffset = 250;
-    public int MinCoreOffset = -250;
+    public int MinCoreOffset = -150;
     public int MaxMemoryOffset = 1000;
-    public int MinMemoryOffset = -1000;
+    public int MinMemoryOffset = -200;
+
+    public int ClampCoreOffset(int offset) => Math.Clamp(offset, MinCoreOffset, MaxCoreOffset);
+
+    public int ClampMemoryOffset(int offset) => Math.Clamp(offset, MinMemoryOffset, MaxMemoryOffset);
 
     // Persist the NVML device handle for rapid polling
     private IntPtr _nvmlDeviceHandle = IntPtr.Zero;

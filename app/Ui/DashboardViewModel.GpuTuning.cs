@@ -255,8 +255,8 @@ public partial class DashboardViewModel
 
                 if (_gpuManager.GetClocks(out int c, out int m))
                 {
-                    GpuCoreOffset = c;
-                    GpuMemoryOffset = m;
+                    GpuCoreOffset = _gpuManager.ClampCoreOffset(c);
+                    GpuMemoryOffset = _gpuManager.ClampMemoryOffset(m);
                 }
             }
             catch (Exception ex)
