@@ -177,193 +177,179 @@
 				</controls:ChamferCard>
 			</StackPanel>
 		</controls:ChamferCard>
-		<!-- REFRESH CARD (Ignite Steel/Ember Card with Chamfered Edges and Recessed Detent Rail) -->
-		<controls:ChamferCard Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
-		                      ChamferSize="6" Padding="10,8,10,10" Margin="0,0,0,16"
-		                      ToolTip="Display refresh rate controls: switch between automatic AC/DC rate switching, fixed 60Hz battery saver, or maximum hardware panel refresh rate.">
-			<StackPanel>
-				<!-- Card Header with Bottom Divider -->
-				<Border BorderBrush="{StaticResource Steel800Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,8">
-					<Grid>
-						<TextBlock Text="DISPLAY REFRESH" Foreground="{StaticResource Steel300Brush}" FontFamily="{StaticResource MonoFontFamily}"
-						           FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center" />
-					</Grid>
-				</Border>
+		<!-- REFRESH + FANS GRID (Ignite 2-Column Grid Layout: 5* Refresh and 7* Fans) -->
+		<Grid Margin="0,0,0,16">
+			<Grid.ColumnDefinitions>
+				<ColumnDefinition Width="5*" />
+				<ColumnDefinition Width="8" />
+				<ColumnDefinition Width="7*" />
+			</Grid.ColumnDefinitions>
 
-				<!-- Detent Rail Outer Well (Chamfered button rail matching ignite.html chamfer-btn-outer) -->
-				<controls:ChamferCard Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel600Brush}" BorderThickness="1"
-				                      ChamferSize="4" Padding="0">
-					<UniformGrid Rows="1" Height="36">
-						<RadioButton x:Name="BtnRefreshAuto" TabIndex="0" GroupName="Refresh" Uid="Auto"
-						             Tag="M12,4V1L7,5L12,9V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6.34,14H4.27A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z"
-						             Content="AUTO" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetRefreshCommand}"
-						             CommandParameter="Auto"
-						             ToolTip="Automatically switches to maximum refresh rate on AC power and 60Hz on battery to save power." />
-						<RadioButton x:Name="BtnRefresh60" TabIndex="1" GroupName="Refresh" Uid="Hz60"
-						             Tag="M2,12C4.5,6.5 7.5,6.5 10.5,12C13.5,17.5 16.5,17.5 19,12H22C18.5,19.5 14.5,19.5 10.5,14C7.5,8.5 5,8.5 2,12Z"
-						             Content="60HZ" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetRefreshCommand}"
-						             CommandParameter="Hz60"
-						             ToolTip="Locks display to 60Hz to reduce display panel power consumption." />
-						<RadioButton x:Name="BtnRefreshMax" TabIndex="1" GroupName="Refresh" Uid="MaxHz"
-						             Tag="M13,2L4,14H11L9,22L20,10H13L15,2Z" Content="{Binding MaxRefreshText}"
-						             Style="{StaticResource ActionButtonStyle}" Command="{Binding SetRefreshCommand}"
-						             CommandParameter="MaxHz"
-						             ToolTip="Forces maximum display refresh rate for fluid, low-latency visuals." />
-					</UniformGrid>
-				</controls:ChamferCard>
-			</StackPanel>
-		</controls:ChamferCard>
+			<!-- REFRESH CARD (Ignite Steel/Ember Card with Chamfered Edges and Vertical Step Stack) -->
+			<controls:ChamferCard Grid.Column="0" Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
+			                      ChamferSize="6" Padding="10,8,10,10"
+			                      ToolTip="Display refresh rate controls: switch between automatic AC/DC rate switching, fixed 60Hz battery saver, or maximum hardware panel refresh rate.">
+				<StackPanel>
+					<!-- Card Header with Active Badge and Bottom Divider -->
+					<Border BorderBrush="{StaticResource Steel800Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,8">
+						<Grid>
+							<TextBlock Text="REFRESH" Foreground="{StaticResource Steel300Brush}" FontFamily="{StaticResource MonoFontFamily}"
+							           FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center" />
+							<TextBlock Text="{Binding RefreshBadgeText}" Foreground="{StaticResource Ember400Brush}" FontFamily="{StaticResource MonoFontFamily}"
+							           FontSize="9.5" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" />
+						</Grid>
+					</Border>
 
-		<!-- FANS CARD (Ignite Steel/Ember Card with Chamfered Edges and Recessed Detent Rail) -->
-		<controls:ChamferCard Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
-		                      ChamferSize="6" Padding="10,8,10,10" Margin="0,0,0,16"
-		                      ToolTip="Hardware cooling fan controls: toggle factory EC automatic curve, maximum RPM, or custom waypoint temperature fan curves.">
-			<StackPanel>
-				<!-- Card Header with Bottom Divider -->
-				<Border BorderBrush="{StaticResource Steel800Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,8">
-					<Grid>
-						<TextBlock Text="FANS" Foreground="{StaticResource Steel300Brush}" FontFamily="{StaticResource MonoFontFamily}"
-						           FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center" />
-					</Grid>
-				</Border>
-
-				<!-- Detent Rail Outer Well (Chamfered button rail matching ignite.html chamfer-btn-outer) -->
-				<controls:ChamferCard Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel600Brush}" BorderThickness="1"
-				                      ChamferSize="4" Padding="0">
-					<UniformGrid Rows="1" Height="36">
-						<RadioButton x:Name="BtnFanAuto" TabIndex="0" GroupName="Fans" Uid="Auto"
-						             Tag="M12,4V1L7,5L12,9V6A6,6 0 0,1 18,12A6,6 0 0,1 12,18A6,6 0 0,1 6.34,14H4.27A8,8 0 0,0 12,20A8,8 0 0,0 20,12A8,8 0 0,0 12,4Z"
-						             Content="AUTO" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetFanCommand}"
-						             CommandParameter="Auto"
-						             ToolTip="Restores factory Acer Embedded Controller automatic fan management." />
-						<RadioButton x:Name="BtnFanMax" TabIndex="1" GroupName="Fans" Uid="Max"
-						             Tag="M19.78,20.78 L12.78,15.9 A3,3 0 1,1 14.9,13.78 Z M4.93,20.06 A10,10 0 1,1 19.07,20.06 C18.68,20.45 18.05,20.45 17.66,20.06 C17.27,19.67 17.27,19.04 17.66,18.65 A8,8 0 1,0 6.34,18.65 C6.74,19.04 6.74,19.67 6.35,20.06 C5.96,20.45 5.32,20.45 4.93,20.06 Z"
-						             Content="MAX" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetFanCommand}"
-						             CommandParameter="Max" ToolTip="Forces all cooling fans to 100% maximum RPM." />
-						<RadioButton x:Name="BtnFanCustom" TabIndex="1" GroupName="Fans" Uid="Medium"
-						             Tag="M3,7V9H13V7H3M15,11H17V9H21V7H17V5H15V11ZM3,15V17H9V15H3M13,19V17H21V15H13V13H11V19H13Z"
-						             Content="CUSTOM" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetFanCommand}"
-						             CommandParameter="Medium"
-						             ToolTip="Enables custom fan speed controls and waypoint temperature curves." />
-					</UniformGrid>
-				</controls:ChamferCard>
-
-				<StackPanel Visibility="{Binding IsCustomFanEnabled, Converter={StaticResource BoolToVis}}" Margin="0,12,0,0">
-					<Grid Margin="0,0,0,12">
-						<TextBlock Text="{Binding CustomFanHeaderText}" Foreground="{Binding CustomFanHeaderColor}" FontSize="10"
-						           FontWeight="Bold" VerticalAlignment="Center" />
-						<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-							<ToggleButton IsChecked="{Binding IsCurveModeEnabled, UpdateSourceTrigger=PropertyChanged}"
-							              IsEnabled="{Binding IsCustomFanEnabled}" Margin="0" Cursor="Hand"
-							              ToolTip="Enables active temperature-based fan curve control.">
-								<ToggleButton.Template>
-									<ControlTemplate TargetType="ToggleButton">
-										<Border x:Name="BgBorder" Background="{StaticResource Steel950Brush}"
-										        BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1" CornerRadius="0"
-										        Padding="6,2">
-											<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-												<Path x:Name="Indicator"
-												      Data="M12,20A8,8 0 0,1 4,12A8,8 0 0,1 12,4A8,8 0 0,1 20,12A8,8 0 0,1 12,20M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z"
-												      Fill="#A1A1AA" Stretch="Uniform" Width="10" Height="10" Margin="0,0,4,0" />
-												<TextBlock x:Name="Txt" Text="USE CURVE" FontSize="9" FontWeight="Bold" Foreground="#A1A1AA"
-												           VerticalAlignment="Center" Margin="0,0,4,0" />
-												<Rectangle Width="1" Height="10" Fill="#333338" Margin="2,0,4,0" VerticalAlignment="Center" />
-												<Button Click="OpenCurveEditor_Click" Background="Transparent" BorderThickness="0" Padding="2"
-												        Cursor="Hand" ToolTip="Opens the interactive fan curve editor.">
-													<Button.Template>
-														<ControlTemplate TargetType="Button">
-															<Border Background="Transparent">
-																<Path x:Name="EditIcon"
-																      Data="M20.71,7.04C21.1,6.65 21.1,6 20.71,5.63L18.37,3.29C18.17,3.09 17.92,3 17.66,3C17.41,3 17.15,3.1 16.96,3.29L15.13,5.12L18.88,8.87L20.71,7.04M3,17.25V21H6.75L17.81,9.94L14.06,6.19L3,17.25Z"
-																      Fill="#A1A1AA" Stretch="Uniform" Width="9" Height="9" />
-															</Border>
-															<ControlTemplate.Triggers>
-																<Trigger Property="IsMouseOver" Value="True">
-																	<Setter TargetName="EditIcon" Property="Fill" Value="#FFFFFF" />
-																</Trigger>
-															</ControlTemplate.Triggers>
-														</ControlTemplate>
-													</Button.Template>
-												</Button>
-											</StackPanel>
-										</Border>
-										<ControlTemplate.Triggers>
-											<Trigger Property="IsChecked" Value="True">
-												<Setter TargetName="Indicator" Property="Fill" Value="#FF4500" />
-												<Setter TargetName="Indicator" Property="Data"
-												        Value="M12 2C6.5 2 2 6.5 2 12S6.5 22 12 22 22 17.5 22 12 17.5 2 12 2M10 17L5 12L6.41 10.59L10 14.17L17.59 6.58L19 8L10 17Z" />
-												<Setter TargetName="BgBorder" Property="BorderBrush" Value="#FF4500" />
-												<Setter TargetName="Txt" Property="Foreground" Value="White" />
-											</Trigger>
-											<Trigger Property="IsMouseOver" Value="True">
-												<Setter TargetName="BgBorder" Property="Background" Value="#1E1E22" />
-											</Trigger>
-											<Trigger Property="IsEnabled" Value="False">
-												<Setter TargetName="BgBorder" Property="Opacity" Value="0.3" />
-											</Trigger>
-										</ControlTemplate.Triggers>
-									</ControlTemplate>
-								</ToggleButton.Template>
-							</ToggleButton>
+					<!-- Vertical Detent Rail (Chamfered outer well with stacked steps) -->
+					<controls:ChamferCard Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel600Brush}" BorderThickness="1"
+					                      ChamferSize="4" Padding="0">
+						<StackPanel>
+							<RadioButton x:Name="BtnRefreshAuto" TabIndex="0" GroupName="Refresh" Uid="Auto"
+							             Content="AUTO" Tag="{Binding AutoRefreshSubtext}"
+							             Style="{StaticResource VerticalDetentButtonStyle}" Command="{Binding SetRefreshCommand}"
+							             CommandParameter="Auto"
+							             ToolTip="Automatically switches to maximum refresh rate on AC power and 60Hz on battery to save power." />
+							<RadioButton x:Name="BtnRefresh60" TabIndex="1" GroupName="Refresh" Uid="Hz60"
+							             Content="60HZ" Tag="ECO"
+							             Style="{StaticResource VerticalDetentButtonStyle}" Command="{Binding SetRefreshCommand}"
+							             CommandParameter="Hz60"
+							             ToolTip="Locks display to 60Hz to reduce display panel power consumption." />
+							<RadioButton x:Name="BtnRefreshMax" TabIndex="1" GroupName="Refresh" Uid="MaxHz"
+							             Content="{Binding MaxRefreshText}" Tag="LOCK"
+							             Style="{StaticResource VerticalDetentButtonStyle}" Command="{Binding SetRefreshCommand}"
+							             CommandParameter="MaxHz"
+							             ToolTip="Forces maximum display refresh rate for fluid, low-latency visuals." />
 						</StackPanel>
-					</Grid>
-					<Grid Margin="0,0,0,4">
-						<TextBlock Text="CPU FAN SPEED" Foreground="White" FontSize="11" FontWeight="Bold" HorizontalAlignment="Left"
-						           VerticalAlignment="Center" />
-						<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-							<TextBox x:Name="CpuFanInput" Text="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}"
-							         Foreground="#FF4500" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0"
-							         MaxLength="3" Width="26" TextAlignment="Right" VerticalContentAlignment="Center"
-							         CaretBrush="#FF4500" IsEnabled="{Binding IsManualSliderEnabled}" />
-							<TextBlock Text="%" Foreground="#FF4500" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
-						</StackPanel>
-					</Grid>
-					<Slider x:Name="CpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100"
-					        Value="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}"
-					        IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1"
-					        Margin="0,0,0,0" />
-
-					<ToggleButton x:Name="TogUnifiedFans" IsChecked="{Binding IsUnifiedFans, UpdateSourceTrigger=PropertyChanged}"
-					              IsEnabled="{Binding IsManualSliderEnabled}" HorizontalAlignment="Center" Margin="0,4,0,0"
-					              Cursor="Hand" ToolTip="Locks CPU and GPU fan speeds together to adjust both fans simultaneously.">
-						<ToggleButton.Template>
-							<ControlTemplate TargetType="ToggleButton">
-								<Border Background="Transparent" Padding="4">
-									<Path x:Name="LinkIcon"
-									      Data="M16,6H13V7.9H16C18.26,7.9 20.1,9.73 20.1,12C20.1,14.26 18.26,16.1 16,16.1H13V18H16C19.31,18 22,15.31 22,12C22,8.68 19.31,6 16,6M3.9,12C3.9,9.73 5.74,7.9 8,7.9H11V6H8C4.69,6 2,8.68 2,12C2,15.31 4.69,18 8,18H11V16.1H8C5.74,16.1 3.9,14.26 3.9,12M8,11H16V12.9H8V11Z"
-									      Fill="#A1A1AA" Stretch="Uniform" Width="14" Height="14" />
-								</Border>
-								<ControlTemplate.Triggers>
-									<Trigger Property="IsChecked" Value="True">
-										<Setter TargetName="LinkIcon" Property="Fill" Value="#FF4500" />
-									</Trigger>
-									<Trigger Property="IsMouseOver" Value="True">
-										<Setter TargetName="LinkIcon" Property="Opacity" Value="0.8" />
-									</Trigger>
-									<Trigger Property="IsEnabled" Value="False">
-										<Setter TargetName="LinkIcon" Property="Opacity" Value="0.3" />
-									</Trigger>
-								</ControlTemplate.Triggers>
-							</ControlTemplate>
-						</ToggleButton.Template>
-					</ToggleButton>
-					<Grid Margin="0,0,0,4">
-						<TextBlock Text="GPU FAN SPEED" Foreground="White" FontSize="11" FontWeight="Bold" HorizontalAlignment="Left"
-						           VerticalAlignment="Center" />
-						<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-							<TextBox x:Name="GpuFanInput" Text="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}"
-							         Foreground="#FF4500" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0"
-							         MaxLength="3" Width="26" TextAlignment="Right" VerticalContentAlignment="Center"
-							         CaretBrush="#FF4500" IsEnabled="{Binding IsManualSliderEnabled}" />
-							<TextBlock Text="%" Foreground="#FF4500" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
-						</StackPanel>
-					</Grid>
-					<Slider x:Name="GpuFanSlider" Style="{StaticResource ModernSliderStyle}" Minimum="0" Maximum="100"
-					        Value="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}"
-					        IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1" />
+					</controls:ChamferCard>
 				</StackPanel>
-			</StackPanel>
-		</controls:ChamferCard>
+			</controls:ChamferCard>
+
+			<!-- FANS CARD (Ignite Steel/Ember Card with Dynamic Read/Write Views and Bottom Rail) -->
+			<controls:ChamferCard Grid.Column="2" Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
+			                      ChamferSize="6" Padding="10,8,10,10"
+			                      ToolTip="Hardware cooling fan controls: toggle factory EC automatic curve, maximum RPM, or custom fan speed and temperature curves.">
+				<StackPanel>
+					<!-- Card Header with Edit Curve Button and Bottom Divider -->
+					<Border BorderBrush="{StaticResource Steel800Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,6">
+						<Grid>
+							<TextBlock Text="FANS" Foreground="{StaticResource Steel300Brush}" FontFamily="{StaticResource MonoFontFamily}"
+							           FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center" />
+							<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+								<!-- USE CURVE Toggle Button (visible when Custom Fan is enabled) -->
+								<ToggleButton x:Name="BtnCurveToggle" IsChecked="{Binding IsCurveModeEnabled, UpdateSourceTrigger=PropertyChanged}"
+								              Visibility="{Binding IsCustomFanEnabled, Converter={StaticResource BoolToVis}}"
+								              Style="{StaticResource SmallGhostToggleBtn}"
+								              Content="CURVE"
+								              Margin="0,0,4,0"
+								              ToolTip="Toggles active temperature-based fan curve control." />
+								<!-- EDIT CURVE Button -->
+								<Button x:Name="BtnEditCurve" Click="OpenCurveEditor_Click" Style="{StaticResource GhostBtn}" Padding="4,1"
+								        ToolTip="Opens the interactive fan curve editor.">
+									<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+										<Path Data="M10.325,4.317c.426-1.756 2.924-1.756 3.35,0a1.724,1.724 0 0,0 2.573,1.066c1.543-.94 3.31.826 2.37,2.37a1.724,1.724 0 0,0 1.065,2.572c1.756.426 1.756,2.924 0,3.35a1.724,1.724 0 0,0-1.066,2.573c.94,1.543-.826,3.31-2.37,2.37a1.724,1.724 0 0,0-2.572,1.065c-.426,1.756-2.924,1.756-3.35,0a1.724,1.724 0 0,0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724,1.724 0 0,0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724,1.724 0 0,0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15,12a3,3 0 1,1 -6,0 3,3 0 0,1 6,0z"
+										      Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
+										      Stretch="Uniform" Width="8" Height="8" Margin="0,0,3,0" />
+										<TextBlock Text="EDIT CURVE" FontFamily="{StaticResource MonoFontFamily}" FontSize="8" FontWeight="Bold" />
+									</StackPanel>
+								</Button>
+							</StackPanel>
+						</Grid>
+					</Border>
+
+					<!-- Middle Fan Speeds Area: Fixed Height (50px) hosting Read View or Write View -->
+					<Grid Height="50">
+						<!-- Read View (Auto / Max / Curve active) -->
+						<StackPanel Visibility="{Binding FanReadViewVisibility}" VerticalAlignment="Center">
+							<!-- CPU Read Bar -->
+							<Grid Margin="0,0,0,6">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="24" />
+									<ColumnDefinition Width="*" />
+									<ColumnDefinition Width="28" />
+								</Grid.ColumnDefinitions>
+								<TextBlock Grid.Column="0" Text="CPU" Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}"
+								           FontSize="9" FontWeight="Bold" VerticalAlignment="Center" />
+								<ProgressBar Grid.Column="1" Value="{Binding CpuFanPercentage}" Maximum="100" Style="{StaticResource IgniteProgressBarStyle}"
+								             Margin="4,0,4,0" VerticalAlignment="Center" />
+								<TextBlock Grid.Column="2" Text="{Binding CpuFanPctText}" Foreground="{StaticResource Steel100Brush}" FontFamily="{StaticResource MonoFontFamily}"
+								           FontSize="9" FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" />
+							</Grid>
+
+							<!-- GPU Read Bar -->
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="24" />
+									<ColumnDefinition Width="*" />
+									<ColumnDefinition Width="28" />
+								</Grid.ColumnDefinitions>
+								<TextBlock Grid.Column="0" Text="GPU" Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}"
+								           FontSize="9" FontWeight="Bold" VerticalAlignment="Center" />
+								<ProgressBar Grid.Column="1" Value="{Binding GpuFanPercentage}" Maximum="100" Style="{StaticResource IgniteProgressBarStyle}"
+								             Margin="4,0,4,0" VerticalAlignment="Center" />
+								<TextBlock Grid.Column="2" Text="{Binding GpuFanPctText}" Foreground="{StaticResource Steel100Brush}" FontFamily="{StaticResource MonoFontFamily}"
+								           FontSize="9" FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" />
+							</Grid>
+						</StackPanel>
+
+						<!-- Write View (Manual fixed sliders) -->
+						<StackPanel Visibility="{Binding FanWriteViewVisibility}" VerticalAlignment="Center">
+							<!-- CPU Write Slider -->
+							<Grid Margin="0,0,0,4">
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="24" />
+									<ColumnDefinition Width="*" />
+									<ColumnDefinition Width="28" />
+								</Grid.ColumnDefinitions>
+								<TextBlock Grid.Column="0" Text="CPU" Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}"
+								           FontSize="9" FontWeight="Bold" VerticalAlignment="Center" />
+								<Slider Grid.Column="1" x:Name="CpuFanSlider" Style="{StaticResource ModernSliderStyle}"
+								        Minimum="0" Maximum="100" Value="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}"
+								        IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1"
+								        Margin="4,0,4,0" VerticalAlignment="Center" />
+								<TextBlock Grid.Column="2" Text="{Binding CpuFanSpeed, StringFormat='{}{0}%'}" Foreground="{StaticResource Ember400Brush}"
+								           FontFamily="{StaticResource MonoFontFamily}" FontSize="9" FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" />
+							</Grid>
+
+							<!-- GPU Write Slider -->
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="24" />
+									<ColumnDefinition Width="*" />
+									<ColumnDefinition Width="28" />
+								</Grid.ColumnDefinitions>
+								<TextBlock Grid.Column="0" Text="GPU" Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}"
+								           FontSize="9" FontWeight="Bold" VerticalAlignment="Center" />
+								<Slider Grid.Column="1" x:Name="GpuFanSlider" Style="{StaticResource ModernSliderStyle}"
+								        Minimum="0" Maximum="100" Value="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}"
+								        IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1"
+								        Margin="4,0,4,0" VerticalAlignment="Center" />
+								<TextBlock Grid.Column="2" Text="{Binding GpuFanSpeed, StringFormat='{}{0}%'}" Foreground="{StaticResource Ember400Brush}"
+								           FontFamily="{StaticResource MonoFontFamily}" FontSize="9" FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" />
+							</Grid>
+						</StackPanel>
+					</Grid>
+
+					<!-- Bottom Fan Control Detent Rail (AUTO / MAX / MANUAL) -->
+					<controls:ChamferCard Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel600Brush}" BorderThickness="1"
+					                      ChamferSize="4" Padding="0" Margin="0,6,0,0">
+						<UniformGrid Rows="1" Height="28">
+							<RadioButton x:Name="BtnFanAuto" TabIndex="0" GroupName="Fans" Uid="Auto"
+							             Content="AUTO" Style="{StaticResource CompactActionButtonStyle}" Command="{Binding SetFanCommand}"
+							             CommandParameter="Auto"
+							             ToolTip="Restores factory Acer Embedded Controller automatic fan management." />
+							<RadioButton x:Name="BtnFanMax" TabIndex="1" GroupName="Fans" Uid="Max"
+							             Content="MAX" Style="{StaticResource CompactActionButtonStyle}" Command="{Binding SetFanCommand}"
+							             CommandParameter="Max"
+							             ToolTip="Forces all cooling fans to 100% maximum RPM." />
+							<RadioButton x:Name="BtnFanCustom" TabIndex="1" GroupName="Fans" Uid="Medium"
+							             Content="MANUAL" Style="{StaticResource CompactActionButtonStyle}" Command="{Binding SetFanCommand}"
+							             CommandParameter="Medium"
+							             ToolTip="Enables custom fan speed controls and waypoint temperature curves." />
+						</UniformGrid>
+					</controls:ChamferCard>
+				</StackPanel>
+			</controls:ChamferCard>
+		</Grid>
 	</StackPanel>
 </UserControl>
 

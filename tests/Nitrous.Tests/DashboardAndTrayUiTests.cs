@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Media;
@@ -1247,6 +1247,79 @@ public class DashboardAndTrayUiTests
             }
         });
     }
+
+    [Fact]
+    public void SmallGhostToggleBtn_Triggers_DoNotHaveUnresolvedStaticResourceUnsetValue()
+    {
+        RunInSta(() =>
+        {
+            var window = new NitrousDashboard();
+            try
+            {
+                var style = (Style)window.FindResource("SmallGhostToggleBtn");
+                Assert.NotNull(style);
+
+                var templateSetter = style.Setters.OfType<Setter>().FirstOrDefault(s => s.Property == System.Windows.Controls.Control.TemplateProperty);
+                Assert.NotNull(templateSetter);
+                var template = Assert.IsType<ControlTemplate>(templateSetter.Value);
+
+                foreach (var trigger in template.Triggers.OfType<Trigger>())
+                {
+                    foreach (var setter in trigger.Setters.OfType<Setter>())
+                    {
+                        Assert.False(setter.Value == DependencyProperty.UnsetValue,
+                            $"Trigger on {trigger.Property?.Name}={trigger.Value} has UnsetValue for property {setter.Property?.Name}");
+                    }
+                }
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void DashboardStyles_AllStylesAndTriggers_HaveNoUnresolvedStaticResources()
+    {
+        RunInSta(() =>
+        {
+            var window = new NitrousDashboard();
+            try
+            {
+                var dict = window.Resources.MergedDictionaries.FirstOrDefault();
+                Assert.NotNull(dict);
+
+                foreach (var key in dict.Keys)
+                {
+                    if (dict[key] is Style style)
+                    {
+                        foreach (var setter in style.Setters.OfType<Setter>())
+                        {
+                            Assert.False(setter.Value == DependencyProperty.UnsetValue,
+                                $"Style '{key}' setter for property {setter.Property?.Name} evaluated to UnsetValue.");
+                        }
+
+                        var templateSetter = style.Setters.OfType<Setter>()
+                            .FirstOrDefault(s => s.Property == System.Windows.Controls.Control.TemplateProperty);
+                        if (templateSetter?.Value is ControlTemplate template)
+                        {
+                            foreach (var trigger in template.Triggers.OfType<Trigger>())
+                            {
+                                foreach (var setter in trigger.Setters.OfType<Setter>())
+                                {
+                                    Assert.False(setter.Value == DependencyProperty.UnsetValue,
+                                        $"Style '{key}' template trigger ({trigger.Property?.Name}={trigger.Value}) setter for property {setter.Property?.Name} evaluated to UnsetValue.");
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
 }
-
-

@@ -102,6 +102,10 @@ static class Program
             System.Windows.Media.RenderOptions.ProcessRenderMode = System.Windows.Interop.RenderMode.SoftwareOnly;
 
             var app = new System.Windows.Application();
+            app.Resources.MergedDictionaries.Add(new System.Windows.ResourceDictionary
+            {
+                Source = new Uri("pack://application:,,,/Nitrous;component/Ui/Styles/DashboardStyles.xaml", UriKind.Absolute)
+            });
             app.DispatcherUnhandledException += (s, e) =>
             {
                 LogManager.Error("Unhandled WPF UI Dispatcher exception", e.Exception, "WpfDispatcher");

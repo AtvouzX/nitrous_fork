@@ -348,6 +348,42 @@ public partial class DashboardViewModel
                         GpuRpmText = telemetry.GpuRpm > 0 ? $"{telemetry.GpuRpm} RPM" : "-- RPM";
                         GpuTempColor = telemetry.GpuTemp > 85 ? "#FF453A" : "White";
 
+                        // Update Fan read percentage indicators
+                        if (IsCustomFanEnabled && !IsCurveModeEnabled)
+                        {
+                            CpuFanPercentage = CpuFanSpeed;
+                            GpuFanPercentage = GpuFanSpeed;
+                        }
+                        else
+                        {
+                            var activeFanMode = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile fMode) ? fMode : FanProfile.Auto;
+                            if (activeFanMode == FanProfile.Max)
+                            {
+                                CpuFanPercentage = 100;
+                                GpuFanPercentage = 100;
+                            }
+                            else if (activeFanMode == FanProfile.Medium && IsCurveModeEnabled)
+                            {
+                                int curCpu = telemetry.CpuTemp > 0 ? telemetry.CpuTemp : 50;
+                                int curGpu = telemetry.GpuTemp > 0 ? telemetry.GpuTemp : curCpu;
+                                string pName = SettingsManager.Get("ActiveFanCurvePreset", "Auto");
+                                if (pName == "Auto") pName = ActivePowerProfile.ToString();
+                                var cpuCurve = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{pName}", FanCurveHelper.GetDefaultCpuCurve(ActivePowerProfile));
+                                var gpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}", FanCurveHelper.GetDefaultGpuCurve(ActivePowerProfile));
+                                CpuFanPercentage = Math.Clamp(FanCurveHelper.InterpolateSpeed(cpuCurve, curCpu), 0, 100);
+                                GpuFanPercentage = Math.Clamp(FanCurveHelper.InterpolateSpeed(gpuCurve, curGpu), 0, 100);
+                            }
+                            else
+                            {
+                                CpuFanPercentage = telemetry.CpuRpm > 0
+                                    ? Math.Clamp((int)Math.Round((telemetry.CpuRpm - 1800.0) / (5850.0 - 1800.0) * 70.0 + 30.0), 0, 100)
+                                    : 0;
+                                GpuFanPercentage = telemetry.GpuRpm > 0
+                                    ? Math.Clamp((int)Math.Round((telemetry.GpuRpm - 1800.0) / (5850.0 - 1800.0) * 70.0 + 30.0), 0, 100)
+                                    : 0;
+                            }
+                        }
+
                         // 2. Update NVIDIA SMI Deep Telemetry
                         if (smi != null && !string.IsNullOrEmpty(smi.Name) && smi.Name != "Unknown" && smi.PState != "Sleep")
                         {

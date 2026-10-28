@@ -91,10 +91,7 @@
                                 Padding="{TemplateBinding Padding}"
                                 SnapsToDevicePixels="True"
                                 MaxWidth="280">
-                            <TextBlock Text="{TemplateBinding Content}"
-                                       Foreground="{TemplateBinding Foreground}"
-                                       FontSize="{TemplateBinding FontSize}"
-                                       TextWrapping="Wrap" />
+                            <ContentPresenter />
                         </Border>
                     </ControlTemplate>
                 </Setter.Value>

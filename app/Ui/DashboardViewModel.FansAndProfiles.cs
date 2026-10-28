@@ -1,5 +1,6 @@
 using System;
 using System.Threading.Tasks;
+using System.Windows;
 using System.Windows.Input;
 using Nitrous.Enums;
 using Nitrous.Helpers;
@@ -64,6 +65,8 @@ public partial class DashboardViewModel
                 SettingsManager.Save("IsCurveModeEnabled", value ? 1 : 0);
                 SettingsManager.Save("FanCurveVersion", DateTime.UtcNow.Ticks);
                 OnPropertyChanged(nameof(IsManualSliderEnabled));
+                OnPropertyChanged(nameof(FanReadViewVisibility));
+                OnPropertyChanged(nameof(FanWriteViewVisibility));
                 OnPropertyChanged(nameof(CustomFanHeaderText));
                 OnPropertyChanged(nameof(CustomFanHeaderColor));
                 OnPropertyChanged(nameof(FanModeSubtext));
@@ -144,6 +147,8 @@ public partial class DashboardViewModel
             {
                 OnPropertyChanged(nameof(CustomFanOpacity));
                 OnPropertyChanged(nameof(IsManualSliderEnabled));
+                OnPropertyChanged(nameof(FanReadViewVisibility));
+                OnPropertyChanged(nameof(FanWriteViewVisibility));
                 OnPropertyChanged(nameof(CustomFanHeaderText));
                 OnPropertyChanged(nameof(CustomFanHeaderColor));
                 OnPropertyChanged(nameof(SliderDisabledTooltip));
@@ -152,6 +157,63 @@ public partial class DashboardViewModel
     }
 
     public double CustomFanOpacity => IsCustomFanEnabled ? 1.0 : 0.4;
+
+    public Visibility FanReadViewVisibility => IsManualSliderEnabled ? Visibility.Collapsed : Visibility.Visible;
+    public Visibility FanWriteViewVisibility => IsManualSliderEnabled ? Visibility.Visible : Visibility.Collapsed;
+
+    private int _cpuFanPercentage = 50;
+
+    public int CpuFanPercentage
+    {
+        get => _cpuFanPercentage;
+        set
+        {
+            if (SetProperty(ref _cpuFanPercentage, value))
+            {
+                OnPropertyChanged(nameof(CpuFanPctText));
+            }
+        }
+    }
+
+    private int _gpuFanPercentage = 50;
+
+    public int GpuFanPercentage
+    {
+        get => _gpuFanPercentage;
+        set
+        {
+            if (SetProperty(ref _gpuFanPercentage, value))
+            {
+                OnPropertyChanged(nameof(GpuFanPctText));
+            }
+        }
+    }
+
+    public string CpuFanPctText => $"{CpuFanPercentage}%";
+    public string GpuFanPctText => $"{GpuFanPercentage}%";
+
+    private RefreshProfile _activeRefreshProfile;
+
+    public RefreshProfile ActiveRefreshProfile
+    {
+        get => _activeRefreshProfile;
+        set
+        {
+            if (SetProperty(ref _activeRefreshProfile, value))
+            {
+                OnPropertyChanged(nameof(RefreshBadgeText));
+            }
+        }
+    }
+
+    public string RefreshBadgeText => ActiveRefreshProfile switch
+    {
+        RefreshProfile.Hz60 => "60HZ",
+        RefreshProfile.MaxHz => MaxRefreshText,
+        _ => "AUTO"
+    };
+
+    public string AutoRefreshSubtext => $"60/{MaxRefreshText.Replace("HZ", "").Trim()}";
 
     private void TriggerFanSave()
     {
@@ -204,9 +266,12 @@ public partial class DashboardViewModel
     {
         _cpuFanSpeed = SettingsManager.Get("CustomFanSpeedCpu", 50);
         _gpuFanSpeed = SettingsManager.Get("CustomFanSpeedGpu", 50);
+        _cpuFanPercentage = _cpuFanSpeed;
+        _gpuFanPercentage = _gpuFanSpeed;
         _isUnifiedFans = SettingsManager.Get("UnifiedFans", 1) == 1;
         _isCurveModeEnabled = SettingsManager.Get("IsCurveModeEnabled", 0) == 1;
         _manageCpuPower = SettingsManager.Get("ManageCpuPower", 0) == 1;
+        _activeRefreshProfile = (RefreshProfile)SettingsManager.Get("RefreshMode", (int)RefreshProfile.Auto);
 
         var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f)
             ? f
@@ -269,9 +334,21 @@ public partial class DashboardViewModel
                 if (mode == FanProfile.Medium)
                 {
                     if (IsCurveModeEnabled)
+                    {
                         ApplyCurrentFanCurve();
+                    }
                     else
+                    {
+                        CpuFanPercentage = CpuFanSpeed;
+                        GpuFanPercentage = GpuFanSpeed;
                         _ = AcerWmiManager.SetCustomFansAsync(CpuFanSpeed, GpuFanSpeed);
+                    }
+                }
+                else if (mode == FanProfile.Max)
+                {
+                    CpuFanPercentage = 100;
+                    GpuFanPercentage = 100;
+                    _ = AcerWmiManager.SetFansAsync(mode);
                 }
                 else
                 {
@@ -288,6 +365,7 @@ public partial class DashboardViewModel
         {
             if (Enum.TryParse(param?.ToString(), out RefreshProfile profile))
             {
+                ActiveRefreshProfile = profile;
                 SettingsManager.Save("RefreshMode", (int)profile);
                 bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
                 DisplayManager.ApplyRefreshProfile(profile, isOnline);

@@ -35,6 +35,9 @@
 	<Color x:Key="Steel300Color">#B8B8C2</Color>
 	<SolidColorBrush x:Key="Steel300Brush" Color="{StaticResource Steel300Color}" />
 
+	<Color x:Key="Steel200Color">#D4D4D9</Color>
+	<SolidColorBrush x:Key="Steel200Brush" Color="{StaticResource Steel200Color}" />
+
 	<Color x:Key="Steel100Color">#EDEDEF</Color>
 	<SolidColorBrush x:Key="Steel100Brush" Color="{StaticResource Steel100Color}" />
 
@@ -175,6 +178,191 @@
 	</Style>
 
 	<!-- ===================================================================== -->
+	<!-- 2B. COMPACT ACTION BUTTON STYLE (For Tight Detent Rails)              -->
+	<!-- Reference: nitrous - ignite.html fan-ctl                              -->
+	<!-- ===================================================================== -->
+	<Style x:Key="CompactActionButtonStyle" TargetType="RadioButton">
+		<Setter Property="Background" Value="Transparent" />
+		<Setter Property="Foreground" Value="{StaticResource Steel400Brush}" />
+		<Setter Property="BorderBrush" Value="Transparent" />
+		<Setter Property="BorderThickness" Value="0" />
+		<Setter Property="Cursor" Value="Hand" />
+		<Setter Property="TabIndex" Value="1" />
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="RadioButton">
+					<Grid Background="Transparent">
+						<Border x:Name="LeftDivider" Width="1" Height="16" Background="{StaticResource Steel700Brush}"
+						        HorizontalAlignment="Left" VerticalAlignment="Center" />
+						<!-- Main Detent Surface -->
+						<Border x:Name="MainBorder" Background="{TemplateBinding Background}"
+						        BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+						        CornerRadius="0" Margin="0" SnapsToDevicePixels="True">
+							<Grid>
+								<TextBlock x:Name="ContentText"
+								           Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource UpperConverter}}"
+								           Foreground="{TemplateBinding Foreground}" FontFamily="{StaticResource MonoFontFamily}"
+								           FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"
+								           Margin="0,0,0,3" />
+								<!-- Ignite Detent Accent Line (Fixed length 24px matching w-6) -->
+								<Border x:Name="IndicatorLine" Height="2" Width="24" Background="{StaticResource Steel600Brush}"
+								        HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,3" />
+							</Grid>
+						</Border>
+					</Grid>
+					<ControlTemplate.Triggers>
+						<Trigger Property="TabIndex" Value="0">
+							<Setter TargetName="LeftDivider" Property="Visibility" Value="Collapsed" />
+						</Trigger>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="MainBorder" Property="Background" Value="{StaticResource Steel850Brush}" />
+							<Setter Property="Foreground" Value="{StaticResource Steel100Brush}" />
+							<Setter TargetName="IndicatorLine" Property="Background" Value="{StaticResource Steel500Brush}" />
+							<Setter TargetName="LeftDivider" Property="Opacity" Value="0" />
+							<Setter TargetName="MainBorder" Property="Margin" Value="-1,0,-1,0" />
+							<Setter Property="Panel.ZIndex" Value="1" />
+						</Trigger>
+						<Trigger Property="IsChecked" Value="True">
+							<Setter TargetName="MainBorder" Property="Background" Value="{StaticResource Steel950Brush}" />
+							<Setter Property="Foreground" Value="{StaticResource Steel100Brush}" />
+							<Setter TargetName="IndicatorLine" Property="Background" Value="{StaticResource Ember500Brush}" />
+							<Setter TargetName="LeftDivider" Property="Opacity" Value="0" />
+							<Setter TargetName="MainBorder" Property="Margin" Value="-1,0,-1,0" />
+							<Setter Property="Panel.ZIndex" Value="2" />
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter Property="Opacity" Value="0.3" />
+							<Setter Property="Cursor" Value="Arrow" />
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<!-- ===================================================================== -->
+	<!-- 2C. VERTICAL DETENT BUTTON STYLE (Zero Radius Stacked Steps)          -->
+	<!-- Reference: nitrous - ignite.html hz-step                              -->
+	<!-- ===================================================================== -->
+	<Style x:Key="VerticalDetentButtonStyle" TargetType="RadioButton">
+		<Setter Property="Background" Value="Transparent" />
+		<Setter Property="Foreground" Value="{StaticResource Steel400Brush}" />
+		<Setter Property="BorderBrush" Value="Transparent" />
+		<Setter Property="BorderThickness" Value="0" />
+		<Setter Property="Cursor" Value="Hand" />
+		<Setter Property="TabIndex" Value="1" />
+		<Setter Property="Height" Value="27" />
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="RadioButton">
+					<Grid Background="Transparent">
+						<Border x:Name="TopDivider" Height="1" Background="{StaticResource Steel800Brush}"
+						        VerticalAlignment="Top" SnapsToDevicePixels="True" />
+						<Border x:Name="MainBorder" Background="{TemplateBinding Background}"
+						        CornerRadius="0" SnapsToDevicePixels="True">
+							<Grid Margin="10,0,8,0">
+								<Border x:Name="VerticalIndicator" Width="3" Background="{StaticResource Steel700Brush}"
+								        HorizontalAlignment="Left" VerticalAlignment="Stretch" Margin="-10,0,0,0" SnapsToDevicePixels="True" />
+								<TextBlock x:Name="TitleText"
+								           Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource UpperConverter}}"
+								           Foreground="{TemplateBinding Foreground}" FontFamily="{StaticResource MonoFontFamily}"
+								           FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Left" />
+								<TextBlock x:Name="SubText"
+								           Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource UpperConverter}}"
+								           Foreground="{StaticResource Steel500Brush}" FontFamily="{StaticResource MonoFontFamily}"
+								           FontSize="8" VerticalAlignment="Center" HorizontalAlignment="Right" />
+							</Grid>
+						</Border>
+					</Grid>
+					<ControlTemplate.Triggers>
+						<Trigger Property="TabIndex" Value="0">
+							<Setter TargetName="TopDivider" Property="Visibility" Value="Collapsed" />
+						</Trigger>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="MainBorder" Property="Background" Value="{StaticResource Steel850Brush}" />
+							<Setter Property="Foreground" Value="{StaticResource Steel100Brush}" />
+							<Setter TargetName="VerticalIndicator" Property="Background" Value="{StaticResource Steel500Brush}" />
+						</Trigger>
+						<Trigger Property="IsChecked" Value="True">
+							<Setter TargetName="MainBorder" Property="Background" Value="{StaticResource Steel950Brush}" />
+							<Setter Property="Foreground" Value="{StaticResource Steel100Brush}" />
+							<Setter TargetName="VerticalIndicator" Property="Background" Value="{StaticResource Ember500Brush}" />
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter Property="Opacity" Value="0.3" />
+							<Setter Property="Cursor" Value="Arrow" />
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<!-- ===================================================================== -->
+	<!-- 2D. IGNITE INDUSTRIAL PROGRESS BAR (Zero Radius Read Bar)             -->
+	<!-- Reference: nitrous - ignite.html fanCpuBarRead                        -->
+	<!-- ===================================================================== -->
+	<Style x:Key="IgniteProgressBarStyle" TargetType="ProgressBar">
+		<Setter Property="Height" Value="6" />
+		<Setter Property="Background" Value="{StaticResource Steel900Brush}" />
+		<Setter Property="BorderBrush" Value="{StaticResource Steel700Brush}" />
+		<Setter Property="BorderThickness" Value="1" />
+		<Setter Property="Foreground" Value="{StaticResource Steel100Brush}" />
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ProgressBar">
+					<Border Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+					        BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="0" SnapsToDevicePixels="True">
+						<Grid x:Name="PART_Track">
+							<Rectangle x:Name="PART_Indicator" Fill="{TemplateBinding Foreground}" HorizontalAlignment="Left"
+							           SnapsToDevicePixels="True" />
+						</Grid>
+					</Border>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<!-- ===================================================================== -->
+	<!-- 2E. SMALL GHOST TOGGLE BUTTON (Zero Radius)                           -->
+	<!-- ===================================================================== -->
+	<Style x:Key="SmallGhostToggleBtn" TargetType="ToggleButton">
+		<Setter Property="Background" Value="{StaticResource Steel900Brush}" />
+		<Setter Property="Foreground" Value="{StaticResource Steel400Brush}" />
+		<Setter Property="BorderBrush" Value="{StaticResource Steel700Brush}" />
+		<Setter Property="BorderThickness" Value="1" />
+		<Setter Property="Cursor" Value="Hand" />
+		<Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
+		<Setter Property="FontSize" Value="8" />
+		<Setter Property="FontWeight" Value="Bold" />
+		<Setter Property="Padding" Value="4,1" />
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ToggleButton">
+					<Border x:Name="BtnBorder" Background="{TemplateBinding Background}"
+					        BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
+					        CornerRadius="0" Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
+						<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="BtnBorder" Property="Background" Value="{StaticResource Steel800Brush}" />
+							<Setter Property="Foreground" Value="{StaticResource Steel100Brush}" />
+						</Trigger>
+						<Trigger Property="IsChecked" Value="True">
+							<Setter TargetName="BtnBorder" Property="Background" Value="{StaticResource Steel850Brush}" />
+							<Setter TargetName="BtnBorder" Property="BorderBrush" Value="{StaticResource Ember500Brush}" />
+							<Setter Property="Foreground" Value="{StaticResource Ember400Brush}" />
+						</Trigger>
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter Property="Opacity" Value="0.3" />
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+	<!-- ===================================================================== -->
 	<!-- 3. MECHANICAL ANVIL TOGGLE (Zero Radius)                              -->
 	<!-- ===================================================================== -->
 	<Style x:Key="ModernToggleStyle" TargetType="CheckBox">
@@ -314,12 +502,13 @@
 							      Margin="1.5"
 							      Visibility="Collapsed" />
 						</Border>
-						<TextBlock Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource UpperConverter}}"
-						           Foreground="{TemplateBinding Foreground}"
-						           FontFamily="{StaticResource MonoFontFamily}"
-						           FontSize="11.5"
-						           FontWeight="Bold"
-						           VerticalAlignment="Center" />
+						<TextBlock
+							Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource UpperConverter}}"
+							Foreground="{TemplateBinding Foreground}"
+							FontFamily="{StaticResource MonoFontFamily}"
+							FontSize="11.5"
+							FontWeight="Bold"
+							VerticalAlignment="Center" />
 					</StackPanel>
 					<ControlTemplate.Triggers>
 						<Trigger Property="IsChecked" Value="True">
@@ -476,6 +665,7 @@
 		<Setter Property="ToolTipService.InitialShowDelay" Value="400" />
 		<Setter Property="ToolTipService.BetweenShowDelay" Value="100" />
 		<Setter Property="ToolTipService.ShowDuration" Value="7000" />
+		<Setter Property="TextBlock.TextWrapping" Value="Wrap" />
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="ToolTip">
@@ -486,10 +676,7 @@
 					        Padding="{TemplateBinding Padding}"
 					        SnapsToDevicePixels="True"
 					        MaxWidth="280">
-						<TextBlock Text="{TemplateBinding Content}"
-						           Foreground="{TemplateBinding Foreground}"
-						           FontSize="{TemplateBinding FontSize}"
-						           TextWrapping="Wrap" />
+						<ContentPresenter />
 					</Border>
 				</ControlTemplate>
 			</Setter.Value>
@@ -497,3 +684,4 @@
 	</Style>
 
 </ResourceDictionary>
+

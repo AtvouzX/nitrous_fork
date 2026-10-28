@@ -316,6 +316,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(IsCustomFanEnabled));
             OnPropertyChanged(nameof(CustomFanOpacity));
             OnPropertyChanged(nameof(IsManualSliderEnabled));
+            OnPropertyChanged(nameof(FanReadViewVisibility));
+            OnPropertyChanged(nameof(FanWriteViewVisibility));
             OnPropertyChanged(nameof(CustomFanHeaderText));
             OnPropertyChanged(nameof(CustomFanHeaderColor));
             OnPropertyChanged(nameof(SliderDisabledTooltip));
@@ -348,11 +350,21 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             _isCurveModeEnabled = newCurve;
             OnPropertyChanged(nameof(IsCurveModeEnabled));
             OnPropertyChanged(nameof(IsManualSliderEnabled));
+            OnPropertyChanged(nameof(FanReadViewVisibility));
+            OnPropertyChanged(nameof(FanWriteViewVisibility));
             OnPropertyChanged(nameof(CustomFanHeaderText));
             OnPropertyChanged(nameof(CustomFanHeaderColor));
             OnPropertyChanged(nameof(FanModeSubtext));
             OnPropertyChanged(nameof(FanModeSubtextColor));
             OnPropertyChanged(nameof(SliderDisabledTooltip));
+        }
+
+        var newRefresh = (RefreshProfile)SettingsManager.Get("RefreshMode", (int)RefreshProfile.Auto);
+        if (_activeRefreshProfile != newRefresh)
+        {
+            _activeRefreshProfile = newRefresh;
+            OnPropertyChanged(nameof(ActiveRefreshProfile));
+            OnPropertyChanged(nameof(RefreshBadgeText));
         }
 
         var newManageCpu = SettingsManager.Get("ManageCpuPower", 0) == 1;

@@ -260,6 +260,7 @@ public partial class NitrousDashboard : Window
         if (DataContext is DashboardViewModel vm)
         {
             vm.ActivePowerProfile = activeMode;
+            vm.ActiveRefreshProfile = activeRefresh;
             vm.UpdateBatteryBadge();
         }
 
