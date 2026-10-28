@@ -9,9 +9,9 @@
 			</ResourceDictionary.MergedDictionaries>
 		</ResourceDictionary>
 	</UserControl.Resources>
-	<StackPanel Margin="20,10,20,0">
+	<StackPanel Margin="12,8,12,0">
 		<!-- Custom Hotkeys Setup -->
-		<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" Margin="0,0,0,10" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
+		<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" Margin="0,0,0,10" BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
 		                      Padding="15">
 			<StackPanel>
 				<TextBlock

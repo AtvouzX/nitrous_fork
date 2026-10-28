@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Media;
@@ -102,6 +102,10 @@ public class DashboardAndTrayUiTests
                     "NavButtonStyle",
                     "GhostBtn",
                     "AccentBtn",
+                    "VerticalDetentButtonStyle",
+                    "CompactActionButtonStyle",
+                    "IgniteProgressBarStyle",
+                    "SmallGhostToggleBtn",
                     "HotkeyTextBoxStyle",
                     "BoolToVis"
                 };
@@ -212,11 +216,87 @@ public class DashboardAndTrayUiTests
                                  window.BtnFanMax.IsChecked == true ||
                                  window.BtnFanCustom.IsChecked == true;
                 Assert.True(fanActive, "Expected at least one Fan Profile radio button to be checked.");
+
+                // Refresh Profile selection: exactly one button must be active
+                bool refreshActive = window.BtnRefreshAuto.IsChecked == true ||
+                                     window.BtnRefresh60.IsChecked == true ||
+                                     window.BtnRefreshMax.IsChecked == true;
+                Assert.True(refreshActive, "Expected at least one Refresh Profile radio button to be checked.");
             }
             finally
             {
                 window.Close();
             }
+        });
+    }
+
+    [Fact]
+    public void DashboardViewModel_RefreshBadgeAndSubtext_FormatsCorrectly()
+    {
+        RunInSta(() =>
+        {
+            var vm = new DashboardViewModel();
+            vm.ActiveRefreshProfile = RefreshProfile.Auto;
+            Assert.Equal("AUTO", vm.RefreshBadgeText);
+            Assert.StartsWith("60/", vm.AutoRefreshSubtext);
+
+            vm.ActiveRefreshProfile = RefreshProfile.Hz60;
+            Assert.Equal("60HZ", vm.RefreshBadgeText);
+
+            vm.ActiveRefreshProfile = RefreshProfile.MaxHz;
+            Assert.Equal(vm.MaxRefreshText, vm.RefreshBadgeText);
+        });
+    }
+
+    [Fact]
+    public void DashboardViewModel_FanViewsAndPercentage_ToggleVisibilityAndFormatCorrectly()
+    {
+        RunInSta(() =>
+        {
+            var vm = new DashboardViewModel();
+
+            // When in Auto or Max: Read View should be Visible, Write View should be Collapsed
+            vm.IsCustomFanEnabled = false;
+            Assert.Equal(System.Windows.Visibility.Visible, vm.FanReadViewVisibility);
+            Assert.Equal(System.Windows.Visibility.Collapsed, vm.FanWriteViewVisibility);
+
+            // When Custom fan enabled with curve: Read view should still be Visible
+            vm.IsCustomFanEnabled = true;
+            vm.IsCurveModeEnabled = true;
+            Assert.Equal(System.Windows.Visibility.Visible, vm.FanReadViewVisibility);
+            Assert.Equal(System.Windows.Visibility.Collapsed, vm.FanWriteViewVisibility);
+
+            // When Custom fan enabled with fixed sliders: Write view should be Visible
+            vm.IsCurveModeEnabled = false;
+            Assert.Equal(System.Windows.Visibility.Collapsed, vm.FanReadViewVisibility);
+            Assert.Equal(System.Windows.Visibility.Visible, vm.FanWriteViewVisibility);
+
+            // Fan percentage format strings
+            vm.CpuFanPercentage = 65;
+            vm.GpuFanPercentage = 70;
+            Assert.Equal("65%", vm.CpuFanPctText);
+            Assert.Equal("70%", vm.GpuFanPctText);
+        });
+    }
+
+    [Fact]
+    public void DashboardViewModel_SetRefreshCommand_UpdatesActiveRefreshProfile()
+    {
+        RunInSta(() =>
+        {
+            var vm = new DashboardViewModel();
+
+            vm.SetRefreshCommand.Execute("Hz60");
+            Assert.Equal(RefreshProfile.Hz60, vm.ActiveRefreshProfile);
+            Assert.Equal("60HZ", vm.RefreshBadgeText);
+
+            vm.SetRefreshCommand.Execute("Auto");
+            Assert.Equal(RefreshProfile.Auto, vm.ActiveRefreshProfile);
+            Assert.Equal("AUTO", vm.RefreshBadgeText);
+
+            vm.SetRefreshCommand.Execute("MaxHz");
+            Assert.Equal(RefreshProfile.MaxHz, vm.ActiveRefreshProfile);
+            Assert.Equal(vm.MaxRefreshText, vm.RefreshBadgeText);
         });
     }
 
@@ -1240,6 +1320,139 @@ public class DashboardAndTrayUiTests
                 Assert.Equal(390.0, seg0.Point.X);
                 var seg1 = Assert.IsType<LineSegment>(updatedClip.Figures[0].Segments[1]);
                 Assert.Equal(400.0, seg1.Point.X);
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+    [Fact]
+    public void Dashboard_RefreshAndFanButtons_MouseHoverTransitions_DoNotThrowUnsetValueException()
+    {
+        RunInSta(() =>
+        {
+            var window = new NitrousDashboard();
+            try
+            {
+                window.Show();
+
+                var page = window.DashPage;
+                Assert.NotNull(page);
+
+                // Enable manual custom fan to make curve buttons visible
+                var vm = Assert.IsType<DashboardViewModel>(window.DataContext);
+                vm.IsCustomFanEnabled = true;
+
+                // Exercise mouse enter and leave on vertical detent refresh and fan buttons
+                UIElement[] buttonsToHover =
+                {
+                    page.BtnRefreshAuto,
+                    page.BtnRefresh60,
+                    page.BtnRefreshMax,
+                    page.BtnFanAuto,
+                    page.BtnFanMax,
+                    page.BtnFanCustom,
+                    page.BtnCurveToggle,
+                    page.BtnEditCurve
+                };
+
+                foreach (var element in buttonsToHover)
+                {
+                    Assert.NotNull(element);
+                    element.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0)
+                    {
+                        RoutedEvent = System.Windows.UIElement.MouseEnterEvent
+                    });
+                    element.RaiseEvent(new System.Windows.Input.MouseEventArgs(System.Windows.Input.Mouse.PrimaryDevice, 0)
+                    {
+                        RoutedEvent = System.Windows.UIElement.MouseLeaveEvent
+                    });
+                }
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+    [Fact]
+    public void Dashboard_FanWriteView_MeasuresAndArrangesCleanly()
+    {
+        RunInSta(() =>
+        {
+            var window = new NitrousDashboard();
+            try
+            {
+                window.Show();
+                var vm = Assert.IsType<DashboardViewModel>(window.DataContext);
+                vm.IsCustomFanEnabled = true;
+                Assert.True(vm.IsManualSliderEnabled);
+
+                window.DashPage.Measure(new System.Windows.Size(375, 580));
+                window.DashPage.Arrange(new System.Windows.Rect(0, 0, 375, 580));
+                window.DashPage.UpdateLayout();
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void Dashboard_PageMetrics_CompactMarginsAndBiggerComponents_RendersCleanly()
+    {
+        RunInSta(() =>
+        {
+            var window = new NitrousDashboard();
+            try
+            {
+                window.Show();
+                Assert.Equal(580, window.Height);
+                Assert.Equal(375, window.Width);
+
+                // Verify BorderCardBrush is resolvable
+                var borderCardBrush = window.TryFindResource("BorderCardBrush") as SolidColorBrush;
+                Assert.NotNull(borderCardBrush);
+                Assert.Equal(System.Windows.Media.Color.FromRgb(0x38, 0x38, 0x42), borderCardBrush.Color);
+
+                // Measure and arrange at new compact height
+                window.DashPage.Measure(new System.Windows.Size(375, 580));
+                window.DashPage.Arrange(new System.Windows.Rect(0, 0, 375, 580));
+                window.DashPage.UpdateLayout();
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void ToolTip_WithDashboardContentPresenterTemplate_RendersWithoutUnsetValueException()
+    {
+        RunInSta(() =>
+        {
+            var window = new NitrousDashboard();
+            try
+            {
+                window.Show();
+                var button = window.DashPage.BtnFanCustom;
+                
+                var tt = new System.Windows.Controls.ToolTip
+                {
+                    Content = "Enables custom fan speed controls and waypoint temperature curves.",
+                    PlacementTarget = button
+                };
+                var style = window.DashPage.FindResource(typeof(System.Windows.Controls.ToolTip)) as Style;
+                Assert.NotNull(style);
+                tt.Style = style;
+                tt.IsOpen = true;
+                tt.Measure(new System.Windows.Size(280, 100));
+                tt.Arrange(new System.Windows.Rect(0, 0, 280, 100));
+                tt.UpdateLayout();
+                tt.IsOpen = false;
             }
             finally
             {

@@ -63,7 +63,8 @@
 	<SolidColorBrush x:Key="SurfaceDeepBrush" Color="{StaticResource Steel950Color}" />
 	<SolidColorBrush x:Key="SurfaceCardBrush" Color="{StaticResource Steel900Color}" />
 	<SolidColorBrush x:Key="SurfaceButtonBrush" Color="{StaticResource Steel850Color}" />
-	<SolidColorBrush x:Key="BorderCardBrush" Color="{StaticResource Steel700Color}" />
+	<Color x:Key="BorderCardColor">#383842</Color>
+	<SolidColorBrush x:Key="BorderCardBrush" Color="{StaticResource BorderCardColor}" />
 	<SolidColorBrush x:Key="BorderShellBrush" Color="{StaticResource Steel600Color}" />
 	<SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource Steel100Color}" />
 	<SolidColorBrush x:Key="TextMutedBrush" Color="{StaticResource Steel400Color}" />
@@ -98,7 +99,7 @@
 					<Grid Background="Transparent">
 						<Border x:Name="LeftDivider"
 						        Width="1"
-						        Height="20"
+						        Height="24"
 						        Background="{StaticResource Steel700Brush}"
 						        HorizontalAlignment="Left"
 						        VerticalAlignment="Center" />
@@ -131,11 +132,11 @@
 								<!-- Ignite Detent Accent Line (Constant fixed length 32px matching w-8 at original elevated bottom position) -->
 								<Border x:Name="IndicatorLine"
 								        Height="2"
-								        Width="32"
+								        Width="36"
 								        Background="{StaticResource Steel600Brush}"
 								        HorizontalAlignment="Center"
 								        VerticalAlignment="Bottom"
-								        Margin="0,0,0,4" />
+								        Margin="0,0,0,5" />
 							</Grid>
 						</Border>
 					</Grid>
@@ -192,7 +193,7 @@
 			<Setter.Value>
 				<ControlTemplate TargetType="RadioButton">
 					<Grid Background="Transparent">
-						<Border x:Name="LeftDivider" Width="1" Height="16" Background="{StaticResource Steel700Brush}"
+						<Border x:Name="LeftDivider" Width="1" Height="18" Background="{StaticResource Steel700Brush}"
 						        HorizontalAlignment="Left" VerticalAlignment="Center" />
 						<!-- Main Detent Surface -->
 						<Border x:Name="MainBorder" Background="{TemplateBinding Background}"
@@ -202,11 +203,11 @@
 								<TextBlock x:Name="ContentText"
 								           Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource UpperConverter}}"
 								           Foreground="{TemplateBinding Foreground}" FontFamily="{StaticResource MonoFontFamily}"
-								           FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"
+								           FontSize="10" FontWeight="Bold" HorizontalAlignment="Center" VerticalAlignment="Center"
 								           Margin="0,0,0,3" />
 								<!-- Ignite Detent Accent Line (Fixed length 24px matching w-6) -->
-								<Border x:Name="IndicatorLine" Height="2" Width="24" Background="{StaticResource Steel600Brush}"
-								        HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,3" />
+								<Border x:Name="IndicatorLine" Height="2" Width="28" Background="{StaticResource Steel600Brush}"
+								        HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,4" />
 							</Grid>
 						</Border>
 					</Grid>
@@ -251,12 +252,12 @@
 		<Setter Property="BorderThickness" Value="0" />
 		<Setter Property="Cursor" Value="Hand" />
 		<Setter Property="TabIndex" Value="1" />
-		<Setter Property="Height" Value="27" />
+		<Setter Property="Height" Value="36" />
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="RadioButton">
 					<Grid Background="Transparent">
-						<Border x:Name="TopDivider" Height="1" Background="{StaticResource Steel800Brush}"
+						<Border x:Name="TopDivider" Height="1" Background="{StaticResource Steel700Brush}"
 						        VerticalAlignment="Top" SnapsToDevicePixels="True" />
 						<Border x:Name="MainBorder" Background="{TemplateBinding Background}"
 						        CornerRadius="0" SnapsToDevicePixels="True">
@@ -266,11 +267,11 @@
 								<TextBlock x:Name="TitleText"
 								           Text="{Binding Content, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource UpperConverter}}"
 								           Foreground="{TemplateBinding Foreground}" FontFamily="{StaticResource MonoFontFamily}"
-								           FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Left" />
+								           FontSize="10.5" FontWeight="Bold" VerticalAlignment="Center" HorizontalAlignment="Left" />
 								<TextBlock x:Name="SubText"
 								           Text="{Binding Tag, RelativeSource={RelativeSource TemplatedParent}, Converter={StaticResource UpperConverter}}"
 								           Foreground="{StaticResource Steel500Brush}" FontFamily="{StaticResource MonoFontFamily}"
-								           FontSize="8" VerticalAlignment="Center" HorizontalAlignment="Right" />
+								           FontSize="8.5" VerticalAlignment="Center" HorizontalAlignment="Right" />
 							</Grid>
 						</Border>
 					</Grid>
@@ -303,9 +304,9 @@
 	<!-- Reference: nitrous - ignite.html fanCpuBarRead                        -->
 	<!-- ===================================================================== -->
 	<Style x:Key="IgniteProgressBarStyle" TargetType="ProgressBar">
-		<Setter Property="Height" Value="6" />
+		<Setter Property="Height" Value="8" />
 		<Setter Property="Background" Value="{StaticResource Steel900Brush}" />
-		<Setter Property="BorderBrush" Value="{StaticResource Steel700Brush}" />
+		<Setter Property="BorderBrush" Value="{StaticResource Steel600Brush}" />
 		<Setter Property="BorderThickness" Value="1" />
 		<Setter Property="Foreground" Value="{StaticResource Steel100Brush}" />
 		<Setter Property="Template">
@@ -329,7 +330,7 @@
 	<Style x:Key="SmallGhostToggleBtn" TargetType="ToggleButton">
 		<Setter Property="Background" Value="{StaticResource Steel900Brush}" />
 		<Setter Property="Foreground" Value="{StaticResource Steel400Brush}" />
-		<Setter Property="BorderBrush" Value="{StaticResource Steel700Brush}" />
+		<Setter Property="BorderBrush" Value="{StaticResource Steel600Brush}" />
 		<Setter Property="BorderThickness" Value="1" />
 		<Setter Property="Cursor" Value="Hand" />
 		<Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
@@ -551,7 +552,7 @@
 	<Style x:Key="GhostBtn" TargetType="Button">
 		<Setter Property="Background" Value="{StaticResource Steel850Brush}" />
 		<Setter Property="Foreground" Value="{StaticResource Steel300Brush}" />
-		<Setter Property="BorderBrush" Value="{StaticResource Steel700Brush}" />
+		<Setter Property="BorderBrush" Value="{StaticResource Steel600Brush}" />
 		<Setter Property="BorderThickness" Value="1" />
 		<Setter Property="Cursor" Value="Hand" />
 		<Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
@@ -620,7 +621,7 @@
 		<Setter Property="Background" Value="{StaticResource Steel950Brush}" />
 		<Setter Property="Foreground" Value="{StaticResource Steel100Brush}" />
 		<Setter Property="BorderThickness" Value="1" />
-		<Setter Property="BorderBrush" Value="{StaticResource Steel700Brush}" />
+		<Setter Property="BorderBrush" Value="{StaticResource Steel600Brush}" />
 		<Setter Property="Cursor" Value="Hand" />
 		<Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
 		<Setter Property="Template">
@@ -656,7 +657,7 @@
 	<Style TargetType="ToolTip">
 		<Setter Property="Background" Value="{StaticResource Steel950Brush}" />
 		<Setter Property="Foreground" Value="{StaticResource Steel100Brush}" />
-		<Setter Property="BorderBrush" Value="{StaticResource Steel700Brush}" />
+		<Setter Property="BorderBrush" Value="{StaticResource Steel600Brush}" />
 		<Setter Property="BorderThickness" Value="1" />
 		<Setter Property="FontSize" Value="12" />
 		<Setter Property="FontFamily" Value="{StaticResource SansFontFamily}" />

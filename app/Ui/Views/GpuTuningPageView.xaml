@@ -9,10 +9,10 @@
 			</ResourceDictionary.MergedDictionaries>
 		</ResourceDictionary>
 	</UserControl.Resources>
-	<ScrollViewer Margin="20,10,20,0" VerticalScrollBarVisibility="Hidden">
+	<ScrollViewer Margin="12,8,12,0" VerticalScrollBarVisibility="Hidden">
 		<StackPanel Margin="0,0,0,16">
 			<!-- GPU TELEMETRY STATS GRID -->
-			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1" Padding="16"
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1" Padding="16"
 			                      Margin="0,0,0,12"
 			                      ToolTip="Live NVIDIA GPU telemetry via NVML. Statistics update while dashboard is active.">
 				<StackPanel>
@@ -78,7 +78,7 @@
 				</StackPanel>
 			</controls:ChamferCard>
 			<!-- CLOCK OFFSETS SLIDERS -->
-			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1" Padding="16,12,16,16"
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1" Padding="16,12,16,16"
 			                      Margin="0,0,0,16">
 				<StackPanel>
 					<TextBlock Text="CLOCK OFFSETS" Foreground="#A1A1AA" FontSize="10" FontWeight="Bold" Margin="0,0,0,12" />

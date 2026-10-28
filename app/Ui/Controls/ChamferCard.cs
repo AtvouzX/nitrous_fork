@@ -52,12 +52,7 @@ public class ChamferCard : ContentControl
         base.OnPropertyChanged(e);
         if (e.Property == BorderBrushProperty || e.Property == BackgroundProperty || e.Property == BorderThicknessProperty)
         {
-            if (_framePath != null)
-            {
-                _framePath.Stroke = BorderBrush;
-                _framePath.Fill = Background;
-                _framePath.StrokeThickness = BorderThickness.Left > 0 ? BorderThickness.Left : (BorderBrush != null ? 1.0 : 0.0);
-            }
+            UpdateCardGeometry();
         }
     }
 
@@ -86,10 +81,14 @@ public class ChamferCard : ContentControl
 
         if (_framePath != null)
         {
-            _framePath.Data = geom;
+            double strokeThickness = BorderThickness.Left > 0 ? BorderThickness.Left : (BorderBrush != null ? 1.0 : 0.0);
+            double halfStroke = strokeThickness > 0 ? strokeThickness / 2.0 : 0.0;
+            var frameGeom = ChamferGeometryHelper.CreateChamferPathGeometry(w, h, c, halfStroke);
+
+            _framePath.Data = frameGeom;
             _framePath.Stroke = BorderBrush;
             _framePath.Fill = Background;
-            _framePath.StrokeThickness = BorderThickness.Left > 0 ? BorderThickness.Left : (BorderBrush != null ? 1.0 : 0.0);
+            _framePath.StrokeThickness = strokeThickness;
         }
 
         if (_contentHost != null && w > 2 && h > 2)

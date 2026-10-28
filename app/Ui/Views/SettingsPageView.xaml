@@ -9,10 +9,10 @@
 			</ResourceDictionary.MergedDictionaries>
 		</ResourceDictionary>
 	</UserControl.Resources>
-	<ScrollViewer Margin="20,10,20,0" VerticalScrollBarVisibility="Hidden"
+	<ScrollViewer Margin="12,8,12,0" VerticalScrollBarVisibility="Hidden"
 	              HorizontalScrollBarVisibility="Disabled" BorderThickness="0" Padding="0,0,4,20">
 		<StackPanel>
-			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1" Margin="0,0,0,12" Padding="12">
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1" Margin="0,0,0,12" Padding="12">
 				<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 					<Border Width="44" Height="44" CornerRadius="0" Background="{StaticResource Steel850Brush}" Margin="0,0,12,0">
 						<Image Source="{StaticResource CachedAppLogo}" RenderOptions.BitmapScalingMode="HighQuality" Margin="8"
@@ -28,7 +28,7 @@
 			<TextBlock Text="POWER &amp; PERFORMANCE RULES" Foreground="#A1A1AA" FontSize="10" FontWeight="Bold"
 			           Margin="0,0,0,8" />
 			<!-- Manage CPU Power Toggle -->
-			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" Height="70" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" Height="70" BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
 			                      Margin="0,0,0,10"
 			                      ToolTip="Synchronizes Windows processor limits per profile: Quiet (85% max, Boost Off), Balanced (99% max, Boost Off), Performance (100% max, Boost On), and Turbo (100% min/max, Boost On). Eliminates thermal throttling and fan revving.">
 				<Grid>
@@ -54,7 +54,7 @@
 				</Grid>
 			</controls:ChamferCard>
 			<!-- Battery Health Diagnostics & Limit -->
-			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" Margin="0,0,0,10" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" Margin="0,0,0,10" BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
 			                      Padding="15"
 			                      ToolTip="Displays native battery health, maximum charge capacity, total charge cycles, and charge limit controls.">
 				<StackPanel>
@@ -134,7 +134,7 @@
 
 						<Popup IsOpen="{Binding IsChecked, ElementName=BtnAcerServicesDetails, Mode=TwoWay}" StaysOpen="False"
 						       PlacementTarget="{Binding ElementName=BtnAcerServicesDetails}" Placement="Bottom">
-							<Border Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1" CornerRadius="0" Padding="10"
+							<Border Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1" CornerRadius="0" Padding="10"
 							        Margin="0,4,0,0">
 								<ItemsControl ItemsSource="{Binding AcerServicesList}">
 									<ItemsControl.ItemTemplate>
@@ -190,7 +190,7 @@
 					</Grid>
 				</StackPanel>
 			</controls:ChamferCard>
-			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" Height="70" Margin="0,0,0,10" BorderBrush="{StaticResource Steel700Brush}"
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" Height="70" Margin="0,0,0,10" BorderBrush="{StaticResource BorderCardBrush}"
 			                      BorderThickness="1"
 			                      ToolTip="Automatically applies your saved GPU clock offsets whenever the discrete NVIDIA GPU wakes up from D3Cold sleep on AC power.">
 				<Grid>
@@ -214,7 +214,7 @@
 					          ToolTip="Automatically applies your saved GPU clock offsets whenever the discrete NVIDIA GPU wakes up from D3Cold sleep on AC power." />
 				</Grid>
 			</controls:ChamferCard>
-			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" Height="70" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" Height="70" BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
 			                      Margin="0,0,0,10"
 			                      ToolTip="Registers an elevated Task Scheduler task to start Nitrous silently in the system tray at Windows logon without UAC prompts.">
 				<Grid>
@@ -242,7 +242,7 @@
 			<TextBlock Text="DIAGNOSTICS" Foreground="#A1A1AA" FontSize="10" FontWeight="Bold"
 			           Margin="0,8,0,8" />
 			<!-- Debugging Toggle -->
-			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" Height="70" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" Height="70" BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
 			                      Margin="0,0,0,10"
 			                      ToolTip="Enables verbose diagnostic logging of Acer EC registers, WMI calls, and GPU sleep transitions to %LOCALAPPDATA%\Nitrous\Logs\nitrous.log. Turn off during normal use for minimal disk writes.">
 				<Grid>
@@ -269,7 +269,7 @@
 				</Grid>
 			</controls:ChamferCard>
 			<!-- Diagnostics Actions Card -->
-			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" Margin="0,0,0,10" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" Margin="0,0,0,10" BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
 			                      Padding="15"
 			                      ToolTip="Diagnostic troubleshooting utilities: open the local log folder or copy a complete hardware diagnostic report to clipboard.">
 				<Grid>

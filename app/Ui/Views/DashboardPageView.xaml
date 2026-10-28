@@ -9,19 +9,19 @@
 			</ResourceDictionary.MergedDictionaries>
 		</ResourceDictionary>
 	</UserControl.Resources>
-	<StackPanel Margin="20,10,20,0">
+	<StackPanel Margin="12,8,12,0">
 		<!-- DASHBOARD GRAPH & TELEMETRY -->
-		<Grid Margin="0,0,0,16" Height="140">
+		<Grid Margin="0,0,0,10" Height="172">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="*" />
-				<ColumnDefinition Width="10" />
+				<ColumnDefinition Width="8" />
 				<ColumnDefinition Width="*" />
 			</Grid.ColumnDefinitions>
 
 			<!-- CPU Graph & Telemetry -->
 			<controls:ChamferCard Grid.Column="0" Background="{StaticResource Steel900Brush}"
-			                      BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
-			                      ChamferSize="6" Padding="10,8,10,8"
+			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
+			                      ChamferSize="6" Padding="12,10,12,10"
 			                      ToolTip="Real-time CPU temperature, usage, and fan speed read directly from the Acer Embedded Controller (EC) and Windows.">
 				<Grid>
 					<Grid.RowDefinitions>
@@ -31,18 +31,18 @@
 					</Grid.RowDefinitions>
 					<Grid Grid.Row="0" Margin="0,0,0,6">
 						<StackPanel HorizontalAlignment="Left" VerticalAlignment="Center">
-							<TextBlock Foreground="#A1A1AA" FontSize="10" FontWeight="Bold">
+							<TextBlock Foreground="#A1A1AA" FontSize="10.5" FontWeight="Bold">
 								<Run Text="CPU" />
 								<Run Text=" • " Foreground="#55555C" />
 								<Run Text="{Binding CpuUsageText}" />
 							</TextBlock>
 							<StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-								<Path Fill="#FF4500" Opacity="0.8" Stretch="Uniform" Width="9" Height="9" Margin="0,0,4,0"
+								<Path Fill="#FF4500" Opacity="0.8" Stretch="Uniform" Width="10" Height="10" Margin="0,0,4,0"
 								      Data="M9,2V4H15V2H17V4H19A2,2 0 0,1 21,6V8H23V10H21V16H23V18H21V20A2,2 0 0,1 19,22H17V24H15V22H9V24H7V22H5A2,2 0 0,1 3,20V18H1V16H3V10H1V8H3V6A2,2 0 0,1 5,4H7V2H9M5,6V20H19V6H5M7,8H17V18H7V8M9,10H15V16H9V10Z" />
-								<TextBlock Text="{Binding CpuRpmText}" Foreground="#A1A1AA" FontSize="10" FontWeight="SemiBold" />
+								<TextBlock Text="{Binding CpuRpmText}" Foreground="#A1A1AA" FontSize="10.5" FontWeight="SemiBold" />
 							</StackPanel>
 						</StackPanel>
-						<TextBlock Text="{Binding CpuTempText}" Foreground="{Binding CpuTempColor}" FontSize="18" FontWeight="Bold"
+						<TextBlock Text="{Binding CpuTempText}" Foreground="{Binding CpuTempColor}" FontSize="22" FontWeight="Bold"
 						           HorizontalAlignment="Right" VerticalAlignment="Center" />
 					</Grid>
 					<Grid Grid.Row="1" x:Name="CpuGraphGrid" Background="Transparent" MouseMove="Graph_MouseMove"
@@ -53,7 +53,7 @@
 						<Polyline Points="{Binding CpuUsagePoints}" Stroke="#FFFFFF" StrokeThickness="1.5" Opacity="0.7" />
 						<Border Width="1" Background="#A1A1AA" HorizontalAlignment="Left" Margin="{Binding CpuHoverMargin}"
 						        Visibility="{Binding CpuHoverVisibility}" />
-						<Border Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource Steel700Brush}"
+						<Border Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource Steel600Brush}"
 						        BorderThickness="1" CornerRadius="0" Padding="6"
 						        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding CpuTooltipMargin}"
 						        Visibility="{Binding CpuHoverVisibility}">
@@ -70,15 +70,15 @@
 							</StackPanel>
 						</Border>
 					</Grid>
-					<TextBlock Grid.Row="2" Text="{Binding CpuMaxStatsText}" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold"
-					           HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,6,0,0" />
+					<TextBlock Grid.Row="2" Text="{Binding CpuMaxStatsText}" Foreground="#A1A1AA" FontSize="9.5" FontWeight="Bold"
+					           HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,8,0,0" />
 				</Grid>
 			</controls:ChamferCard>
 
 			<!-- GPU Graph & Telemetry -->
 			<controls:ChamferCard Grid.Column="2" Background="{StaticResource Steel900Brush}"
-			                      BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
-			                      ChamferSize="6" Padding="10,8,10,8"
+			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
+			                      ChamferSize="6" Padding="12,10,12,10"
 			                      ToolTip="Discrete GPU thermals and usage.">
 				<Grid>
 					<Grid.RowDefinitions>
@@ -88,18 +88,18 @@
 					</Grid.RowDefinitions>
 					<Grid Grid.Row="0" Margin="0,0,0,6">
 						<StackPanel HorizontalAlignment="Left" VerticalAlignment="Center">
-							<TextBlock Foreground="#A1A1AA" FontSize="10" FontWeight="Bold">
+							<TextBlock Foreground="#A1A1AA" FontSize="10.5" FontWeight="Bold">
 								<Run Text="GPU" />
 								<Run Text=" • " Foreground="#55555C" />
 								<Run Text="{Binding GpuUsageText}" />
 							</TextBlock>
 							<StackPanel Orientation="Horizontal" Margin="0,2,0,0">
-								<Path Fill="#FF4500" Opacity="0.8" Stretch="Uniform" Width="9" Height="9" Margin="0,0,4,0"
+								<Path Fill="#FF4500" Opacity="0.8" Stretch="Uniform" Width="10" Height="10" Margin="0,0,4,0"
 								      Data="M22,9V7H20V5A2,2 0 0,0 18,3H4A2,2 0 0,0 2,5V19A2,2 0 0,0 4,21H18A2,2 0 0,0 20,19V17H22V15H20V13H22V11H20V9H22M18,19H4V5H18V19M6,13H11V17H6V13M12,7H16V10H12V7M6,7H11V12H6V7M12,11H16V17H12V11Z" />
-								<TextBlock Text="{Binding GpuRpmText}" Foreground="#A1A1AA" FontSize="10" FontWeight="SemiBold" />
+								<TextBlock Text="{Binding GpuRpmText}" Foreground="#A1A1AA" FontSize="10.5" FontWeight="SemiBold" />
 							</StackPanel>
 						</StackPanel>
-						<TextBlock Text="{Binding GpuTempText}" Foreground="{Binding GpuTempColor}" FontSize="18" FontWeight="Bold"
+						<TextBlock Text="{Binding GpuTempText}" Foreground="{Binding GpuTempColor}" FontSize="22" FontWeight="Bold"
 						           HorizontalAlignment="Right" VerticalAlignment="Center" />
 					</Grid>
 					<Grid Grid.Row="1" x:Name="GpuGraphGrid" Background="Transparent" MouseMove="Graph_MouseMove"
@@ -110,7 +110,7 @@
 						<Polyline Points="{Binding GpuUsagePoints}" Stroke="#FFFFFF" StrokeThickness="1.5" Opacity="0.7" />
 						<Border Width="1" Background="#A1A1AA" HorizontalAlignment="Left" Margin="{Binding GpuHoverMargin}"
 						        Visibility="{Binding GpuHoverVisibility}" />
-						<Border Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource Steel700Brush}"
+						<Border Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource Steel600Brush}"
 						        BorderThickness="1" CornerRadius="0" Padding="6"
 						        HorizontalAlignment="Left" VerticalAlignment="Top" Margin="{Binding GpuTooltipMargin}"
 						        Visibility="{Binding GpuHoverVisibility}">
@@ -134,28 +134,29 @@
 							</StackPanel>
 						</Border>
 					</Grid>
-					<TextBlock Grid.Row="2" Text="{Binding GpuMaxStatsText}" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold"
-					           HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,6,0,0" />
+					<TextBlock Grid.Row="2" Text="{Binding GpuMaxStatsText}" Foreground="#A1A1AA" FontSize="9.5" FontWeight="Bold"
+					           HorizontalAlignment="Left" VerticalAlignment="Bottom" Margin="0,8,0,0" />
 				</Grid>
 			</controls:ChamferCard>
 		</Grid>
+
 		<!-- POWER CARD (Ignite Steel/Ember Card with Chamfered Edges and Recessed Detent Rail) -->
-		<controls:ChamferCard Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
-		                      ChamferSize="6" Padding="10,8,10,10" Margin="0,0,0,16"
+		<controls:ChamferCard Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
+		                      ChamferSize="6" Padding="12,10,12,12" Margin="0,0,0,10"
 		                      ToolTip="Hardware power profile: controls Acer EC thermal profiles, Windows processor states, wattage limits, and fan acoustics.">
 			<StackPanel>
 				<!-- Card Header with Bottom Divider -->
-				<Border BorderBrush="{StaticResource Steel800Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,8">
+				<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
 					<Grid>
 						<TextBlock Text="POWER" Foreground="{StaticResource Steel300Brush}" FontFamily="{StaticResource MonoFontFamily}"
-						           FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center" />
+						           FontSize="10" FontWeight="Bold" VerticalAlignment="Center" />
 					</Grid>
 				</Border>
 
 				<!-- Detent Rail Outer Well (Chamfered button rail matching ignite.html chamfer-btn-outer) -->
 				<controls:ChamferCard Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel600Brush}" BorderThickness="1"
 				                      ChamferSize="4" Padding="0">
-					<UniformGrid Rows="1" Height="36">
+					<UniformGrid Rows="1" Height="42">
 						<RadioButton x:Name="BtnPowerQuiet" TabIndex="0" GroupName="Power" Uid="Quiet"
 						             Content="QUIET" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}"
 						             CommandParameter="Quiet"
@@ -177,8 +178,9 @@
 				</controls:ChamferCard>
 			</StackPanel>
 		</controls:ChamferCard>
+
 		<!-- REFRESH + FANS GRID (Ignite 2-Column Grid Layout: 5* Refresh and 7* Fans) -->
-		<Grid Margin="0,0,0,16">
+		<Grid Margin="0,0,0,0">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="5*" />
 				<ColumnDefinition Width="8" />
@@ -186,17 +188,17 @@
 			</Grid.ColumnDefinitions>
 
 			<!-- REFRESH CARD (Ignite Steel/Ember Card with Chamfered Edges and Vertical Step Stack) -->
-			<controls:ChamferCard Grid.Column="0" Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
-			                      ChamferSize="6" Padding="10,8,10,10"
+			<controls:ChamferCard Grid.Column="0" Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
+			                      ChamferSize="6" Padding="12,10,12,12"
 			                      ToolTip="Display refresh rate controls: switch between automatic AC/DC rate switching, fixed 60Hz battery saver, or maximum hardware panel refresh rate.">
 				<StackPanel>
 					<!-- Card Header with Active Badge and Bottom Divider -->
-					<Border BorderBrush="{StaticResource Steel800Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,8">
+					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
 						<Grid>
 							<TextBlock Text="REFRESH" Foreground="{StaticResource Steel300Brush}" FontFamily="{StaticResource MonoFontFamily}"
-							           FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center" />
+							           FontSize="10" FontWeight="Bold" VerticalAlignment="Center" />
 							<TextBlock Text="{Binding RefreshBadgeText}" Foreground="{StaticResource Ember400Brush}" FontFamily="{StaticResource MonoFontFamily}"
-							           FontSize="9.5" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" />
+							           FontSize="10" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" />
 						</Grid>
 					</Border>
 
@@ -225,15 +227,15 @@
 			</controls:ChamferCard>
 
 			<!-- FANS CARD (Ignite Steel/Ember Card with Dynamic Read/Write Views and Bottom Rail) -->
-			<controls:ChamferCard Grid.Column="2" Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
-			                      ChamferSize="6" Padding="10,8,10,10"
+			<controls:ChamferCard Grid.Column="2" Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
+			                      ChamferSize="6" Padding="12,10,12,12"
 			                      ToolTip="Hardware cooling fan controls: toggle factory EC automatic curve, maximum RPM, or custom fan speed and temperature curves.">
 				<StackPanel>
 					<!-- Card Header with Edit Curve Button and Bottom Divider -->
-					<Border BorderBrush="{StaticResource Steel800Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,6">
+					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
 						<Grid>
 							<TextBlock Text="FANS" Foreground="{StaticResource Steel300Brush}" FontFamily="{StaticResource MonoFontFamily}"
-							           FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center" />
+							           FontSize="10" FontWeight="Bold" VerticalAlignment="Center" />
 							<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
 								<!-- USE CURVE Toggle Button (visible when Custom Fan is enabled) -->
 								<ToggleButton x:Name="BtnCurveToggle" IsChecked="{Binding IsCurveModeEnabled, UpdateSourceTrigger=PropertyChanged}"
@@ -256,83 +258,83 @@
 						</Grid>
 					</Border>
 
-					<!-- Middle Fan Speeds Area: Fixed Height (50px) hosting Read View or Write View -->
-					<Grid Height="50">
+					<!-- Middle Fan Speeds Area: Fixed Height (74px) hosting Read View or Write View -->
+					<Grid Height="74">
 						<!-- Read View (Auto / Max / Curve active) -->
 						<StackPanel Visibility="{Binding FanReadViewVisibility}" VerticalAlignment="Center">
 							<!-- CPU Read Bar -->
-							<Grid Margin="0,0,0,6">
+							<Grid Margin="0,0,0,8">
 								<Grid.ColumnDefinitions>
-									<ColumnDefinition Width="24" />
+									<ColumnDefinition Width="26" />
 									<ColumnDefinition Width="*" />
-									<ColumnDefinition Width="28" />
+									<ColumnDefinition Width="32" />
 								</Grid.ColumnDefinitions>
 								<TextBlock Grid.Column="0" Text="CPU" Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}"
-								           FontSize="9" FontWeight="Bold" VerticalAlignment="Center" />
+								           FontSize="10" FontWeight="Bold" VerticalAlignment="Center" />
 								<ProgressBar Grid.Column="1" Value="{Binding CpuFanPercentage}" Maximum="100" Style="{StaticResource IgniteProgressBarStyle}"
-								             Margin="4,0,4,0" VerticalAlignment="Center" />
+								             Margin="6,0,6,0" VerticalAlignment="Center" />
 								<TextBlock Grid.Column="2" Text="{Binding CpuFanPctText}" Foreground="{StaticResource Steel100Brush}" FontFamily="{StaticResource MonoFontFamily}"
-								           FontSize="9" FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" />
+								           FontSize="10" FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" />
 							</Grid>
 
 							<!-- GPU Read Bar -->
 							<Grid>
 								<Grid.ColumnDefinitions>
-									<ColumnDefinition Width="24" />
+									<ColumnDefinition Width="26" />
 									<ColumnDefinition Width="*" />
-									<ColumnDefinition Width="28" />
+									<ColumnDefinition Width="32" />
 								</Grid.ColumnDefinitions>
 								<TextBlock Grid.Column="0" Text="GPU" Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}"
-								           FontSize="9" FontWeight="Bold" VerticalAlignment="Center" />
+								           FontSize="10" FontWeight="Bold" VerticalAlignment="Center" />
 								<ProgressBar Grid.Column="1" Value="{Binding GpuFanPercentage}" Maximum="100" Style="{StaticResource IgniteProgressBarStyle}"
-								             Margin="4,0,4,0" VerticalAlignment="Center" />
+								             Margin="6,0,6,0" VerticalAlignment="Center" />
 								<TextBlock Grid.Column="2" Text="{Binding GpuFanPctText}" Foreground="{StaticResource Steel100Brush}" FontFamily="{StaticResource MonoFontFamily}"
-								           FontSize="9" FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" />
+								           FontSize="10" FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" />
 							</Grid>
 						</StackPanel>
 
 						<!-- Write View (Manual fixed sliders) -->
 						<StackPanel Visibility="{Binding FanWriteViewVisibility}" VerticalAlignment="Center">
 							<!-- CPU Write Slider -->
-							<Grid Margin="0,0,0,4">
+							<Grid Margin="0,0,0,6">
 								<Grid.ColumnDefinitions>
-									<ColumnDefinition Width="24" />
+									<ColumnDefinition Width="26" />
 									<ColumnDefinition Width="*" />
-									<ColumnDefinition Width="28" />
+									<ColumnDefinition Width="32" />
 								</Grid.ColumnDefinitions>
 								<TextBlock Grid.Column="0" Text="CPU" Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}"
-								           FontSize="9" FontWeight="Bold" VerticalAlignment="Center" />
+								           FontSize="10" FontWeight="Bold" VerticalAlignment="Center" />
 								<Slider Grid.Column="1" x:Name="CpuFanSlider" Style="{StaticResource ModernSliderStyle}"
 								        Minimum="0" Maximum="100" Value="{Binding CpuFanSpeed, UpdateSourceTrigger=PropertyChanged}"
 								        IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1"
-								        Margin="4,0,4,0" VerticalAlignment="Center" />
+								        Margin="6,0,6,0" VerticalAlignment="Center" />
 								<TextBlock Grid.Column="2" Text="{Binding CpuFanSpeed, StringFormat='{}{0}%'}" Foreground="{StaticResource Ember400Brush}"
-								           FontFamily="{StaticResource MonoFontFamily}" FontSize="9" FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" />
+								           FontFamily="{StaticResource MonoFontFamily}" FontSize="10" FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" />
 							</Grid>
 
 							<!-- GPU Write Slider -->
 							<Grid>
 								<Grid.ColumnDefinitions>
-									<ColumnDefinition Width="24" />
+									<ColumnDefinition Width="26" />
 									<ColumnDefinition Width="*" />
-									<ColumnDefinition Width="28" />
+									<ColumnDefinition Width="32" />
 								</Grid.ColumnDefinitions>
 								<TextBlock Grid.Column="0" Text="GPU" Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}"
-								           FontSize="9" FontWeight="Bold" VerticalAlignment="Center" />
+								           FontSize="10" FontWeight="Bold" VerticalAlignment="Center" />
 								<Slider Grid.Column="1" x:Name="GpuFanSlider" Style="{StaticResource ModernSliderStyle}"
 								        Minimum="0" Maximum="100" Value="{Binding GpuFanSpeed, UpdateSourceTrigger=PropertyChanged}"
 								        IsEnabled="{Binding IsManualSliderEnabled}" IsSnapToTickEnabled="True" TickFrequency="1"
-								        Margin="4,0,4,0" VerticalAlignment="Center" />
+								        Margin="6,0,6,0" VerticalAlignment="Center" />
 								<TextBlock Grid.Column="2" Text="{Binding GpuFanSpeed, StringFormat='{}{0}%'}" Foreground="{StaticResource Ember400Brush}"
-								           FontFamily="{StaticResource MonoFontFamily}" FontSize="9" FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" />
+								           FontFamily="{StaticResource MonoFontFamily}" FontSize="10" FontWeight="Bold" TextAlignment="Right" VerticalAlignment="Center" />
 							</Grid>
 						</StackPanel>
 					</Grid>
 
 					<!-- Bottom Fan Control Detent Rail (AUTO / MAX / MANUAL) -->
 					<controls:ChamferCard Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel600Brush}" BorderThickness="1"
-					                      ChamferSize="4" Padding="0" Margin="0,6,0,0">
-						<UniformGrid Rows="1" Height="28">
+					                      ChamferSize="4" Padding="0" Margin="0,8,0,0">
+						<UniformGrid Rows="1" Height="34">
 							<RadioButton x:Name="BtnFanAuto" TabIndex="0" GroupName="Fans" Uid="Auto"
 							             Content="AUTO" Style="{StaticResource CompactActionButtonStyle}" Command="{Binding SetFanCommand}"
 							             CommandParameter="Auto"
@@ -352,4 +354,3 @@
 		</Grid>
 	</StackPanel>
 </UserControl>
-

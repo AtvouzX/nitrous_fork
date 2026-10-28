@@ -72,6 +72,41 @@ public class ChamferGeometryHelperTests
         Assert.Equal(new Point(0, 650.0), seg4.Point);
     }
 
+    [Fact]
+    public void CreateChamferPathGeometry_WithInset_CalculatesCorrectStrokeInsetGeometry()
+    {
+        double width = 100.0;
+        double height = 60.0;
+        double chamfer = 6.0;
+        double inset = 0.5;
+
+        var geometry = ChamferGeometryHelper.CreateChamferPathGeometry(width, height, chamfer, inset);
+
+        Assert.NotNull(geometry);
+        Assert.True(geometry.IsFrozen);
+        Assert.Single(geometry.Figures);
+
+        var figure = geometry.Figures[0];
+        Assert.True(figure.IsClosed);
+        Assert.Equal(new Point(0.5, 0.5), figure.StartPoint);
+        Assert.Equal(5, figure.Segments.Count);
+
+        var seg0 = Assert.IsType<LineSegment>(figure.Segments[0]);
+        Assert.Equal(new Point(93.5, 0.5), seg0.Point);
+
+        var seg1 = Assert.IsType<LineSegment>(figure.Segments[1]);
+        Assert.Equal(new Point(99.5, 6.5), seg1.Point);
+
+        var seg2 = Assert.IsType<LineSegment>(figure.Segments[2]);
+        Assert.Equal(new Point(99.5, 59.5), seg2.Point);
+
+        var seg3 = Assert.IsType<LineSegment>(figure.Segments[3]);
+        Assert.Equal(new Point(6.5, 59.5), seg3.Point);
+
+        var seg4 = Assert.IsType<LineSegment>(figure.Segments[4]);
+        Assert.Equal(new Point(0.5, 53.5), seg4.Point);
+    }
+
     [Theory]
     [InlineData(0, 600)]
     [InlineData(350, 0)]

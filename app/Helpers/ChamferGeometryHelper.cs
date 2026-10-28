@@ -16,35 +16,38 @@ public static class ChamferGeometryHelper
     public const double DefaultButtonChamfer = 4.0;
 
     /// <summary>
-    /// Computes the 6-point chamfer polygon PathGeometry for a rectangle of given width and height.
-    /// Top-Left: (0, 0) - sharp right angle with 0 radius.
-    /// Top-Right cut: (width - chamfer, 0) to (width, chamfer).
-    /// Bottom-Right: (width, height) - sharp right angle with 0 radius.
-    /// Bottom-Left cut: (chamfer, height) to (0, height - chamfer).
+    /// Computes the 6-point chamfer polygon PathGeometry for a rectangle of given width and height,
+    /// with an optional inset to account for stroke centering and prevent edge clipping.
+    /// Top-Left: (inset, inset) - sharp right angle with 0 radius.
+    /// Top-Right cut: (width - inset - chamfer, inset) to (width - inset, inset + chamfer).
+    /// Bottom-Right: (width - inset, height - inset) - sharp right angle with 0 radius.
+    /// Bottom-Left cut: (inset + chamfer, height - inset) to (inset, height - inset - chamfer).
     /// </summary>
-    public static PathGeometry CreateChamferPathGeometry(double width, double height, double chamferSize = DefaultWindowChamfer)
+    public static PathGeometry CreateChamferPathGeometry(double width, double height, double chamferSize = DefaultWindowChamfer, double inset = 0.0)
     {
-        if (width <= 0 || height <= 0)
+        if (width <= 0 || height <= 0 || width <= inset * 2 || height <= inset * 2)
         {
             var empty = new PathGeometry();
             empty.Freeze();
             return empty;
         }
 
-        double c = Math.Clamp(chamferSize, 0, Math.Min(width, height) / 2.0);
+        double w = width - inset;
+        double h = height - inset;
+        double c = Math.Clamp(chamferSize, 0, Math.Min(w - inset, h - inset) / 2.0);
 
         var figure = new PathFigure
         {
-            StartPoint = new Point(0, 0),
+            StartPoint = new Point(inset, inset),
             IsClosed = true,
             IsFilled = true
         };
 
-        figure.Segments.Add(new LineSegment(new Point(width - c, 0), true));
-        figure.Segments.Add(new LineSegment(new Point(width, c), true));
-        figure.Segments.Add(new LineSegment(new Point(width, height), true));
-        figure.Segments.Add(new LineSegment(new Point(c, height), true));
-        figure.Segments.Add(new LineSegment(new Point(0, height - c), true));
+        figure.Segments.Add(new LineSegment(new Point(w - c, inset), true));
+        figure.Segments.Add(new LineSegment(new Point(w, inset + c), true));
+        figure.Segments.Add(new LineSegment(new Point(w, h), true));
+        figure.Segments.Add(new LineSegment(new Point(inset + c, h), true));
+        figure.Segments.Add(new LineSegment(new Point(inset, h - c), true));
 
         var geometry = new PathGeometry();
         geometry.Figures.Add(figure);
