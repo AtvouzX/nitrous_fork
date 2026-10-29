@@ -147,6 +147,15 @@ public class ChamferCardTests
             var settingsPage = new Nitrous.Ui.Views.SettingsPageView();
             var settingsCards = FindLogicalChildren<ChamferCard>(settingsPage).ToList();
             Assert.True(settingsCards.Count >= 7, $"Expected at least 7 ChamferCards in SettingsPageView, found {settingsCards.Count}");
+
+            var settingsButtons = FindLogicalChildren<ChamferButton>(settingsPage).ToList();
+            Assert.True(settingsButtons.Count >= 4, $"Expected at least 4 ChamferButtons in SettingsPageView, found {settingsButtons.Count}");
+
+            var settingsCheckboxes = FindLogicalChildren<System.Windows.Controls.CheckBox>(settingsPage).ToList();
+            Assert.True(settingsCheckboxes.Count >= 6, $"Expected at least 6 CheckBoxes in SettingsPageView, found {settingsCheckboxes.Count}");
+
+            var batteryBars = FindLogicalChildren<BatteryBlockBar>(settingsPage).ToList();
+            Assert.Single(batteryBars);
         });
     }
 

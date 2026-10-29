@@ -58,12 +58,20 @@ public partial class DashboardViewModel
         set => SetProperty(ref _batteryHealthPercentText, value);
     }
 
-    private string _batteryCycleText = "-- CYCLES";
+    private string _batteryCycleText = "--";
 
     public string BatteryCycleText
     {
         get => _batteryCycleText;
         set => SetProperty(ref _batteryCycleText, value);
+    }
+
+    private string _batteryMwhText = "--";
+
+    public string BatteryMwhText
+    {
+        get => _batteryMwhText;
+        set => SetProperty(ref _batteryMwhText, value);
     }
 
     public ICommand ToggleAcerServicesCommand { get; private set; } = null!;
@@ -227,13 +235,15 @@ public partial class DashboardViewModel
                 var val = health.Value;
                 BatteryHealthText = $"{val.FullChargedCapacity:N0} / {val.DesignedCapacity:N0} MWH";
                 BatteryHealthPercentText = $"{val.HealthPercent:0.0}%";
-                BatteryCycleText = $"{val.CycleCount} CYCLES";
+                BatteryCycleText = $"{val.CycleCount}";
+                BatteryMwhText = $"{val.FullChargedCapacity:N0}";
             }
             else
             {
                 BatteryHealthText = "ACPI DATA MISSING";
-                BatteryHealthPercentText = "UNKNOWN HEALTH";
-                BatteryCycleText = "UNKNOWN CYCLES";
+                BatteryHealthPercentText = "--%";
+                BatteryCycleText = "--";
+                BatteryMwhText = "--";
             }
         });
     }

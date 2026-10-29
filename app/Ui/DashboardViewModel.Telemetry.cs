@@ -144,6 +144,9 @@ public partial class DashboardViewModel
     public const string BattBadgeIcon =
         "M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z";
 
+    private double _batteryChargePercent = 100.0;
+    public double BatteryChargePercent { get => _batteryChargePercent; set => SetProperty(ref _batteryChargePercent, value); }
+
     private string _batteryBadgeText = "AC POWER";
     public string BatteryBadgeText { get => _batteryBadgeText; set => SetProperty(ref _batteryBadgeText, value); }
 
@@ -159,6 +162,16 @@ public partial class DashboardViewModel
     public void UpdateBatteryBadge(Powrprof.SYSTEM_BATTERY_STATE batteryState)
     {
         double watts = Math.Abs(batteryState.Rate) / 1000.0;
+
+        if (batteryState.MaxCapacity > 0)
+        {
+            BatteryChargePercent = Math.Clamp((double)batteryState.RemainingCapacity / batteryState.MaxCapacity * 100.0, 0.0, 100.0);
+        }
+        else
+        {
+            var pStatus = System.Windows.Forms.SystemInformation.PowerStatus;
+            BatteryChargePercent = Math.Clamp(pStatus.BatteryLifePercent * 100.0, 0.0, 100.0);
+        }
 
         if (!batteryState.BatteryPresent || batteryState.AcOnLine)
         {

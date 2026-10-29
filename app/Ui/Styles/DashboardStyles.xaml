@@ -1,4 +1,4 @@
-<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+﻿<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
                     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
                     xmlns:helpers="clr-namespace:Nitrous.Helpers">
 
@@ -363,40 +363,148 @@
 			</Setter.Value>
 		</Setter>
 	</Style>
-	<!-- ===================================================================== -->
-	<!-- 3. MECHANICAL ANVIL TOGGLE (Zero Radius)                              -->
+		<!-- ===================================================================== -->
+	<!-- 3. MECHANICAL ANVIL DIP SWITCH (Chamfered Industrial Rocker)          -->
+	<!-- Reference: toggleDipSwitch in ignite.html                             -->
 	<!-- ===================================================================== -->
 	<Style x:Key="ModernToggleStyle" TargetType="CheckBox">
 		<Setter Property="Cursor" Value="Hand" />
+		<Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
+		<Setter Property="FontSize" Value="8.5" />
+		<Setter Property="FontWeight" Value="Bold" />
+		<Setter Property="FocusVisualStyle" Value="{x:Null}" />
+		<Setter Property="SnapsToDevicePixels" Value="True" />
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="CheckBox">
-					<Border x:Name="BgBorder"
-					        Width="38" Height="18"
-					        CornerRadius="0"
-					        Background="{StaticResource Steel950Brush}"
-					        BorderBrush="{StaticResource Steel700Brush}"
-					        BorderThickness="1"
-					        SnapsToDevicePixels="True">
-						<Border x:Name="Thumb"
-						        Width="16" Height="14"
-						        CornerRadius="0"
-						        Background="{StaticResource Steel600Brush}"
-						        HorizontalAlignment="Left"
-						        Margin="1,0,0,0"
-						        SnapsToDevicePixels="True" />
-					</Border>
+					<Grid Width="52" Height="22" SnapsToDevicePixels="True">
+						<!-- Chamfered Shell: 52x22, 4px cut at Top-Right and Bottom-Left, 0.5px stroke inset -->
+						<Path x:Name="OuterFrame"
+						      Data="M 0.5,0.5 L 47.5,0.5 51.5,4.5 51.5,21.5 4.5,21.5 0.5,17.5 Z"
+						      Fill="{StaticResource Steel950Brush}"
+						      Stroke="{StaticResource Steel700Brush}"
+						      StrokeThickness="1"
+						      SnapsToDevicePixels="True" />
+
+						<!-- Two-state rocker content -->
+						<Grid Margin="2,1">
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="*" />
+								<ColumnDefinition Width="*" />
+							</Grid.ColumnDefinitions>
+
+							<!-- OFF Pill (Left) -->
+							<Border x:Name="OffPill" Grid.Column="0"
+							        Background="{StaticResource Steel700Brush}"
+							        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+							        SnapsToDevicePixels="True">
+								<TextBlock x:Name="OffText" Text="OFF"
+								           Foreground="{StaticResource Steel200Brush}"
+								           FontFamily="{StaticResource MonoFontFamily}"
+								           FontSize="8.5" FontWeight="Bold"
+								           HorizontalAlignment="Center" VerticalAlignment="Center" />
+							</Border>
+
+							<!-- ON Pill (Right) -->
+							<Border x:Name="OnPill" Grid.Column="1"
+							        Background="Transparent"
+							        HorizontalAlignment="Stretch" VerticalAlignment="Stretch"
+							        SnapsToDevicePixels="True">
+								<TextBlock x:Name="OnText" Text="ON"
+								           Foreground="{StaticResource Steel500Brush}"
+								           FontFamily="{StaticResource MonoFontFamily}"
+								           FontSize="8.5" FontWeight="Bold"
+								           HorizontalAlignment="Center" VerticalAlignment="Center" />
+							</Border>
+						</Grid>
+					</Grid>
+
 					<ControlTemplate.Triggers>
-						<Trigger Property="IsMouseOver" Value="True">
-							<Setter TargetName="BgBorder" Property="BorderBrush" Value="{StaticResource Steel600Brush}" />
-						</Trigger>
+						<!-- Checked (ON) State -->
 						<Trigger Property="IsChecked" Value="True">
-							<Setter TargetName="BgBorder" Property="Background" Value="{StaticResource Steel850Brush}" />
-							<Setter TargetName="BgBorder" Property="BorderBrush" Value="{StaticResource Ember700Brush}" />
-							<Setter TargetName="Thumb" Property="HorizontalAlignment" Value="Right" />
-							<Setter TargetName="Thumb" Property="Margin" Value="0,0,1,0" />
-							<Setter TargetName="Thumb" Property="Background" Value="{StaticResource Ember500Brush}" />
+							<Setter TargetName="OuterFrame" Property="Stroke" Value="{StaticResource Steel600Brush}" />
+							<Setter TargetName="OffPill" Property="Background" Value="Transparent" />
+							<Setter TargetName="OffText" Property="Foreground" Value="{StaticResource Steel500Brush}" />
+							<Setter TargetName="OnPill" Property="Background" Value="{StaticResource Ember500Brush}" />
+							<Setter TargetName="OnText" Property="Foreground" Value="{StaticResource Steel950Brush}" />
 						</Trigger>
+
+						<!-- MouseOver State -->
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="OuterFrame" Property="Stroke" Value="{StaticResource Steel500Brush}" />
+						</Trigger>
+
+						<!-- Disabled State -->
+						<Trigger Property="IsEnabled" Value="False">
+							<Setter Property="Opacity" Value="0.3" />
+							<Setter Property="Cursor" Value="Arrow" />
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+
+	<!-- ===================================================================== -->
+	<!-- 3B. MINI DIP TOGGLE STYLE (Chamfered Compact Badge)                   -->
+	<!-- Reference: toggleMiniDip in ignite.html                               -->
+	<!-- ===================================================================== -->
+	<Style x:Key="ChamferMiniToggleStyle" TargetType="CheckBox">
+		<Setter Property="Cursor" Value="Hand" />
+		<Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
+		<Setter Property="FontSize" Value="8.5" />
+		<Setter Property="FontWeight" Value="Bold" />
+		<Setter Property="FocusVisualStyle" Value="{x:Null}" />
+		<Setter Property="SnapsToDevicePixels" Value="True" />
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="CheckBox">
+					<Grid Width="36" Height="20" SnapsToDevicePixels="True">
+						<!-- Chamfered Shell: 36x20, 3px cut at Top-Right and Bottom-Left, 0.5px stroke inset -->
+						<Path x:Name="MiniFrame"
+						      Data="M 0.5,0.5 L 32.5,0.5 35.5,3.5 35.5,19.5 3.5,19.5 0.5,16.5 Z"
+						      Fill="{StaticResource Steel850Brush}"
+						      Stroke="{StaticResource Steel700Brush}"
+						      StrokeThickness="1"
+						      SnapsToDevicePixels="True" />
+
+						<TextBlock x:Name="MiniText" Text="OFF"
+						           Foreground="{StaticResource Steel400Brush}"
+						           FontFamily="{StaticResource MonoFontFamily}"
+						           FontSize="8.5" FontWeight="Bold"
+						           HorizontalAlignment="Center" VerticalAlignment="Center" />
+					</Grid>
+
+					<ControlTemplate.Triggers>
+						<!-- Checked (ON) State -->
+						<Trigger Property="IsChecked" Value="True">
+							<Setter TargetName="MiniFrame" Property="Fill" Value="{StaticResource Ember500Brush}" />
+							<Setter TargetName="MiniFrame" Property="Stroke" Value="{StaticResource Ember600Brush}" />
+							<Setter TargetName="MiniText" Property="Text" Value="ON" />
+							<Setter TargetName="MiniText" Property="Foreground" Value="{StaticResource Steel950Brush}" />
+						</Trigger>
+
+						<!-- MouseOver State -->
+						<MultiTrigger>
+							<MultiTrigger.Conditions>
+								<Condition Property="IsMouseOver" Value="True" />
+								<Condition Property="IsChecked" Value="False" />
+							</MultiTrigger.Conditions>
+							<Setter TargetName="MiniFrame" Property="Stroke" Value="{StaticResource Steel500Brush}" />
+							<Setter TargetName="MiniFrame" Property="Fill" Value="{StaticResource Steel800Brush}" />
+							<Setter TargetName="MiniText" Property="Foreground" Value="{StaticResource Steel200Brush}" />
+						</MultiTrigger>
+
+						<MultiTrigger>
+							<MultiTrigger.Conditions>
+								<Condition Property="IsMouseOver" Value="True" />
+								<Condition Property="IsChecked" Value="True" />
+							</MultiTrigger.Conditions>
+							<Setter TargetName="MiniFrame" Property="Fill" Value="{StaticResource Ember400Brush}" />
+							<Setter TargetName="MiniFrame" Property="Stroke" Value="{StaticResource Ember500Brush}" />
+						</MultiTrigger>
+
+						<!-- Disabled State -->
 						<Trigger Property="IsEnabled" Value="False">
 							<Setter Property="Opacity" Value="0.3" />
 							<Setter Property="Cursor" Value="Arrow" />

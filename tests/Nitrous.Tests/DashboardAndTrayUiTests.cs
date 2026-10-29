@@ -1,4 +1,4 @@
-using System.Windows;
+﻿using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Media;
@@ -97,6 +97,7 @@ public class DashboardAndTrayUiTests
                     "CachedAppLogo",
                     "ActionButtonStyle",
                     "ModernToggleStyle",
+                    "ChamferMiniToggleStyle",
                     "ModernSliderStyle",
                     "SquareCheckBoxStyle",
                     "NavButtonStyle",
