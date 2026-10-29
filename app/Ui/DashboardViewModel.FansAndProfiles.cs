@@ -202,6 +202,45 @@ public partial class DashboardViewModel
             if (SetProperty(ref _activeRefreshProfile, value))
             {
                 OnPropertyChanged(nameof(RefreshBadgeText));
+                OnPropertyChanged(nameof(IsRefreshAutoChecked));
+                OnPropertyChanged(nameof(IsRefresh60Checked));
+                OnPropertyChanged(nameof(IsRefreshMaxChecked));
+            }
+        }
+    }
+
+    public bool IsRefreshAutoChecked
+    {
+        get => ActiveRefreshProfile == RefreshProfile.Auto;
+        set
+        {
+            if (value && ActiveRefreshProfile != RefreshProfile.Auto)
+            {
+                SetRefreshCommand.Execute(RefreshProfile.Auto);
+            }
+        }
+    }
+
+    public bool IsRefresh60Checked
+    {
+        get => ActiveRefreshProfile == RefreshProfile.Hz60;
+        set
+        {
+            if (value && ActiveRefreshProfile != RefreshProfile.Hz60)
+            {
+                SetRefreshCommand.Execute(RefreshProfile.Hz60);
+            }
+        }
+    }
+
+    public bool IsRefreshMaxChecked
+    {
+        get => ActiveRefreshProfile == RefreshProfile.MaxHz;
+        set
+        {
+            if (value && ActiveRefreshProfile != RefreshProfile.MaxHz)
+            {
+                SetRefreshCommand.Execute(RefreshProfile.MaxHz);
             }
         }
     }
@@ -301,16 +340,8 @@ public partial class DashboardViewModel
                     }
 
                     await _gpuManager.ApplyPowerProfileOcAsync(mode, isOnline);
-                    if (_gpuManager.GetClocks(out int c, out int m))
-                    {
-                        GpuCoreOffset = _gpuManager.ClampCoreOffset(c);
-                        GpuMemoryOffset = _gpuManager.ClampMemoryOffset(m);
-                    }
-                    else
-                    {
-                        GpuCoreOffset = _gpuManager.ClampCoreOffset(SettingsManager.Get($"GpuCore_{mode}", _gpuManager.GetDefaultCore(mode)));
-                        GpuMemoryOffset = _gpuManager.ClampMemoryOffset(SettingsManager.Get($"GpuMemory_{mode}", _gpuManager.GetDefaultMemory(mode)));
-                    }
+                    GpuCoreOffset = _gpuManager.ClampCoreOffset(SettingsManager.Get($"GpuCore_{mode}", _gpuManager.GetDefaultCore(mode)));
+                    GpuMemoryOffset = _gpuManager.ClampMemoryOffset(SettingsManager.Get($"GpuMemory_{mode}", _gpuManager.GetDefaultMemory(mode)));
 
                     if (IsCustomFanEnabled && IsCurveModeEnabled)
                     {
@@ -363,13 +394,20 @@ public partial class DashboardViewModel
 
         SetRefreshCommand = new RelayCommand(param =>
         {
-            if (Enum.TryParse(param?.ToString(), out RefreshProfile profile))
+            RefreshProfile profile;
+            if (param is RefreshProfile rp)
             {
-                ActiveRefreshProfile = profile;
-                SettingsManager.Save("RefreshMode", (int)profile);
-                bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
-                DisplayManager.ApplyRefreshProfile(profile, isOnline);
+                profile = rp;
             }
+            else if (!Enum.TryParse(param?.ToString(), out profile))
+            {
+                return;
+            }
+
+            ActiveRefreshProfile = profile;
+            SettingsManager.Save("RefreshMode", (int)profile);
+            bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
+            DisplayManager.ApplyRefreshProfile(profile, isOnline);
         });
     }
 }
