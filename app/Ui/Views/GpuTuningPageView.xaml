@@ -119,10 +119,10 @@
 							<TextBlock Text=" MHZ" Foreground="{StaticResource Ember500Brush}" FontFamily="{StaticResource MonoFontFamily}" FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center" />
 						</StackPanel>
 					</Grid>
-					<Slider x:Name="GpuCoreSlider" Style="{StaticResource ModernSliderStyle}" Minimum="-150" Maximum="250"
+					<Slider x:Name="GpuCoreSlider" Style="{StaticResource ModernSliderStyle}" Minimum="-200" Maximum="200"
 					        Value="{Binding GpuCoreOffset, UpdateSourceTrigger=PropertyChanged}" IsSnapToTickEnabled="True"
 					        TickFrequency="5" Margin="0,0,0,14"
-					        ToolTip="Applies a frequency offset (-150 MHz to +250 MHz) to discrete GPU core clocks via NVML." />
+					        ToolTip="Applies a frequency offset (-200 MHz to +200 MHz) to discrete GPU core clocks via NVML." />
 
 					<!-- Memory Clock Offset -->
 					<Grid Margin="0,0,0,4">
@@ -132,10 +132,10 @@
 							<TextBlock Text=" MHZ" Foreground="{StaticResource Ember500Brush}" FontFamily="{StaticResource MonoFontFamily}" FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center" />
 						</StackPanel>
 					</Grid>
-					<Slider x:Name="GpuMemorySlider" Style="{StaticResource ModernSliderStyle}" Minimum="-200" Maximum="1000"
+					<Slider x:Name="GpuMemorySlider" Style="{StaticResource ModernSliderStyle}" Minimum="-500" Maximum="500"
 					        Value="{Binding GpuMemoryOffset, UpdateSourceTrigger=PropertyChanged}" IsSnapToTickEnabled="True"
 					        TickFrequency="10" Margin="0,0,0,4"
-					        ToolTip="Applies a frequency offset (-200 MHz to +1000 MHz) to discrete GPU video memory (VRAM)." />
+					        ToolTip="Applies a frequency offset (-500 MHz to +500 MHz) to discrete GPU video memory (VRAM)." />
 				</StackPanel>
 			</controls:ChamferCard>
 

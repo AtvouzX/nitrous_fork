@@ -129,10 +129,10 @@ public partial class NvidiaGpuManager : IDisposable
         return _internalGpu != null;
     }
 
-    public const int MaxCoreOffset = 250;
-    public const int MinCoreOffset = -150;
-    public const int MaxMemoryOffset = 1000;
-    public const int MinMemoryOffset = -200;
+    public const int MaxCoreOffset = 200;
+    public const int MinCoreOffset = -200;
+    public const int MaxMemoryOffset = 500;
+    public const int MinMemoryOffset = -500;
 
     public int ClampCoreOffset(int offset) => Math.Clamp(offset, MinCoreOffset, MaxCoreOffset);
 

@@ -251,11 +251,11 @@ public class NvidiaGpuManagerTests
     }
 
     [Theory]
-    [InlineData(300, 0)]    // Exceeds MaxCoreOffset (250)
-    [InlineData(-250, 0)]   // Fatal undervolt below safe MinCoreOffset (-150)
+    [InlineData(300, 0)]    // Exceeds MaxCoreOffset (200)
+    [InlineData(-250, 0)]   // Fatal undervolt below safe MinCoreOffset (-200)
     [InlineData(-300, 0)]   // Below MinCoreOffset
-    [InlineData(0, 1200)]   // Exceeds MaxMemoryOffset (1000)
-    [InlineData(0, -1000)]  // Fatal GDDR downclock below safe MinMemoryOffset (-200)
+    [InlineData(0, 1200)]   // Exceeds MaxMemoryOffset (500)
+    [InlineData(0, -1000)]  // Fatal GDDR downclock below safe MinMemoryOffset (-500)
     [InlineData(0, -1200)]  // Below MinMemoryOffset
     public void SetClocksInternal_WithOutOfBoundsOffsets_ReturnsZero(int core, int memory)
     {
@@ -265,11 +265,11 @@ public class NvidiaGpuManagerTests
     }
 
     [Theory]
-    [InlineData(-250, -150)]
-    [InlineData(-300, -150)]
+    [InlineData(-250, -200)]
+    [InlineData(-300, -200)]
     [InlineData(0, 0)]
     [InlineData(100, 100)]
-    [InlineData(300, 250)]
+    [InlineData(300, 200)]
     public void ClampCoreOffset_ClampsToSafeOperatingRange(int input, int expected)
     {
         using var manager = new NvidiaGpuManager();
@@ -277,12 +277,12 @@ public class NvidiaGpuManagerTests
     }
 
     [Theory]
-    [InlineData(-1000, -200)]
-    [InlineData(-500, -200)]
+    [InlineData(-1000, -500)]
+    [InlineData(-600, -500)]
     [InlineData(-100, -100)]
     [InlineData(0, 0)]
     [InlineData(500, 500)]
-    [InlineData(1200, 1000)]
+    [InlineData(1200, 500)]
     public void ClampMemoryOffset_ClampsToSafeOperatingRange(int input, int expected)
     {
         using var manager = new NvidiaGpuManager();
@@ -290,10 +290,10 @@ public class NvidiaGpuManagerTests
     }
 
     [Theory]
-    [InlineData("MinCoreOffset", -150)]
-    [InlineData("MaxCoreOffset", 250)]
-    [InlineData("MinMemoryOffset", -200)]
-    [InlineData("MaxMemoryOffset", 1000)]
+    [InlineData("MinCoreOffset", -200)]
+    [InlineData("MaxCoreOffset", 200)]
+    [InlineData("MinMemoryOffset", -500)]
+    [InlineData("MaxMemoryOffset", 500)]
     public void HardwareOffsetLimits_AreImmutableConstants(string fieldName, int expectedValue)
     {
         var field = typeof(NvidiaGpuManager).GetField(fieldName, BindingFlags.Public | BindingFlags.Static);
