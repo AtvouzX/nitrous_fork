@@ -185,4 +185,132 @@ public class GraphGeometryHelperTests
         Assert.Empty(tempFillPoints);
         Assert.Empty(usageFillPoints);
     }
+
+    [Fact]
+    public void FindHoverPoint_ZeroAllocationsOnHeap_DoesNotAllocateDuringHoverScan()
+    {
+        long now = 1000000;
+        var history = new List<DashboardViewModel.TelemetryPoint>();
+        for (int i = 0; i < 200; i++)
+        {
+            history.Add(new DashboardViewModel.TelemetryPoint
+            {
+                Timestamp = now - 300000 + (i * 1500),
+                Temp = 40 + (i % 30),
+                Usage = 20 + (i % 60)
+            });
+        }
+
+        // Warm up JIT and method compilation
+        GraphGeometryHelper.FindHoverPoint(history, pixelX: 72.0, actualWidth: 144.5, now: now);
+
+        long before = GC.GetAllocatedBytesForCurrentThread();
+
+        for (int i = 0; i < 500; i++)
+        {
+            double px = (i % 144);
+            GraphGeometryHelper.FindHoverPoint(history, pixelX: px, actualWidth: 144.5, now: now);
+        }
+
+        long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
+        Assert.Equal(0, allocated);
+    }
+
+    [Fact]
+    public void FindHoverPoint_WithEqualDeltaPoints_PreservesFirstEncounteredPoint()
+    {
+        long now = 1000000;
+        long targetTime = now - 150000;
+
+        // Two points exactly 100ms before and 100ms after targetTime
+        var pointEarly = new DashboardViewModel.TelemetryPoint { Timestamp = targetTime - 100, Temp = 50, Usage = 30 };
+        var pointLate = new DashboardViewModel.TelemetryPoint { Timestamp = targetTime + 100, Temp = 75, Usage = 60 };
+
+        var history = new List<DashboardViewModel.TelemetryPoint> { pointEarly, pointLate };
+
+        // pixelX at exact midpoint of 300s window on 200px width -> targetTime = now - 150000
+        var result = GraphGeometryHelper.FindHoverPoint(history, pixelX: 100, actualWidth: 200, now: now);
+
+        Assert.True(result.Found);
+        Assert.Equal(pointEarly.Temp, result.Point.Temp);
+        Assert.Equal(pointEarly.Timestamp, result.Point.Timestamp);
+    }
+
+    [Fact]
+    public void FindHoverPoint_AtExactToleranceThreshold_ExcludesSample()
+    {
+        long now = 1000000;
+        long targetTime = now - 150000;
+        long maxTol = 5000;
+
+        var history = new List<DashboardViewModel.TelemetryPoint>
+        {
+            new() { Timestamp = targetTime - maxTol, Temp = 60, Usage = 40 }
+        };
+
+        var result = GraphGeometryHelper.FindHoverPoint(history, pixelX: 100, actualWidth: 200, now: now, maxToleranceMs: maxTol);
+        Assert.False(result.Found);
+    }
+
+    [Fact]
+    public void FindHoverPoint_AtToleranceMinusOne_IncludesSample()
+    {
+        long now = 1000000;
+        long targetTime = now - 150000;
+        long maxTol = 5000;
+
+        var history = new List<DashboardViewModel.TelemetryPoint>
+        {
+            new() { Timestamp = targetTime - maxTol + 1, Temp = 60, Usage = 40 }
+        };
+
+        var result = GraphGeometryHelper.FindHoverPoint(history, pixelX: 100, actualWidth: 200, now: now, maxToleranceMs: maxTol);
+        Assert.True(result.Found);
+        Assert.Equal(60, result.Point.Temp);
+    }
+
+    [Fact]
+    public void FindHoverPoint_WithZeroOrNegativeCanvasWidth_ReturnsNotFound()
+    {
+        long now = 1000000;
+        var history = new List<DashboardViewModel.TelemetryPoint>
+        {
+            new() { Timestamp = now, Temp = 55, Usage = 35 }
+        };
+
+        var zeroWidth = GraphGeometryHelper.FindHoverPoint(history, pixelX: 10, actualWidth: 0, now: now);
+        var negativeWidth = GraphGeometryHelper.FindHoverPoint(history, pixelX: 10, actualWidth: -100, now: now);
+
+        Assert.False(zeroWidth.Found);
+        Assert.False(negativeWidth.Found);
+    }
+
+    [Fact]
+    public void GenerateGraphPoints_WhenFirstPositiveThenZero_GeneratesPoints()
+    {
+        long now = 300000;
+        var history = new List<DashboardViewModel.TelemetryPoint>
+        {
+            new() { Timestamp = 0, Temp = 45, Usage = 20 },
+            new() { Timestamp = 150000, Temp = 0, Usage = 0 }
+        };
+
+        var points = GraphGeometryHelper.GenerateGraphPoints(history, isTemp: true, now: now);
+        Assert.Equal(2, points.Count);
+    }
+
+    [Fact]
+    public void GenerateGraphPoints_WhenNegativeValuesOnly_ReturnsEmptyCollection()
+    {
+        long now = 300000;
+        var history = new List<DashboardViewModel.TelemetryPoint>
+        {
+            new() { Timestamp = 0, Temp = -10, Usage = -5 },
+            new() { Timestamp = 150000, Temp = 0, Usage = 0 }
+        };
+
+        var points = GraphGeometryHelper.GenerateGraphPoints(history, isTemp: true, now: now);
+        Assert.Empty(points);
+        Assert.True(points.IsFrozen);
+    }
 }

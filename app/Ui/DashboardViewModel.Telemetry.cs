@@ -30,43 +30,108 @@ public partial class DashboardViewModel
     public IReadOnlyList<TelemetryPoint> GpuHistory => _gpuHistory;
 
     private PointCollection _cpuTempPoints = new PointCollection();
-    public PointCollection CpuTempPoints { get => _cpuTempPoints; set => SetProperty(ref _cpuTempPoints, value); }
+
+    public PointCollection CpuTempPoints
+    {
+        get => _cpuTempPoints;
+        set => SetProperty(ref _cpuTempPoints, value);
+    }
 
     private PointCollection _cpuTempFillPoints = new PointCollection();
-    public PointCollection CpuTempFillPoints { get => _cpuTempFillPoints; set => SetProperty(ref _cpuTempFillPoints, value); }
+
+    public PointCollection CpuTempFillPoints
+    {
+        get => _cpuTempFillPoints;
+        set => SetProperty(ref _cpuTempFillPoints, value);
+    }
 
     private PointCollection _cpuUsagePoints = new PointCollection();
-    public PointCollection CpuUsagePoints { get => _cpuUsagePoints; set => SetProperty(ref _cpuUsagePoints, value); }
+
+    public PointCollection CpuUsagePoints
+    {
+        get => _cpuUsagePoints;
+        set => SetProperty(ref _cpuUsagePoints, value);
+    }
 
     private PointCollection _cpuUsageFillPoints = new PointCollection();
-    public PointCollection CpuUsageFillPoints { get => _cpuUsageFillPoints; set => SetProperty(ref _cpuUsageFillPoints, value); }
+
+    public PointCollection CpuUsageFillPoints
+    {
+        get => _cpuUsageFillPoints;
+        set => SetProperty(ref _cpuUsageFillPoints, value);
+    }
 
     private PointCollection _gpuTempPoints = new PointCollection();
-    public PointCollection GpuTempPoints { get => _gpuTempPoints; set => SetProperty(ref _gpuTempPoints, value); }
+
+    public PointCollection GpuTempPoints
+    {
+        get => _gpuTempPoints;
+        set => SetProperty(ref _gpuTempPoints, value);
+    }
 
     private PointCollection _gpuTempFillPoints = new PointCollection();
-    public PointCollection GpuTempFillPoints { get => _gpuTempFillPoints; set => SetProperty(ref _gpuTempFillPoints, value); }
+
+    public PointCollection GpuTempFillPoints
+    {
+        get => _gpuTempFillPoints;
+        set => SetProperty(ref _gpuTempFillPoints, value);
+    }
 
     private PointCollection _gpuUsagePoints = new PointCollection();
-    public PointCollection GpuUsagePoints { get => _gpuUsagePoints; set => SetProperty(ref _gpuUsagePoints, value); }
+
+    public PointCollection GpuUsagePoints
+    {
+        get => _gpuUsagePoints;
+        set => SetProperty(ref _gpuUsagePoints, value);
+    }
 
     private PointCollection _gpuUsageFillPoints = new PointCollection();
-    public PointCollection GpuUsageFillPoints { get => _gpuUsageFillPoints; set => SetProperty(ref _gpuUsageFillPoints, value); }
+
+    public PointCollection GpuUsageFillPoints
+    {
+        get => _gpuUsageFillPoints;
+        set => SetProperty(ref _gpuUsageFillPoints, value);
+    }
 
     private double _gpuGraphOpacity = 1.0;
-    public double GpuGraphOpacity { get => _gpuGraphOpacity; set => SetProperty(ref _gpuGraphOpacity, value); }
+
+    public double GpuGraphOpacity
+    {
+        get => _gpuGraphOpacity;
+        set => SetProperty(ref _gpuGraphOpacity, value);
+    }
 
     private double _cpuGraphWidth = GraphGeometryHelper.DefaultGraphWidth;
-    public double CpuGraphWidth { get => _cpuGraphWidth; set => SetProperty(ref _cpuGraphWidth, value); }
+
+    public double CpuGraphWidth
+    {
+        get => _cpuGraphWidth;
+        set => SetProperty(ref _cpuGraphWidth, value);
+    }
 
     private double _cpuGraphHeight = GraphGeometryHelper.DefaultGraphHeight;
-    public double CpuGraphHeight { get => _cpuGraphHeight; set => SetProperty(ref _cpuGraphHeight, value); }
+
+    public double CpuGraphHeight
+    {
+        get => _cpuGraphHeight;
+        set => SetProperty(ref _cpuGraphHeight, value);
+    }
 
     private double _gpuGraphWidth = GraphGeometryHelper.DefaultGraphWidth;
-    public double GpuGraphWidth { get => _gpuGraphWidth; set => SetProperty(ref _gpuGraphWidth, value); }
+
+    public double GpuGraphWidth
+    {
+        get => _gpuGraphWidth;
+        set => SetProperty(ref _gpuGraphWidth, value);
+    }
 
     private double _gpuGraphHeight = GraphGeometryHelper.DefaultGraphHeight;
-    public double GpuGraphHeight { get => _gpuGraphHeight; set => SetProperty(ref _gpuGraphHeight, value); }
+
+    public double GpuGraphHeight
+    {
+        get => _gpuGraphHeight;
+        set => SetProperty(ref _gpuGraphHeight, value);
+    }
 
     public void UpdateCpuGraphDimensions(double width, double height)
     {
@@ -93,50 +158,108 @@ public partial class DashboardViewModel
     public void RegenerateCpuGraphPoints(long now = 0)
     {
         if (now == 0) now = Environment.TickCount64;
-        CpuTempPoints = GraphGeometryHelper.GenerateGraphPoints(_cpuHistory, true, now, _cpuGraphWidth, _cpuGraphHeight);
-        CpuTempFillPoints = GraphGeometryHelper.GenerateGraphFillPoints(_cpuHistory, true, now, _cpuGraphWidth, _cpuGraphHeight);
-        CpuUsagePoints = GraphGeometryHelper.GenerateGraphPoints(_cpuHistory, false, now, _cpuGraphWidth, _cpuGraphHeight);
-        CpuUsageFillPoints = GraphGeometryHelper.GenerateGraphFillPoints(_cpuHistory, false, now, _cpuGraphWidth, _cpuGraphHeight);
+        CpuTempPoints =
+            GraphGeometryHelper.GenerateGraphPoints(_cpuHistory, true, now, _cpuGraphWidth, _cpuGraphHeight);
+        CpuTempFillPoints =
+            GraphGeometryHelper.GenerateGraphFillPoints(_cpuHistory, true, now, _cpuGraphWidth, _cpuGraphHeight);
+        CpuUsagePoints =
+            GraphGeometryHelper.GenerateGraphPoints(_cpuHistory, false, now, _cpuGraphWidth, _cpuGraphHeight);
+        CpuUsageFillPoints =
+            GraphGeometryHelper.GenerateGraphFillPoints(_cpuHistory, false, now, _cpuGraphWidth, _cpuGraphHeight);
     }
 
     public void RegenerateGpuGraphPoints(long now = 0)
     {
         if (now == 0) now = Environment.TickCount64;
-        GpuTempPoints = GraphGeometryHelper.GenerateGraphPoints(_gpuHistory, true, now, _gpuGraphWidth, _gpuGraphHeight);
-        GpuTempFillPoints = GraphGeometryHelper.GenerateGraphFillPoints(_gpuHistory, true, now, _gpuGraphWidth, _gpuGraphHeight);
-        GpuUsagePoints = GraphGeometryHelper.GenerateGraphPoints(_gpuHistory, false, now, _gpuGraphWidth, _gpuGraphHeight);
-        GpuUsageFillPoints = GraphGeometryHelper.GenerateGraphFillPoints(_gpuHistory, false, now, _gpuGraphWidth, _gpuGraphHeight);
+        GpuTempPoints =
+            GraphGeometryHelper.GenerateGraphPoints(_gpuHistory, true, now, _gpuGraphWidth, _gpuGraphHeight);
+        GpuTempFillPoints =
+            GraphGeometryHelper.GenerateGraphFillPoints(_gpuHistory, true, now, _gpuGraphWidth, _gpuGraphHeight);
+        GpuUsagePoints =
+            GraphGeometryHelper.GenerateGraphPoints(_gpuHistory, false, now, _gpuGraphWidth, _gpuGraphHeight);
+        GpuUsageFillPoints =
+            GraphGeometryHelper.GenerateGraphFillPoints(_gpuHistory, false, now, _gpuGraphWidth, _gpuGraphHeight);
     }
 
     private string _cpuTempText = "--°C";
-    public string CpuTempText { get => _cpuTempText; set => SetProperty(ref _cpuTempText, value); }
+
+    public string CpuTempText
+    {
+        get => _cpuTempText;
+        set => SetProperty(ref _cpuTempText, value);
+    }
 
     private string _cpuUsageText = "--%";
-    public string CpuUsageText { get => _cpuUsageText; set => SetProperty(ref _cpuUsageText, value); }
+
+    public string CpuUsageText
+    {
+        get => _cpuUsageText;
+        set => SetProperty(ref _cpuUsageText, value);
+    }
 
     private string _cpuMaxStatsText = "";
-    public string CpuMaxStatsText { get => _cpuMaxStatsText; set => SetProperty(ref _cpuMaxStatsText, value); }
+
+    public string CpuMaxStatsText
+    {
+        get => _cpuMaxStatsText;
+        set => SetProperty(ref _cpuMaxStatsText, value);
+    }
 
     private string _cpuTempColor = "White";
-    public string CpuTempColor { get => _cpuTempColor; set => SetProperty(ref _cpuTempColor, value); }
+
+    public string CpuTempColor
+    {
+        get => _cpuTempColor;
+        set => SetProperty(ref _cpuTempColor, value);
+    }
 
     private string _cpuRpmText = "-- RPM";
-    public string CpuRpmText { get => _cpuRpmText; set => SetProperty(ref _cpuRpmText, value); }
+
+    public string CpuRpmText
+    {
+        get => _cpuRpmText;
+        set => SetProperty(ref _cpuRpmText, value);
+    }
 
     private string _gpuTempText = "--°C";
-    public string GpuTempText { get => _gpuTempText; set => SetProperty(ref _gpuTempText, value); }
+
+    public string GpuTempText
+    {
+        get => _gpuTempText;
+        set => SetProperty(ref _gpuTempText, value);
+    }
 
     private string _gpuUsageText = "--%";
-    public string GpuUsageText { get => _gpuUsageText; set => SetProperty(ref _gpuUsageText, value); }
+
+    public string GpuUsageText
+    {
+        get => _gpuUsageText;
+        set => SetProperty(ref _gpuUsageText, value);
+    }
 
     private string _gpuMaxStatsText = "";
-    public string GpuMaxStatsText { get => _gpuMaxStatsText; set => SetProperty(ref _gpuMaxStatsText, value); }
+
+    public string GpuMaxStatsText
+    {
+        get => _gpuMaxStatsText;
+        set => SetProperty(ref _gpuMaxStatsText, value);
+    }
 
     private string _gpuRpmText = "-- RPM";
-    public string GpuRpmText { get => _gpuRpmText; set => SetProperty(ref _gpuRpmText, value); }
+
+    public string GpuRpmText
+    {
+        get => _gpuRpmText;
+        set => SetProperty(ref _gpuRpmText, value);
+    }
 
     private string _gpuTempColor = "White";
-    public string GpuTempColor { get => _gpuTempColor; set => SetProperty(ref _gpuTempColor, value); }
+
+    public string GpuTempColor
+    {
+        get => _gpuTempColor;
+        set => SetProperty(ref _gpuTempColor, value);
+    }
 
     public const string AcBadgeIcon =
         "M16,7V3H14V7H10V3H8V7C8,10 9.79,11.4 11,11.83V16H13V11.83C14.21,11.4 16,10 16,7M10,18H14V22H10V18Z";
@@ -145,19 +268,44 @@ public partial class DashboardViewModel
         "M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z";
 
     private double _batteryChargePercent = 100.0;
-    public double BatteryChargePercent { get => _batteryChargePercent; set => SetProperty(ref _batteryChargePercent, value); }
+
+    public double BatteryChargePercent
+    {
+        get => _batteryChargePercent;
+        set => SetProperty(ref _batteryChargePercent, value);
+    }
 
     private string _batteryBadgeText = "AC POWER";
-    public string BatteryBadgeText { get => _batteryBadgeText; set => SetProperty(ref _batteryBadgeText, value); }
+
+    public string BatteryBadgeText
+    {
+        get => _batteryBadgeText;
+        set => SetProperty(ref _batteryBadgeText, value);
+    }
 
     private string _batteryBadgeBorder = "#FF4500";
-    public string BatteryBadgeBorder { get => _batteryBadgeBorder; set => SetProperty(ref _batteryBadgeBorder, value); }
+
+    public string BatteryBadgeBorder
+    {
+        get => _batteryBadgeBorder;
+        set => SetProperty(ref _batteryBadgeBorder, value);
+    }
 
     private string _batteryBadgeForeground = "White";
-    public string BatteryBadgeForeground { get => _batteryBadgeForeground; set => SetProperty(ref _batteryBadgeForeground, value); }
+
+    public string BatteryBadgeForeground
+    {
+        get => _batteryBadgeForeground;
+        set => SetProperty(ref _batteryBadgeForeground, value);
+    }
 
     private string _batteryBadgeIcon = AcBadgeIcon;
-    public string BatteryBadgeIcon { get => _batteryBadgeIcon; set => SetProperty(ref _batteryBadgeIcon, value); }
+
+    public string BatteryBadgeIcon
+    {
+        get => _batteryBadgeIcon;
+        set => SetProperty(ref _batteryBadgeIcon, value);
+    }
 
     public void UpdateBatteryBadge(Powrprof.SYSTEM_BATTERY_STATE batteryState)
     {
@@ -165,7 +313,8 @@ public partial class DashboardViewModel
 
         if (batteryState.MaxCapacity > 0)
         {
-            BatteryChargePercent = Math.Clamp((double)batteryState.RemainingCapacity / batteryState.MaxCapacity * 100.0, 0.0, 100.0);
+            BatteryChargePercent = Math.Clamp((double)batteryState.RemainingCapacity / batteryState.MaxCapacity * 100.0,
+                0.0, 100.0);
         }
         else
         {
@@ -177,7 +326,8 @@ public partial class DashboardViewModel
         {
             if (batteryState.BatteryPresent && batteryState.Charging && watts > 0.5)
             {
-                BatteryBadgeText = $"CHARGING • {watts.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}W";
+                BatteryBadgeText =
+                    $"CHARGING • {watts.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}W";
                 BatteryBadgeBorder = "#34C759";
                 BatteryBadgeForeground = "#34C759";
                 BatteryBadgeIcon = AcBadgeIcon;
@@ -192,7 +342,9 @@ public partial class DashboardViewModel
         }
         else
         {
-            BatteryBadgeText = watts > 0.1 ? $"BATTERY • {watts.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}W" : "BATTERY";
+            BatteryBadgeText = watts > 0.1
+                ? $"BATTERY • {watts.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}W"
+                : "BATTERY";
             BatteryBadgeBorder = "#32D74B";
             BatteryBadgeForeground = "#64D2FF";
             BatteryBadgeIcon = BattBadgeIcon;
@@ -334,6 +486,31 @@ public partial class DashboardViewModel
     private int _gpuSleepHoldTicks;
     internal int GpuSleepHoldTicks => _gpuSleepHoldTicks;
 
+    private PowerProfile? _cachedProfile;
+    private List<Point>? _cachedCpuCurve;
+    private List<Point>? _cachedGpuCurve;
+    private long _cachedCurveVersion = -1;
+    private string _lastObservedFanPreset = "";
+
+    internal long CachedCurveVersionForTesting => _cachedCurveVersion;
+    internal List<Point>? CachedCpuCurveForTesting => _cachedCpuCurve;
+    internal List<Point>? CachedGpuCurveForTesting => _cachedGpuCurve;
+
+    internal void EnsureCachedCurvesLoaded(long currentCurveVersion, string pName)
+    {
+        if (_cachedCpuCurve == null || _cachedGpuCurve == null || _cachedProfile != ActivePowerProfile ||
+            _lastObservedFanPreset != pName || _cachedCurveVersion != currentCurveVersion)
+        {
+            _cachedProfile = ActivePowerProfile;
+            _lastObservedFanPreset = pName;
+            _cachedCurveVersion = currentCurveVersion;
+            _cachedCpuCurve = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{pName}",
+                FanCurveHelper.GetDefaultCpuCurve(ActivePowerProfile));
+            _cachedGpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}",
+                FanCurveHelper.GetDefaultGpuCurve(ActivePowerProfile));
+        }
+    }
+
     private void StartTelemetryPolling()
     {
         _pollingCts?.Cancel();
@@ -370,7 +547,8 @@ public partial class DashboardViewModel
                     // Debounced via EvaluateGpuSleepHysteresis to absorb transient 1-2s RTD3 drops and CM API read flickers.
                     bool gpuIsAwake = NvidiaGpuManager.IsGpuAwake();
                     var (newWasAwake, newHoldTicks, _, shouldResetHandle) =
-                        NvidiaGpuManager.EvaluateGpuSleepHysteresis(_wasGpuAwake, gpuIsAwake, _gpuSleepHoldTicks, NvidiaGpuManager.GpuSleepHysteresisCycles);
+                        NvidiaGpuManager.EvaluateGpuSleepHysteresis(_wasGpuAwake, gpuIsAwake, _gpuSleepHoldTicks,
+                            NvidiaGpuManager.GpuSleepHysteresisCycles);
 
                     _wasGpuAwake = newWasAwake;
                     _gpuSleepHoldTicks = newHoldTicks;
@@ -421,7 +599,10 @@ public partial class DashboardViewModel
                         }
                         else
                         {
-                            var activeFanMode = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile fMode) ? fMode : FanProfile.Auto;
+                            var activeFanMode =
+                                Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile fMode)
+                                    ? fMode
+                                    : FanProfile.Auto;
                             if (activeFanMode == FanProfile.Max)
                             {
                                 CpuFanPercentage = 100;
@@ -431,26 +612,27 @@ public partial class DashboardViewModel
                             {
                                 int curCpu = telemetry.CpuTemp > 0 ? telemetry.CpuTemp : 50;
                                 int curGpu = telemetry.GpuTemp > 0 ? telemetry.GpuTemp : curCpu;
+                                long currentCurveVersion = SettingsManager.Get("FanCurveVersion", 0L);
                                 string pName = SettingsManager.Get("ActiveFanCurvePreset", "Auto");
                                 if (pName == "Auto") pName = ActivePowerProfile.ToString();
-                                var cpuCurve = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{pName}", FanCurveHelper.GetDefaultCpuCurve(ActivePowerProfile));
-                                var gpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}", FanCurveHelper.GetDefaultGpuCurve(ActivePowerProfile));
-                                CpuFanPercentage = Math.Clamp(FanCurveHelper.InterpolateSpeed(cpuCurve, curCpu), 0, 100);
-                                GpuFanPercentage = Math.Clamp(FanCurveHelper.InterpolateSpeed(gpuCurve, curGpu), 0, 100);
+
+                                EnsureCachedCurvesLoaded(currentCurveVersion, pName);
+
+                                CpuFanPercentage = Math.Clamp(FanCurveHelper.InterpolateSpeed(_cachedCpuCurve, curCpu),
+                                    0, 100);
+                                GpuFanPercentage = Math.Clamp(FanCurveHelper.InterpolateSpeed(_cachedGpuCurve, curGpu),
+                                    0, 100);
                             }
                             else
                             {
-                                CpuFanPercentage = telemetry.CpuRpm > 0
-                                    ? Math.Clamp((int)Math.Round((telemetry.CpuRpm - 1800.0) / (5850.0 - 1800.0) * 70.0 + 30.0), 0, 100)
-                                    : 0;
-                                GpuFanPercentage = telemetry.GpuRpm > 0
-                                    ? Math.Clamp((int)Math.Round((telemetry.GpuRpm - 1800.0) / (5850.0 - 1800.0) * 70.0 + 30.0), 0, 100)
-                                    : 0;
+                                CpuFanPercentage = FanCurveHelper.RpmToPercentage(telemetry.CpuRpm);
+                                GpuFanPercentage = FanCurveHelper.RpmToPercentage(telemetry.GpuRpm);
                             }
                         }
 
                         // 2. Update NVIDIA SMI Deep Telemetry
-                        if (smi != null && !string.IsNullOrEmpty(smi.Name) && smi.Name != "Unknown" && smi.PState != "Sleep")
+                        if (smi != null && !string.IsNullOrEmpty(smi.Name) && smi.Name != "Unknown" &&
+                            smi.PState != "Sleep")
                         {
                             // Override WMI GPU temp with highly-accurate NVML temp if awake
                             if (smi.CoreTemp > 0)
@@ -538,6 +720,7 @@ public partial class DashboardViewModel
                         {
                             _cpuHistory.RemoveAt(0);
                         }
+
                         while (_gpuHistory.Count > 0 && _gpuHistory[0].Timestamp < cutoff)
                         {
                             _gpuHistory.RemoveAt(0);
@@ -550,6 +733,7 @@ public partial class DashboardViewModel
                             if (_cpuHistory[i].Temp > maxCpuTemp) maxCpuTemp = _cpuHistory[i].Temp;
                             if (_cpuHistory[i].Usage > maxCpuUsage) maxCpuUsage = _cpuHistory[i].Usage;
                         }
+
                         CpuMaxStatsText = $"MAX: {maxCpuTemp}°C  {maxCpuUsage:0}%";
 
                         double maxGpuTemp = 0;
@@ -559,6 +743,7 @@ public partial class DashboardViewModel
                             if (_gpuHistory[i].Temp > maxGpuTemp) maxGpuTemp = _gpuHistory[i].Temp;
                             if (_gpuHistory[i].Usage > maxGpuUsage) maxGpuUsage = _gpuHistory[i].Usage;
                         }
+
                         GpuMaxStatsText = $"MAX: {maxGpuTemp}°C  {maxGpuUsage:0}%";
 
                         RegenerateCpuGraphPoints(now);

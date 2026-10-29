@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Windows;
 using System.Windows.Media;
 using Nitrous.Ui;
@@ -17,6 +16,19 @@ public static class GraphGeometryHelper
     public const double DefaultGraphHeight = 94.0;
     public const long DefaultWindowDurationMs = 300000; // 5 minutes
 
+    private static bool HasPositiveValue(IReadOnlyList<DashboardViewModel.TelemetryPoint> history, bool isTemp)
+    {
+        for (int i = 0; i < history.Count; i++)
+        {
+            if ((isTemp ? history[i].Temp : history[i].Usage) > 0)
+            {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     /// <summary>
     /// Generates stroke line points for a telemetry history stream.
     /// </summary>
@@ -29,7 +41,7 @@ public static class GraphGeometryHelper
         long windowDurationMs = DefaultWindowDurationMs)
     {
         var points = new PointCollection();
-        if (history.Count == 0 || history.All(p => (isTemp ? p.Temp : p.Usage) <= 0))
+        if (history.Count == 0 || !HasPositiveValue(history, isTemp))
         {
             points.Freeze();
             return points;
@@ -62,7 +74,7 @@ public static class GraphGeometryHelper
         long windowDurationMs = DefaultWindowDurationMs)
     {
         var points = new PointCollection();
-        if (history.Count == 0 || history.All(p => (isTemp ? p.Temp : p.Usage) <= 0))
+        if (history.Count == 0 || !HasPositiveValue(history, isTemp))
         {
             points.Freeze();
             return points;
@@ -109,12 +121,25 @@ public static class GraphGeometryHelper
 
         double clampedX = Math.Clamp(pixelX, 0, actualWidth);
         long targetTime = now - windowDurationMs + (long)((clampedX / actualWidth) * windowDurationMs);
-        var point = history.OrderBy(p => Math.Abs(p.Timestamp - targetTime)).FirstOrDefault();
 
-        if (point.Timestamp > 0 && Math.Abs(point.Timestamp - targetTime) < maxToleranceMs)
+        DashboardViewModel.TelemetryPoint bestPoint = default;
+        long minDiff = long.MaxValue;
+
+        for (int i = 0; i < history.Count; i++)
         {
-            TimeSpan diff = TimeSpan.FromMilliseconds(now - point.Timestamp);
-            return (true, point, diff);
+            var p = history[i];
+            long diff = Math.Abs(p.Timestamp - targetTime);
+            if (diff < minDiff)
+            {
+                minDiff = diff;
+                bestPoint = p;
+            }
+        }
+
+        if (bestPoint.Timestamp > 0 && minDiff < maxToleranceMs)
+        {
+            TimeSpan diff = TimeSpan.FromMilliseconds(now - bestPoint.Timestamp);
+            return (true, bestPoint, diff);
         }
 
         return (false, default, TimeSpan.Zero);
