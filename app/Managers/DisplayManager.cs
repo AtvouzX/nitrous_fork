@@ -97,27 +97,33 @@ public static class DisplayManager
 
             LogManager.Info($"Switching display refresh rate from {mode.dmDisplayFrequency}Hz to {targetHz}Hz (Profile: {profile}, AC: {isAcPower})", "Display");
 
-            // 1. Try Windows CCD API (Connecting and Configuring Displays) - the modern standard for Windows 10/11 internal laptop panels
-            if (TryApplyRefreshViaCcd(targetHz))
-            {
-                return;
-            }
-
-            // 2. Fall back to ChangeDisplaySettingsExW with preserved resolution and color depth flags
-            mode.dmFields |= User32.DM_DISPLAYFREQUENCY | User32.DM_PELSWIDTH | User32.DM_PELSHEIGHT | User32.DM_BITSPERPEL;
+            // 1. Primary method (fast/seamless): ChangeDisplaySettingsExW with DM_DISPLAYFREQUENCY.
+            // When only DM_DISPLAYFREQUENCY is specified, Windows and the graphics driver perform
+            // a dynamic in-place frequency switch without blanking or turning off the screen (matching v0.9.30).
+            mode.dmFields = User32.DM_DISPLAYFREQUENCY;
             mode.dmDisplayFrequency = targetHz;
 
             int ret = User32.ChangeDisplaySettingsExW(null, ref mode, IntPtr.Zero, User32.CDS_UPDATEREGISTRY, IntPtr.Zero);
-            if (ret != 0 && !string.IsNullOrEmpty(mode.dmDeviceName))
+            if (ret != User32.DISP_CHANGE_SUCCESSFUL && !string.IsNullOrEmpty(mode.dmDeviceName))
             {
                 // Retry with explicit device name if null returned an error
                 ret = User32.ChangeDisplaySettingsExW(mode.dmDeviceName, ref mode, IntPtr.Zero, User32.CDS_UPDATEREGISTRY, IntPtr.Zero);
             }
 
-            if (ret != 0)
+            if (ret == User32.DISP_CHANGE_SUCCESSFUL)
             {
-                LogManager.Warn($"ChangeDisplaySettingsExW returned error code {ret}", "Display");
+                return;
             }
+
+            LogManager.Warn($"ChangeDisplaySettingsExW returned error code {ret}; attempting CCD fallback", "Display");
+
+            // 2. Fallback method: Windows CCD API (Connecting and Configuring Displays)
+            if (TryApplyRefreshViaCcd(targetHz))
+            {
+                return;
+            }
+
+            LogManager.Warn($"All refresh rate application methods failed for {targetHz}Hz", "Display");
         }
         catch (Exception ex)
         {
