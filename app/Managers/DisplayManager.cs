@@ -91,11 +91,15 @@ public static class DisplayManager
             // Do not ask the driver for a mode it did not advertise.
             if (!IsRefreshSupported(mode.dmPelsWidth, mode.dmPelsHeight, targetHz))
             {
-                LogManager.Warn($"Display: {targetHz}Hz is not supported at {mode.dmPelsWidth}x{mode.dmPelsHeight}; leaving current mode unchanged.", "Display");
+                LogManager.Warn(
+                    $"Display: {targetHz}Hz is not supported at {mode.dmPelsWidth}x{mode.dmPelsHeight}; leaving current mode unchanged.",
+                    "Display");
                 return;
             }
 
-            LogManager.Info($"Switching display refresh rate from {mode.dmDisplayFrequency}Hz to {targetHz}Hz (Profile: {profile}, AC: {isAcPower})", "Display");
+            LogManager.Info(
+                $"Switching display refresh rate from {mode.dmDisplayFrequency}Hz to {targetHz}Hz (Profile: {profile}, AC: {isAcPower})",
+                "Display");
 
             // 1. Primary method (fast/seamless): ChangeDisplaySettingsExW with DM_DISPLAYFREQUENCY.
             // When only DM_DISPLAYFREQUENCY is specified, Windows and the graphics driver perform
@@ -103,11 +107,13 @@ public static class DisplayManager
             mode.dmFields = User32.DM_DISPLAYFREQUENCY;
             mode.dmDisplayFrequency = targetHz;
 
-            int ret = User32.ChangeDisplaySettingsExW(null, ref mode, IntPtr.Zero, User32.CDS_UPDATEREGISTRY, IntPtr.Zero);
+            int ret = User32.ChangeDisplaySettingsExW(null, ref mode, IntPtr.Zero, User32.CDS_UPDATEREGISTRY,
+                IntPtr.Zero);
             if (ret != User32.DISP_CHANGE_SUCCESSFUL && !string.IsNullOrEmpty(mode.dmDeviceName))
             {
                 // Retry with explicit device name if null returned an error
-                ret = User32.ChangeDisplaySettingsExW(mode.dmDeviceName, ref mode, IntPtr.Zero, User32.CDS_UPDATEREGISTRY, IntPtr.Zero);
+                ret = User32.ChangeDisplaySettingsExW(mode.dmDeviceName, ref mode, IntPtr.Zero,
+                    User32.CDS_UPDATEREGISTRY, IntPtr.Zero);
             }
 
             if (ret == User32.DISP_CHANGE_SUCCESSFUL)
@@ -135,13 +141,15 @@ public static class DisplayManager
     {
         try
         {
-            int err = User32.GetDisplayConfigBufferSizes(User32.QDC_ONLY_ACTIVE_PATHS, out uint pathCount, out uint modeCount);
+            int err = User32.GetDisplayConfigBufferSizes(User32.QDC_ONLY_ACTIVE_PATHS, out uint pathCount,
+                out uint modeCount);
             if (err != 0 || pathCount == 0) return false;
 
             var paths = new User32.DISPLAYCONFIG_PATH_INFO[pathCount];
             var modes = new User32.DISPLAYCONFIG_MODE_INFO[modeCount];
 
-            err = User32.QueryDisplayConfig(User32.QDC_ONLY_ACTIVE_PATHS, ref pathCount, paths, ref modeCount, modes, IntPtr.Zero);
+            err = User32.QueryDisplayConfig(User32.QDC_ONLY_ACTIVE_PATHS, ref pathCount, paths, ref modeCount, modes,
+                IntPtr.Zero);
             if (err != 0) return false;
 
             for (int i = 0; i < pathCount; i++)
@@ -155,15 +163,17 @@ public static class DisplayManager
                 uint targetModeIdx = paths[i].targetInfo.modeInfoIdx;
                 if (targetModeIdx < modeCount && modes[targetModeIdx].infoType == 2 /* Target mode */)
                 {
-                    modes[targetModeIdx].info.targetMode.targetVideoSignalInfo.vSyncFreq = new User32.DISPLAYCONFIG_RATIONAL
-                    {
-                        Numerator = (uint)targetHz,
-                        Denominator = 1
-                    };
+                    modes[targetModeIdx].info.targetMode.targetVideoSignalInfo.vSyncFreq =
+                        new User32.DISPLAYCONFIG_RATIONAL
+                        {
+                            Numerator = (uint)targetHz,
+                            Denominator = 1
+                        };
                 }
             }
 
-            uint flags = User32.SDC_APPLY | User32.SDC_USE_SUPPLIED_DISPLAY_CONFIG | User32.SDC_ALLOW_CHANGES | User32.SDC_SAVE_TO_DATABASE;
+            uint flags = User32.SDC_APPLY | User32.SDC_USE_SUPPLIED_DISPLAY_CONFIG | User32.SDC_ALLOW_CHANGES |
+                         User32.SDC_SAVE_TO_DATABASE;
             int applyErr = User32.SetDisplayConfig(pathCount, paths, modeCount, modes, flags);
             if (applyErr == 0)
             {
@@ -171,7 +181,8 @@ public static class DisplayManager
                 return true;
             }
 
-            LogManager.Debug($"SetDisplayConfig returned {applyErr}; falling back to ChangeDisplaySettingsExW", "Display");
+            LogManager.Debug($"SetDisplayConfig returned {applyErr}; falling back to ChangeDisplaySettingsExW",
+                "Display");
             return false;
         }
         catch (Exception ex)

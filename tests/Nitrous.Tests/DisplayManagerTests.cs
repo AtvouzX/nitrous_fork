@@ -46,3 +46,4 @@ public class DisplayManagerTests
         Assert.Equal(1, SettingsManager.Get("GpuOffsetsMigratedToStock_v1", 0));
     }
 }
+

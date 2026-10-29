@@ -218,18 +218,18 @@
 						<StackPanel>
 							<RadioButton x:Name="BtnRefreshAuto" TabIndex="0" GroupName="Refresh" Uid="Auto"
 							             Content="AUTO" Tag="{Binding AutoRefreshSubtext}"
-							             Style="{StaticResource VerticalDetentButtonStyle}"
-							             IsChecked="{Binding IsRefreshAutoChecked, Mode=TwoWay}"
+							             Style="{StaticResource VerticalDetentButtonStyle}" Command="{Binding SetRefreshCommand}"
+							             CommandParameter="Auto"
 							             ToolTip="Automatically switches to maximum refresh rate on AC power and 60Hz on battery to save power." />
 							<RadioButton x:Name="BtnRefresh60" TabIndex="1" GroupName="Refresh" Uid="Hz60"
 							             Content="60HZ" Tag="Eco"
-							             Style="{StaticResource VerticalDetentButtonStyle}"
-							             IsChecked="{Binding IsRefresh60Checked, Mode=TwoWay}"
+							             Style="{StaticResource VerticalDetentButtonStyle}" Command="{Binding SetRefreshCommand}"
+							             CommandParameter="Hz60"
 							             ToolTip="Locks display to 60Hz to reduce display panel power consumption." />
 							<RadioButton x:Name="BtnRefreshMax" TabIndex="1" GroupName="Refresh" Uid="MaxHz"
 							             Content="{Binding MaxRefreshText}" Tag="Max"
-							             Style="{StaticResource VerticalDetentButtonStyle}"
-							             IsChecked="{Binding IsRefreshMaxChecked, Mode=TwoWay}"
+							             Style="{StaticResource VerticalDetentButtonStyle}" Command="{Binding SetRefreshCommand}"
+							             CommandParameter="MaxHz"
 							             ToolTip="Forces maximum display refresh rate for fluid, low-latency visuals." />
 						</StackPanel>
 					</controls:ChamferCard>
