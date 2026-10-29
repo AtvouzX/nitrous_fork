@@ -17,9 +17,21 @@ public partial class TrayApplication : ApplicationContext
     internal ContextMenuStrip? ContextMenu => trayIcon?.ContextMenuStrip;
     internal NotifyIcon TrayIcon => trayIcon;
     private bool? _wasOnAcPower = null;
-    internal bool? WasOnAcPower { get => _wasOnAcPower; set => _wasOnAcPower = value; }
+
+    internal bool? WasOnAcPower
+    {
+        get => _wasOnAcPower;
+        set => _wasOnAcPower = value;
+    }
+
     private bool _wasGpuAwake;
-    internal bool WasGpuAwake { get => _wasGpuAwake; set => _wasGpuAwake = value; }
+
+    internal bool WasGpuAwake
+    {
+        get => _wasGpuAwake;
+        set => _wasGpuAwake = value;
+    }
+
     internal PowerProfile? LastOsdProfile { get; set; }
     private int _powerEventId = 0;
 
@@ -60,11 +72,20 @@ public partial class TrayApplication : ApplicationContext
     {
         Instance = this;
         Icon appIcon = SystemIcons.Shield;
-        try { appIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Shield; }
-        catch (Exception ex) { LogManager.Debug($"Could not extract app icon: {ex.Message}", "Tray"); }
+        try
+        {
+            appIcon = Icon.ExtractAssociatedIcon(Application.ExecutablePath) ?? SystemIcons.Shield;
+        }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"Could not extract app icon: {ex.Message}", "Tray");
+        }
 
         trayIcon = new NotifyIcon { Icon = appIcon, Visible = true, Text = "Nitrous" };
-        trayIcon.MouseClick += (s, e) => { if (e.Button == MouseButtons.Left) ShowDashboard(); };
+        trayIcon.MouseClick += (s, e) =>
+        {
+            if (e.Button == MouseButtons.Left) ShowDashboard();
+        };
 
         BuildContextMenu();
 
@@ -79,7 +100,8 @@ public partial class TrayApplication : ApplicationContext
 
             try
             {
-                _settingsSyncEvent = new EventWaitHandle(false, EventResetMode.AutoReset, Program.SettingsChangedEventName);
+                _settingsSyncEvent =
+                    new EventWaitHandle(false, EventResetMode.AutoReset, Program.SettingsChangedEventName);
                 _settingsSyncReg = ThreadPool.RegisterWaitForSingleObject(_settingsSyncEvent, (state, timedOut) =>
                 {
                     LogManager.SyncSettings();
@@ -189,7 +211,14 @@ public partial class TrayApplication : ApplicationContext
                 uiProc.EnableRaisingEvents = true;
                 uiProc.Exited += (s, e) =>
                 {
-                    try { uiProc.Dispose(); } catch { }
+                    try
+                    {
+                        uiProc.Dispose();
+                    }
+                    catch
+                    {
+                    }
+
                     MemoryHelper.TrimWorkingSet();
                 };
             }
@@ -232,7 +261,8 @@ public partial class TrayApplication : ApplicationContext
         {
             var previousMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
             string keyMode = isOnline ? "LastAcPowerMode" : "LastDcPowerMode";
-            var activeMode = (PowerProfile)SettingsManager.Get(keyMode, (int)(isOnline ? PowerProfile.Performance : PowerProfile.Quiet));
+            var activeMode = (PowerProfile)SettingsManager.Get(keyMode,
+                (int)(isOnline ? PowerProfile.Performance : PowerProfile.Quiet));
             _ = AcerWmiManager.SetPowerModeAsync(activeMode);
             SettingsManager.Save("LastPowerMode", (int)activeMode);
 
@@ -240,7 +270,8 @@ public partial class TrayApplication : ApplicationContext
             var activeFan = Enum.TryParse(SettingsManager.Get(keyFan, "Auto"), out FanProfile f) ? f : FanProfile.Auto;
 
             if (activeFan == FanProfile.Medium)
-                _ = AcerWmiManager.SetCustomFansAsync(SettingsManager.Get("CustomFanSpeedCpu", 50), SettingsManager.Get("CustomFanSpeedGpu", 50));
+                _ = AcerWmiManager.SetCustomFansAsync(SettingsManager.Get("CustomFanSpeedCpu", 50),
+                    SettingsManager.Get("CustomFanSpeedGpu", 50));
             else
                 _ = AcerWmiManager.SetFansAsync(activeFan);
 
@@ -269,7 +300,6 @@ public partial class TrayApplication : ApplicationContext
 
         _ = _gpuManager.ApplyPowerProfileOcAsync(currentProfile, isOnline);
     }
-
 
 
     internal void ReloadHotkeys()
@@ -315,17 +345,13 @@ public partial class TrayApplication : ApplicationContext
         string saved = SettingsManager.Get(settingKey, "");
         if (string.IsNullOrEmpty(saved)) return;
 
-        try
+        if (HotkeyFormatter.TryParse(saved, out uint mods, out uint key))
         {
-            // Example saved format: "2|81" (Modifiers=2 (Ctrl), Key=81 (Q))
-            var parts = saved.Split('|');
-            uint mods = uint.Parse(parts[0]);
-            uint key = uint.Parse(parts[1]);
             _hotkeys.Register(id, mods, key);
         }
-        catch (Exception ex)
+        else
         {
-            LogManager.Debug($"Failed registering hotkey ID {id} ('{saved}'): {ex.Message}", "Tray");
+            LogManager.Debug($"Failed registering hotkey ID {id} ('{saved}'): Invalid format", "Tray");
         }
     }
 
@@ -389,10 +415,10 @@ public partial class TrayApplication : ApplicationContext
         LastOsdProfile = profile;
         Color osdColor = profile switch
         {
-            PowerProfile.Quiet => Color.FromArgb(52, 199, 89),       // Green
-            PowerProfile.Balanced => Color.FromArgb(10, 132, 255),   // Blue
-            PowerProfile.Performance => Color.FromArgb(255, 159, 10),// Orange
-            PowerProfile.Turbo => Color.FromArgb(255, 69, 58),       // Red
+            PowerProfile.Quiet => Color.FromArgb(52, 199, 89), // Green
+            PowerProfile.Balanced => Color.FromArgb(10, 132, 255), // Blue
+            PowerProfile.Performance => Color.FromArgb(255, 159, 10), // Orange
+            PowerProfile.Turbo => Color.FromArgb(255, 69, 58), // Red
             _ => Color.White
         };
 
@@ -406,6 +432,7 @@ public partial class TrayApplication : ApplicationContext
         {
             CleanupResources();
         }
+
         base.Dispose(disposing);
     }
 
@@ -448,12 +475,20 @@ public partial class TrayApplication : ApplicationContext
                     {
                         if (p.Id != currentId && p.SessionId == currentSessionId)
                         {
-                            try { p.Kill(); } catch { }
+                            try
+                            {
+                                p.Kill();
+                            }
+                            catch
+                            {
+                            }
                         }
                     }
                 }
             }
-            catch { }
+            catch
+            {
+            }
         }
     }
 

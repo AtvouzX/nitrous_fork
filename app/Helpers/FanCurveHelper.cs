@@ -6,6 +6,23 @@ namespace Nitrous.Helpers;
 
 public static class FanCurveHelper
 {
+    public const double MinRpm = 1800.0;
+    public const double MaxRpm = 5850.0;
+    public const double MinDutyPercentage = 30.0;
+    public const double MaxDutyPercentage = 100.0;
+
+    /// <summary>
+    /// Converts physical fan tachometer RPM into an estimated duty-cycle percentage (30% - 100%).
+    /// Returns 0 if RPM is zero or negative (fan stopped/idle).
+    /// </summary>
+    public static int RpmToPercentage(int rpm)
+    {
+        if (rpm <= 0) return 0;
+        return Math.Clamp(
+            (int)Math.Round((rpm - MinRpm) / (MaxRpm - MinRpm) * (MaxDutyPercentage - MinDutyPercentage) +
+                            MinDutyPercentage), 0, 100);
+    }
+
     public static List<Point> GetDefaultCpuCurve(PowerProfile profile)
     {
         return profile switch
@@ -46,6 +63,7 @@ public static class FanCurveHelper
                 return (int)Math.Round(curve[i].Y + t * (curve[i + 1].Y - curve[i].Y));
             }
         }
+
         return (int)curve[^1].Y;
     }
 
@@ -73,11 +91,13 @@ public static class FanCurveHelper
                     pts.Add(new Point(x, y));
                 }
             }
+
             if (pts.Count >= 2)
             {
                 pts.Sort((a, b) => a.X.CompareTo(b.X));
                 return pts;
             }
+
             return [.. defaultCurve];
         }
         catch (Exception ex)

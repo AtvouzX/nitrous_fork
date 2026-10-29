@@ -3,6 +3,7 @@ using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using Nitrous.Enums;
+using Nitrous.Helpers;
 
 namespace Nitrous.Ui;
 
@@ -66,7 +67,10 @@ public class OsdForm : Form
             {
                 this.BeginInvoke(new Action(() => ShowProfile(profileName, color, profile)));
             }
-            catch { }
+            catch
+            {
+            }
+
             return;
         }
 
@@ -107,6 +111,7 @@ public class OsdForm : Form
             _holdTimer.Dispose();
             _fadeTimer.Dispose();
         }
+
         base.Dispose(disposing);
     }
 
@@ -171,21 +176,9 @@ public class OsdForm : Form
 
         g.DrawArc(thickPen, cx - r, cy - r, r * 2, r * 2, 135, 270);
 
-        double angle = 270;
-        switch (profile)
-        {
-            case PowerProfile.Quiet: angle = 180; break;
-            case PowerProfile.Balanced: angle = 270; break;
-            case PowerProfile.Performance: angle = 360; break;
-            case PowerProfile.Turbo: angle = 45; break;
-        }
-
         g.FillEllipse(new SolidBrush(color), cx - 3, cy - 3, 6, 6);
 
-        double rad = angle * Math.PI / 180.0;
-        int nx = cx + (int)((r - 2) * Math.Cos(rad));
-        int ny = cy + (int)((r - 2) * Math.Sin(rad));
-
+        var (nx, ny) = DialGeometryHelper.CalculateNeedleTip(cx, cy, r - 2, profile);
         g.DrawLine(thinPen, cx, cy, nx, ny);
     }
 

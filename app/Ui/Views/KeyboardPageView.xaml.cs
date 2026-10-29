@@ -1,6 +1,7 @@
 using System;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Nitrous.Helpers;
 using Nitrous.Managers;
 using UserControl = System.Windows.Controls.UserControl;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
@@ -20,8 +21,8 @@ public partial class KeyboardPageView : UserControl
     {
         if (TxtHkCycle != null)
         {
-            TxtHkCycle.Text = FormatHotkeyLabel(SettingsManager.Get("Hotkey_CyclePower", ""));
-            TxtHkDash.Text = FormatHotkeyLabel(SettingsManager.Get("Hotkey_Dashboard", ""));
+            TxtHkCycle.Text = HotkeyFormatter.Format(SettingsManager.Get("Hotkey_CyclePower", ""));
+            TxtHkDash.Text = HotkeyFormatter.Format(SettingsManager.Get("Hotkey_Dashboard", ""));
         }
     }
 
@@ -62,33 +63,12 @@ public partial class KeyboardPageView : UserControl
         if (modifiers == 0) return;
 
         // Save as "Modifiers|VirtualKey"
-        string savedValue = $"{modifiers}|{vk}";
+        string savedValue = HotkeyFormatter.Serialize(modifiers, vk);
         SettingsManager.Save(settingKey, savedValue);
 
-        txt.Text = FormatHotkeyLabel(savedValue);
+        txt.Text = HotkeyFormatter.Format(savedValue);
         Keyboard.ClearFocus();
     }
 
-    public static string FormatHotkeyLabel(string savedValue)
-    {
-        if (string.IsNullOrEmpty(savedValue)) return "None";
-        try
-        {
-            var parts = savedValue.Split('|');
-            uint mods = uint.Parse(parts[0]);
-            uint vk = uint.Parse(parts[1]);
-
-            string label = "";
-            if ((mods & 0x0002) != 0) label += "Ctrl + ";
-            if ((mods & 0x0004) != 0) label += "Shift + ";
-            if ((mods & 0x0001) != 0) label += "Alt + ";
-
-            label += KeyInterop.KeyFromVirtualKey((int)vk).ToString();
-            return label;
-        }
-        catch
-        {
-            return "None";
-        }
-    }
+    public static string FormatHotkeyLabel(string savedValue) => HotkeyFormatter.Format(savedValue);
 }

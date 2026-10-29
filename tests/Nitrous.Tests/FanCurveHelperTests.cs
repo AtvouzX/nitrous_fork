@@ -131,4 +131,17 @@ public class FanCurveHelperTests
             Assert.True(curve[i].Y >= 0 && curve[i].Y <= 100, $"Speed must be in [0, 100]: {curve[i].Y}");
         }
     }
+
+    [Theory]
+    [InlineData(0, 0)]          // Idle/stopped
+    [InlineData(-500, 0)]       // Negative/invalid RPM
+    [InlineData(1800, 30)]      // Minimum active threshold (30%)
+    [InlineData(5850, 100)]     // Maximum rated tachometer (100%)
+    [InlineData(3825, 65)]      // Midpoint: (3825-1800)/4050 * 70 + 30 = 65%
+    [InlineData(7000, 100)]     // Above max clamped to 100%
+    public void RpmToPercentage_ConvertsTachometerAccurately(int rpm, int expectedPercentage)
+    {
+        int percentage = FanCurveHelper.RpmToPercentage(rpm);
+        Assert.Equal(expectedPercentage, percentage);
+    }
 }
