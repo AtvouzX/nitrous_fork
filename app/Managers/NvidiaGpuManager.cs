@@ -15,6 +15,7 @@ using NvAPIWrapper.Native.GPU;
 using NvAPIWrapper.Native.GPU.Structures;
 using NvAPIWrapper.Native.Interfaces.GPU;
 using Nitrous.Enums;
+using Nitrous.Interop;
 
 namespace Nitrous.Managers;
 
@@ -31,11 +32,25 @@ public partial class NvidiaGpuManager : IDisposable
         _internalGpu = null;
         _nvmlDeviceHandle = IntPtr.Zero;
         _lastAutoApplyTick = 0;
-        try { NVIDIA.Unload(); } catch { }
-        try { NativeNvml.Shutdown(); } catch { }
+        try
+        {
+            NVIDIA.Unload();
+        }
+        catch
+        {
+        }
+
+        try
+        {
+            NativeNvml.Shutdown();
+        }
+        catch
+        {
+        }
     }
 
-    public static bool ShouldAutoApplyGpuClocks(bool wasGpuAwake, bool isGpuAwake, bool isAcOnline, int autoApplySetting)
+    public static bool ShouldAutoApplyGpuClocks(bool wasGpuAwake, bool isGpuAwake, bool isAcOnline,
+        int autoApplySetting)
     {
         return !wasGpuAwake && isGpuAwake && isAcOnline && autoApplySetting == 1;
     }
@@ -52,11 +67,12 @@ public partial class NvidiaGpuManager : IDisposable
     /// as asleep and resetting driver handles.
     /// Waking up is instantaneous (0 delay).
     /// </summary>
-    public static (bool newWasGpuAwake, int newHoldTicks, bool shouldAutoApply, bool shouldResetHandle) EvaluateGpuSleepHysteresis(
-        bool wasGpuAwake,
-        bool isGpuAwake,
-        int currentHoldTicks,
-        int holdCycles = GpuSleepHysteresisCycles)
+    public static (bool newWasGpuAwake, int newHoldTicks, bool shouldAutoApply, bool shouldResetHandle)
+        EvaluateGpuSleepHysteresis(
+            bool wasGpuAwake,
+            bool isGpuAwake,
+            int currentHoldTicks,
+            int holdCycles = GpuSleepHysteresisCycles)
     {
         if (isGpuAwake)
         {
@@ -72,8 +88,10 @@ public partial class NvidiaGpuManager : IDisposable
                 {
                     return (false, 0, false, true);
                 }
+
                 return (true, nextHold, false, false);
             }
+
             return (false, 0, false, false);
         }
     }
@@ -86,6 +104,7 @@ public partial class NvidiaGpuManager : IDisposable
             {
                 ResetGpuHandle();
             }
+
             return false;
         }
 
@@ -94,10 +113,10 @@ public partial class NvidiaGpuManager : IDisposable
         return _internalGpu != null;
     }
 
-    public int MaxCoreOffset = 250;
-    public int MinCoreOffset = -150;
-    public int MaxMemoryOffset = 1000;
-    public int MinMemoryOffset = -200;
+    public const int MaxCoreOffset = 250;
+    public const int MinCoreOffset = -150;
+    public const int MaxMemoryOffset = 1000;
+    public const int MinMemoryOffset = -200;
 
     public int ClampCoreOffset(int offset) => Math.Clamp(offset, MinCoreOffset, MaxCoreOffset);
 
@@ -160,8 +179,21 @@ public partial class NvidiaGpuManager : IDisposable
 
         try
         {
-            try { NVIDIA.Unload(); } catch { }
-            try { NativeNvml.Shutdown(); } catch { }
+            try
+            {
+                NVIDIA.Unload();
+            }
+            catch
+            {
+            }
+
+            try
+            {
+                NativeNvml.Shutdown();
+            }
+            catch
+            {
+            }
 
             // Initialize NvAPI for Overclocking
             NVIDIA.Initialize();
@@ -174,7 +206,8 @@ public partial class NvidiaGpuManager : IDisposable
                 NativeNvml.DeviceGetHandleByIndex(0, out _nvmlDeviceHandle);
 
                 // Fetch architecture to set the correct memory divisor for GDDR7 (Blackwell+)
-                if (NativeNvml.DeviceGetArchitecture(_nvmlDeviceHandle, out NvmlDeviceArchitecture arch) == NvmlReturn.Success)
+                if (NativeNvml.DeviceGetArchitecture(_nvmlDeviceHandle, out NvmlDeviceArchitecture arch) ==
+                    NvmlReturn.Success)
                 {
                     _memoryClockDivisor = ((int)arch >= 10) ? 8.0 : 4.0;
                     _cachedArchName = arch.ToString();
@@ -193,9 +226,9 @@ public partial class NvidiaGpuManager : IDisposable
         try
         {
             return PhysicalGPU
-                .GetPhysicalGPUs()
-                .FirstOrDefault(gpu => gpu.SystemType == SystemType.Laptop)
-                ?? PhysicalGPU.GetPhysicalGPUs().FirstOrDefault();
+                       .GetPhysicalGPUs()
+                       .FirstOrDefault(gpu => gpu.SystemType == SystemType.Laptop)
+                   ?? PhysicalGPU.GetPhysicalGPUs().FirstOrDefault();
         }
         catch
         {
@@ -204,19 +237,18 @@ public partial class NvidiaGpuManager : IDisposable
     }
 
 
-
     public static bool IsAcPowerConnected()
     {
         try
         {
-            return System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus == System.Windows.Forms.PowerLineStatus.Online;
+            return System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
+                   System.Windows.Forms.PowerLineStatus.Online;
         }
         catch
         {
             return true;
         }
     }
-
 
 
     public void Dispose()
@@ -275,30 +307,31 @@ public partial class NvidiaGpuManager : IDisposable
                 return false;
 
             // Locate the device node by its PNP instance ID
-            int cr = NativeCM.CM_Locate_DevNode(out uint devInst, _nvidiaInstanceId, NativeCM.CM_LOCATE_DEVNODE_NORMAL);
-            if (cr != NativeCM.CR_SUCCESS)
+            int cr = Cfgmgr32.CM_Locate_DevNode(out uint devInst, _nvidiaInstanceId, Cfgmgr32.CM_LOCATE_DEVNODE_NORMAL);
+            if (cr != Cfgmgr32.CR_SUCCESS)
                 return false;
 
             // Read the CM_POWER_DATA structure from DEVPKEY_Device_PowerData
             // The PD_MostRecentPowerState field tells us the actual D-state.
-            var powerData = new NativeCM.CM_POWER_DATA();
-            uint dataSize = (uint)Marshal.SizeOf<NativeCM.CM_POWER_DATA>();
+            var powerData = new Cfgmgr32.CM_POWER_DATA();
+            uint dataSize = (uint)Marshal.SizeOf<Cfgmgr32.CM_POWER_DATA>();
             uint propType = 0;
 
-            cr = NativeCM.CM_Get_DevNode_Property(
+            var powerKey = Cfgmgr32.DEVPKEY_Device_PowerData;
+            cr = Cfgmgr32.CM_Get_DevNode_Property(
                 devInst,
-                ref NativeCM.DEVPKEY_Device_PowerData,
+                ref powerKey,
                 out propType,
                 ref powerData,
                 ref dataSize,
                 0);
 
-            if (cr != NativeCM.CR_SUCCESS)
+            if (cr != Cfgmgr32.CR_SUCCESS)
                 return false;
 
             // PowerDeviceD0 = 1 (fully powered / active)
             // PowerDeviceD1/D2/D3 = 2/3/4 (various sleep states including D3Cold)
-            return powerData.PD_MostRecentPowerState == NativeCM.PowerDeviceD0;
+            return powerData.PD_MostRecentPowerState == Cfgmgr32.PowerDeviceD0;
         }
         catch (Exception ex)
         {
@@ -320,15 +353,15 @@ public partial class NvidiaGpuManager : IDisposable
             // GUID_DEVCLASS_DISPLAY = {4D36E968-E325-11CE-BFC1-08002BE10318}
             string filter = "{4D36E968-E325-11CE-BFC1-08002BE10318}";
 
-            int cr = NativeCM.CM_Get_Device_ID_List_Size(out uint listSize, filter,
-                NativeCM.CM_GETIDLIST_FILTER_CLASS | NativeCM.CM_GETIDLIST_FILTER_PRESENT);
-            if (cr != NativeCM.CR_SUCCESS || listSize == 0)
+            int cr = Cfgmgr32.CM_Get_Device_ID_List_Size(out uint listSize, filter,
+                Cfgmgr32.CM_GETIDLIST_FILTER_CLASS | Cfgmgr32.CM_GETIDLIST_FILTER_PRESENT);
+            if (cr != Cfgmgr32.CR_SUCCESS || listSize == 0)
                 return null;
 
             char[] buffer = new char[listSize];
-            cr = NativeCM.CM_Get_Device_ID_List(filter, buffer, listSize,
-                NativeCM.CM_GETIDLIST_FILTER_CLASS | NativeCM.CM_GETIDLIST_FILTER_PRESENT);
-            if (cr != NativeCM.CR_SUCCESS)
+            cr = Cfgmgr32.CM_Get_Device_ID_List(filter, buffer, listSize,
+                Cfgmgr32.CM_GETIDLIST_FILTER_CLASS | Cfgmgr32.CM_GETIDLIST_FILTER_PRESENT);
+            if (cr != Cfgmgr32.CR_SUCCESS)
                 return null;
 
             // The buffer is a multi-string (null-separated, double-null terminated)
@@ -375,6 +408,7 @@ public partial class NvidiaGpuManager : IDisposable
                 t.Name = "NVIDIA (Asleep)";
                 return t;
             }
+
             if (isAcOnline)
             {
                 _sleepPendingUntil = DateTime.MinValue;
@@ -387,7 +421,8 @@ public partial class NvidiaGpuManager : IDisposable
                 if (NativeNvml.Init() == NvmlReturn.Success)
                 {
                     NativeNvml.DeviceGetHandleByIndex(0, out _nvmlDeviceHandle);
-                    if (NativeNvml.DeviceGetArchitecture(_nvmlDeviceHandle, out NvmlDeviceArchitecture arch) == NvmlReturn.Success)
+                    if (NativeNvml.DeviceGetArchitecture(_nvmlDeviceHandle, out NvmlDeviceArchitecture arch) ==
+                        NvmlReturn.Success)
                     {
                         _memoryClockDivisor = ((int)arch >= 10) ? 8.0 : 4.0;
                         _cachedArchName = arch.ToString();
@@ -407,11 +442,15 @@ public partial class NvidiaGpuManager : IDisposable
                 {
                     uint graphicsCount = 32;
                     _cachedGraphicsInfos ??= new NvmlProcessInfo[32];
-                    bool hasGraphics = NativeNvml.DeviceGetGraphicsRunningProcesses(_nvmlDeviceHandle, ref graphicsCount, _cachedGraphicsInfos) == NvmlReturn.Success;
+                    bool hasGraphics =
+                        NativeNvml.DeviceGetGraphicsRunningProcesses(_nvmlDeviceHandle, ref graphicsCount,
+                            _cachedGraphicsInfos) == NvmlReturn.Success;
 
                     uint computeCount = 32;
                     _cachedComputeInfos ??= new NvmlProcessInfo[32];
-                    bool hasCompute = NativeNvml.DeviceGetComputeRunningProcesses(_nvmlDeviceHandle, ref computeCount, _cachedComputeInfos) == NvmlReturn.Success;
+                    bool hasCompute =
+                        NativeNvml.DeviceGetComputeRunningProcesses(_nvmlDeviceHandle, ref computeCount,
+                            _cachedComputeInfos) == NvmlReturn.Success;
 
                     if (hasGraphics || hasCompute)
                     {
@@ -422,10 +461,25 @@ public partial class NvidiaGpuManager : IDisposable
 
                         if (shouldSleep)
                         {
-                            LogManager.Info("Only Nitrous is running on the GPU on battery. Unloading NVML to allow sleep.", "NvidiaGpu");
-                            try { NVIDIA.Unload(); } catch { }
-                            try { NativeNvml.Shutdown(); } catch { }
-                            
+                            LogManager.Info(
+                                "Only Nitrous is running on the GPU on battery. Unloading NVML to allow sleep.",
+                                "NvidiaGpu");
+                            try
+                            {
+                                NVIDIA.Unload();
+                            }
+                            catch
+                            {
+                            }
+
+                            try
+                            {
+                                NativeNvml.Shutdown();
+                            }
+                            catch
+                            {
+                            }
+
                             _nvmlDeviceHandle = IntPtr.Zero;
                             _internalGpu = null;
                             _sleepPendingUntil = DateTime.UtcNow.AddSeconds(15);
@@ -450,17 +504,21 @@ public partial class NvidiaGpuManager : IDisposable
                 if (_cachedGpuName == null)
                 {
                     var nameBuilder = new StringBuilder(64);
-                    if (NativeNvml.DeviceGetName(_nvmlDeviceHandle, nameBuilder, (uint)nameBuilder.Capacity) == NvmlReturn.Success)
+                    if (NativeNvml.DeviceGetName(_nvmlDeviceHandle, nameBuilder, (uint)nameBuilder.Capacity) ==
+                        NvmlReturn.Success)
                         _cachedGpuName = nameBuilder.ToString();
                 }
+
                 t.Name = _cachedGpuName ?? "NVIDIA GPU";
 
                 // Load
-                if (NativeNvml.DeviceGetUtilizationRates(_nvmlDeviceHandle, out NvmlUtilization util) == NvmlReturn.Success)
+                if (NativeNvml.DeviceGetUtilizationRates(_nvmlDeviceHandle, out NvmlUtilization util) ==
+                    NvmlReturn.Success)
                     t.GpuLoad = (int)util.Gpu;
 
                 // Temp
-                if (NativeNvml.DeviceGetTemperature(_nvmlDeviceHandle, NvmlTemperatureSensors.Gpu, out uint temp) == NvmlReturn.Success)
+                if (NativeNvml.DeviceGetTemperature(_nvmlDeviceHandle, NvmlTemperatureSensors.Gpu, out uint temp) ==
+                    NvmlReturn.Success)
                     t.CoreTemp = (int)temp;
 
                 // Memory
@@ -474,14 +532,17 @@ public partial class NvidiaGpuManager : IDisposable
                 }
 
                 // P-State (Format string to match SMI output like "P0", "P8")
-                if (NativeNvml.DeviceGetPerformanceState(_nvmlDeviceHandle, out NvmlPstates pState) == NvmlReturn.Success)
+                if (NativeNvml.DeviceGetPerformanceState(_nvmlDeviceHandle, out NvmlPstates pState) ==
+                    NvmlReturn.Success)
                     t.PState = FormatPState(pState);
 
                 // Clocks
-                if (NativeNvml.DeviceGetClockInfo(_nvmlDeviceHandle, NvmlClockType.Graphics, out uint coreClock) == NvmlReturn.Success)
+                if (NativeNvml.DeviceGetClockInfo(_nvmlDeviceHandle, NvmlClockType.Graphics, out uint coreClock) ==
+                    NvmlReturn.Success)
                     t.CurrentCoreClock = (int)coreClock;
 
-                if (NativeNvml.DeviceGetClockInfo(_nvmlDeviceHandle, NvmlClockType.Mem, out uint memClock) == NvmlReturn.Success)
+                if (NativeNvml.DeviceGetClockInfo(_nvmlDeviceHandle, NvmlClockType.Mem, out uint memClock) ==
+                    NvmlReturn.Success)
                     t.CurrentMemoryClock = (int)(memClock / _memoryClockDivisor);
 
                 // Power Limits (Convert milliwatts to Watts)
@@ -491,7 +552,8 @@ public partial class NvidiaGpuManager : IDisposable
                 if (NativeNvml.DeviceGetEnforcedPowerLimit(_nvmlDeviceHandle, out uint enforced) == NvmlReturn.Success)
                     t.EnforcedPowerLimitW = Math.Round(enforced / 1000.0, 1);
 
-                if (NativeNvml.DeviceGetPowerManagementLimitConstraints(_nvmlDeviceHandle, out uint minLimit, out uint maxLimit) == NvmlReturn.Success)
+                if (NativeNvml.DeviceGetPowerManagementLimitConstraints(_nvmlDeviceHandle, out uint minLimit,
+                        out uint maxLimit) == NvmlReturn.Success)
                 {
                     t.MinPowerLimitW = Math.Round(minLimit / 1000.0, 1);
                     t.MaxPowerLimitW = Math.Round(maxLimit / 1000.0, 1);
@@ -513,7 +575,7 @@ public partial class NvidiaGpuManager : IDisposable
     /// </summary>
     public static bool IsOnlyNitrousRunningOnGpu(
         NvmlProcessInfo[]? graphicsInfos, uint graphicsCount,
-        NvmlProcessInfo[]? computeInfos, uint computeCount, 
+        NvmlProcessInfo[]? computeInfos, uint computeCount,
         int currentPid)
     {
         bool onlyNitrous = true;
@@ -547,5 +609,4 @@ public partial class NvidiaGpuManager : IDisposable
 
         return hasAnyProcess && onlyNitrous;
     }
-
 }

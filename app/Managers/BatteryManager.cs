@@ -8,17 +8,76 @@ namespace Nitrous.Managers;
 
 public static class BatteryManager
 {
+    private static uint _lastNtStatus = 0;
+    private static readonly object _statusLock = new();
+
+    internal delegate uint CallNtPowerInformationDelegate(
+        int informationLevel,
+        IntPtr inputBuffer,
+        uint inputBufferSize,
+        out Powrprof.SYSTEM_BATTERY_STATE outputBuffer,
+        uint outputBufferSize);
+
+    private static CallNtPowerInformationDelegate _callNtPowerInfo = Powrprof.CallNtPowerInformation;
+
+    internal static void SetPowerInfoDelegateForTesting(CallNtPowerInformationDelegate? testDelegate)
+    {
+        lock (_statusLock)
+        {
+            _callNtPowerInfo = testDelegate ?? Powrprof.CallNtPowerInformation;
+            _lastNtStatus = 0;
+        }
+    }
+
     public static Powrprof.SYSTEM_BATTERY_STATE GetBatteryState()
     {
         const int SystemBatteryStateLevel = 5;
         Powrprof.SYSTEM_BATTERY_STATE state = default;
-        uint ret = Powrprof.CallNtPowerInformation(SystemBatteryStateLevel, IntPtr.Zero, 0, out state, (uint)Marshal.SizeOf<Powrprof.SYSTEM_BATTERY_STATE>());
+        uint ret = _callNtPowerInfo(
+            SystemBatteryStateLevel,
+            IntPtr.Zero,
+            0,
+            out state,
+            (uint)Marshal.SizeOf<Powrprof.SYSTEM_BATTERY_STATE>());
+
         if (ret != 0)
         {
-            LogManager.Warn($"CallNtPowerInformation failed with NTSTATUS 0x{ret:X}", "Battery");
+            bool shouldLog = false;
+            lock (_statusLock)
+            {
+                if (ret != _lastNtStatus)
+                {
+                    _lastNtStatus = ret;
+                    shouldLog = true;
+                }
+            }
+
+            if (shouldLog)
+            {
+                LogManager.Warn($"CallNtPowerInformation failed with NTSTATUS 0x{ret:X}", "Battery");
+            }
+
             state.AcOnLine = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
                              System.Windows.Forms.PowerLineStatus.Online;
         }
+        else
+        {
+            bool recovered = false;
+            lock (_statusLock)
+            {
+                if (_lastNtStatus != 0)
+                {
+                    _lastNtStatus = 0;
+                    recovered = true;
+                }
+            }
+
+            if (recovered && LogManager.IsDebugEnabled)
+            {
+                LogManager.Debug("CallNtPowerInformation recovered to STATUS_SUCCESS", "Battery");
+            }
+        }
+
         return state;
     }
 
@@ -40,7 +99,8 @@ public static class BatteryManager
             uint cycleCount = 0;
 
             // 1. Get Designed Capacity
-            using (var searcher = new ManagementObjectSearcher(@"root\wmi", "SELECT DesignedCapacity FROM BatteryStaticData"))
+            using (var searcher =
+                   new ManagementObjectSearcher(@"root\wmi", "SELECT DesignedCapacity FROM BatteryStaticData"))
             using (var collection = searcher.Get())
             {
                 foreach (ManagementObject obj in collection)
@@ -57,7 +117,8 @@ public static class BatteryManager
             }
 
             // 2. Get Full Charged Capacity
-            using (var searcher = new ManagementObjectSearcher(@"root\wmi", "SELECT FullChargedCapacity FROM BatteryFullChargedCapacity"))
+            using (var searcher = new ManagementObjectSearcher(@"root\wmi",
+                       "SELECT FullChargedCapacity FROM BatteryFullChargedCapacity"))
             using (var collection = searcher.Get())
             {
                 foreach (ManagementObject obj in collection)

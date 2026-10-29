@@ -1,3 +1,4 @@
+using System.Reflection;
 using Nitrous.Managers;
 using Xunit;
 
@@ -282,6 +283,19 @@ public class NvidiaGpuManagerTests
     {
         using var manager = new NvidiaGpuManager();
         Assert.Equal(expected, manager.ClampMemoryOffset(input));
+    }
+
+    [Theory]
+    [InlineData("MinCoreOffset", -150)]
+    [InlineData("MaxCoreOffset", 250)]
+    [InlineData("MinMemoryOffset", -200)]
+    [InlineData("MaxMemoryOffset", 1000)]
+    public void HardwareOffsetLimits_AreImmutableConstants(string fieldName, int expectedValue)
+    {
+        var field = typeof(NvidiaGpuManager).GetField(fieldName, BindingFlags.Public | BindingFlags.Static);
+        Assert.NotNull(field);
+        Assert.True(field.IsLiteral && !field.IsInitOnly, $"{fieldName} must be a compile-time const.");
+        Assert.Equal(expectedValue, (int)field.GetValue(null)!);
     }
 }
 

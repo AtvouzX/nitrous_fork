@@ -175,13 +175,14 @@ public partial class DashboardViewModel
                 }
 
                 // 4. Check if offsets are out of supported range
-                if (GpuCoreOffset < _gpuManager.MinCoreOffset || GpuCoreOffset > _gpuManager.MaxCoreOffset ||
-                    GpuMemoryOffset < _gpuManager.MinMemoryOffset || GpuMemoryOffset > _gpuManager.MaxMemoryOffset)
+                if (GpuCoreOffset < NvidiaGpuManager.MinCoreOffset || GpuCoreOffset > NvidiaGpuManager.MaxCoreOffset ||
+                    GpuMemoryOffset < NvidiaGpuManager.MinMemoryOffset ||
+                    GpuMemoryOffset > NvidiaGpuManager.MaxMemoryOffset)
                 {
                     ShowGpuAlert(
                         GpuAlertLevel.Error,
                         "Offsets Out of Range",
-                        $"Clock offsets exceed supported hardware limits (Core: {_gpuManager.MinCoreOffset} to +{_gpuManager.MaxCoreOffset} MHz, Memory: {_gpuManager.MinMemoryOffset} to +{_gpuManager.MaxMemoryOffset} MHz).");
+                        $"Clock offsets exceed supported hardware limits (Core: {NvidiaGpuManager.MinCoreOffset} to +{NvidiaGpuManager.MaxCoreOffset} MHz, Memory: {NvidiaGpuManager.MinMemoryOffset} to +{NvidiaGpuManager.MaxMemoryOffset} MHz).");
 
                     ApplyBtnText = "INVALID";
                     ApplyBtnColor = "#FF453A";
@@ -277,26 +278,30 @@ public partial class DashboardViewModel
                 GpuAlertBackground = "#101C14";
                 GpuAlertBorder = "#2A7A3B";
                 GpuAlertForeground = "#34C759";
-                GpuAlertIcon = customIcon ?? "M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M10,17L5,12L6.41,10.59L10,14.17L17.59,6.58L19,8L10,17Z";
+                GpuAlertIcon = customIcon ??
+                               "M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M10,17L5,12L6.41,10.59L10,14.17L17.59,6.58L19,8L10,17Z";
                 break;
             case GpuAlertLevel.Warning:
                 GpuAlertBackground = "#1C1610";
                 GpuAlertBorder = "#7A4D12";
                 GpuAlertForeground = "#FF9F0A";
-                GpuAlertIcon = customIcon ?? "M12,2L1,21H23L12,2M12,6L19.53,19H4.47L12,6M11,10V14H13V10H11M11,16V18H13V16H11Z";
+                GpuAlertIcon = customIcon ??
+                               "M12,2L1,21H23L12,2M12,6L19.53,19H4.47L12,6M11,10V14H13V10H11M11,16V18H13V16H11Z";
                 break;
             case GpuAlertLevel.Error:
                 GpuAlertBackground = "#201214";
                 GpuAlertBorder = "#7A2024";
                 GpuAlertForeground = "#FF453A";
-                GpuAlertIcon = customIcon ?? "M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M13,17H11V15H13V17M13,13H11V7H13V13Z";
+                GpuAlertIcon = customIcon ??
+                               "M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M13,17H11V15H13V17M13,13H11V7H13V13Z";
                 break;
             case GpuAlertLevel.Info:
             default:
                 GpuAlertBackground = "#101620";
                 GpuAlertBorder = "#1D4273";
                 GpuAlertForeground = "#0A84FF";
-                GpuAlertIcon = customIcon ?? "M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M13,17H11V11H13V17M13,9H11V7H13V9Z";
+                GpuAlertIcon = customIcon ??
+                               "M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M13,17H11V11H13V17M13,9H11V7H13V9Z";
                 break;
         }
 
