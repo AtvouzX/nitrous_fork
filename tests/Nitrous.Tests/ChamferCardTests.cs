@@ -137,6 +137,8 @@ public class ChamferCardTests
             var gpuPage = new Nitrous.Ui.Views.GpuTuningPageView();
             var gpuCards = FindLogicalChildren<ChamferCard>(gpuPage).ToList();
             Assert.True(gpuCards.Count >= 2, $"Expected at least 2 ChamferCards in GpuTuningPageView, found {gpuCards.Count}");
+            var gpuButtons = FindLogicalChildren<ChamferButton>(gpuPage).ToList();
+            Assert.True(gpuButtons.Count >= 2, $"Expected at least 2 ChamferButtons in GpuTuningPageView, found {gpuButtons.Count}");
 
             // 3. KeyboardPageView
             var kbPage = new Nitrous.Ui.Views.KeyboardPageView();
@@ -156,6 +158,33 @@ public class ChamferCardTests
 
             var batteryBars = FindLogicalChildren<BatteryBlockBar>(settingsPage).ToList();
             Assert.Single(batteryBars);
+        });
+    }
+
+    [Fact]
+    public void GpuTuningAndKeyboardViews_ControlsAndTooltipsAreValid()
+    {
+        RunInSta(() =>
+        {
+            // Verify GPU Tuning Page controls
+            var gpuPage = new Nitrous.Ui.Views.GpuTuningPageView();
+            Assert.NotNull(gpuPage.GpuCoreSlider);
+            Assert.NotNull(gpuPage.GpuMemorySlider);
+            Assert.False(string.IsNullOrWhiteSpace(gpuPage.GpuCoreSlider.ToolTip as string));
+            Assert.False(string.IsNullOrWhiteSpace(gpuPage.GpuMemorySlider.ToolTip as string));
+
+            var gpuButtons = FindLogicalChildren<ChamferButton>(gpuPage).ToList();
+            Assert.True(gpuButtons.Count >= 2);
+            var resetBtn = gpuButtons.FirstOrDefault(b => b.Content?.ToString() == "RESET");
+            Assert.NotNull(resetBtn);
+            Assert.Equal(ChamferButtonVariant.Secondary, resetBtn.Variant);
+
+            // Verify Keyboard Page controls
+            var kbPage = new Nitrous.Ui.Views.KeyboardPageView();
+            Assert.NotNull(kbPage.TxtHkCycle);
+            Assert.NotNull(kbPage.TxtHkDash);
+            Assert.False(string.IsNullOrWhiteSpace(kbPage.TxtHkCycle.ToolTip as string));
+            Assert.False(string.IsNullOrWhiteSpace(kbPage.TxtHkDash.ToolTip as string));
         });
     }
 

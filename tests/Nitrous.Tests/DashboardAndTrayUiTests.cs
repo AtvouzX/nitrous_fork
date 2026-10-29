@@ -1,4 +1,4 @@
-﻿using System.Windows;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Forms;
 using System.Windows.Media;
@@ -466,12 +466,20 @@ public class DashboardAndTrayUiTests
                 window.Show();
                 System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
                 window.WindowState = WindowState.Minimized;
-                System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
+                for (int i = 0; i < 10 && vm.IsPollingActive; i++)
+                {
+                    System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                    System.Threading.Thread.Sleep(10);
+                }
                 Assert.False(vm.IsPollingActive, "Polling should be paused on minimization.");
 
                 // Restoring to Normal should resume polling
                 window.WindowState = WindowState.Normal;
-                System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
+                for (int i = 0; i < 10 && !vm.IsPollingActive; i++)
+                {
+                    System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                    System.Threading.Thread.Sleep(10);
+                }
                 Assert.True(vm.IsPollingActive, "Polling should resume on restoration.");
             }
             finally

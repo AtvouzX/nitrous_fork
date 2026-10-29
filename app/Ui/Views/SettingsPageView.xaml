@@ -10,8 +10,8 @@
 		</ResourceDictionary>
 	</UserControl.Resources>
 
-	<ScrollViewer Margin="12,8,12,0" VerticalScrollBarVisibility="Auto"
-	              HorizontalScrollBarVisibility="Disabled" BorderThickness="0" Padding="0,0,4,12">
+	<ScrollViewer Margin="12,8,12,0" VerticalScrollBarVisibility="Hidden"
+	              HorizontalScrollBarVisibility="Disabled" BorderThickness="0" Padding="0,0,0,12">
 		<StackPanel>
 			<!-- 1. APP / SYSTEM INFO BANNER CARD -->
 			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}" 
@@ -62,22 +62,14 @@
 				<StackPanel>
 					<!-- Card Header with Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
-						<Grid>
-							<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-								<Border Width="2" Height="10" Background="{StaticResource Ember500Brush}" Margin="0,0,6,0" VerticalAlignment="Center" />
-								<TextBlock Text="BATTERY" Foreground="{StaticResource Steel300Brush}" 
-								           FontFamily="{StaticResource MonoFontFamily}"
-								           FontWeight="Bold" FontSize="10" VerticalAlignment="Center" />
-							</StackPanel>
-							<TextBlock Text="SMART ACPI" Foreground="{StaticResource Steel400Brush}" 
-							           FontFamily="{StaticResource MonoFontFamily}"
-							           FontSize="9.5" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" />
-						</Grid>
+						<TextBlock Text="BATTERY" Foreground="{StaticResource Steel300Brush}" 
+						           FontFamily="{StaticResource MonoFontFamily}"
+						           FontWeight="Bold" FontSize="10" VerticalAlignment="Center" />
 					</Border>
 
-					<!-- 3-Column Metrics Well (Recessed Deep Steel900 Well) -->
-					<Border Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel700Brush}" 
-					        BorderThickness="1" Margin="0,0,0,10" Padding="0,8">
+					<!-- 3-Column Metrics Well (Chamfered Recessed Deep Steel900 Well) -->
+					<controls:ChamferCard ChamferSize="4" Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel700Brush}" 
+					                      BorderThickness="1" Margin="0,0,0,10" Padding="0,8">
 						<Grid>
 							<Grid.ColumnDefinitions>
 								<ColumnDefinition Width="*" />
@@ -120,7 +112,7 @@
 								           HorizontalAlignment="Center" Margin="0,3,0,0" />
 							</StackPanel>
 						</Grid>
-					</Border>
+					</controls:ChamferCard>
 
 					<!-- 20-Segment Battery Charge Block Meter -->
 					<controls:BatteryBlockBar Height="8" Margin="0,0,0,12" 
@@ -157,14 +149,9 @@
 				<StackPanel>
 					<!-- Card Header with Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
-						<Grid>
-							<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-								<Border Width="2" Height="10" Background="{StaticResource Ember500Brush}" Margin="0,0,6,0" VerticalAlignment="Center" />
-								<TextBlock Text="ACER SERVICES" Foreground="{StaticResource Steel300Brush}" 
-								           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="10" 
-								           VerticalAlignment="Center" />
-							</StackPanel>
-						</Grid>
+						<TextBlock Text="ACER SERVICES" Foreground="{StaticResource Steel300Brush}" 
+						           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="10" 
+						           VerticalAlignment="Center" />
 					</Border>
 
 					<Grid>
@@ -241,14 +228,9 @@
 				<StackPanel>
 					<!-- Card Header with Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
-						<Grid>
-							<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-								<Border Width="2" Height="10" Background="{StaticResource Ember500Brush}" Margin="0,0,6,0" VerticalAlignment="Center" />
-								<TextBlock Text="RULES" Foreground="{StaticResource Steel300Brush}" 
-								           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="10" 
-								           VerticalAlignment="Center" />
-							</StackPanel>
-						</Grid>
+						<TextBlock Text="RULES" Foreground="{StaticResource Steel300Brush}" 
+						           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="10" 
+						           VerticalAlignment="Center" />
 					</Border>
 
 					<Grid>
@@ -370,14 +352,9 @@
 				<StackPanel>
 					<!-- Card Header with Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
-						<Grid>
-							<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-								<Border Width="2" Height="10" Background="{StaticResource Ember500Brush}" Margin="0,0,6,0" VerticalAlignment="Center" />
-								<TextBlock Text="DEBUG" Foreground="{StaticResource Steel300Brush}" 
-								           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="10" 
-								           VerticalAlignment="Center" />
-							</StackPanel>
-						</Grid>
+						<TextBlock Text="DEBUG" Foreground="{StaticResource Steel300Brush}" 
+						           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="10" 
+						           VerticalAlignment="Center" />
 					</Border>
 
 					<!-- Top Row: Debugging Toggle -->

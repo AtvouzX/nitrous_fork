@@ -9,162 +9,187 @@
 			</ResourceDictionary.MergedDictionaries>
 		</ResourceDictionary>
 	</UserControl.Resources>
-	<ScrollViewer Margin="12,8,12,0" VerticalScrollBarVisibility="Hidden">
-		<StackPanel Margin="0,0,0,16">
-			<!-- GPU TELEMETRY STATS GRID -->
-			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1" Padding="16"
-			                      Margin="0,0,0,12"
+
+	<ScrollViewer Margin="12,8,12,0" VerticalScrollBarVisibility="Hidden"
+	              HorizontalScrollBarVisibility="Disabled" BorderThickness="0" Padding="0,0,0,12">
+		<StackPanel>
+			<!-- 1. GPU TELEMETRY STATS CARD -->
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}" 
+			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1" 
+			                      Margin="0,0,0,10" Padding="12,10,12,12"
 			                      ToolTip="Live NVIDIA GPU telemetry via NVML. Statistics update while dashboard is active.">
 				<StackPanel>
-					<!-- GPU Name Header -->
-					<Grid Margin="0,0,0,16">
+					<!-- Card Header with Bottom Divider -->
+					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
+						<Grid>
+							<TextBlock Text="GPU TELEMETRY" Foreground="{StaticResource Steel300Brush}" 
+							           FontFamily="{StaticResource MonoFontFamily}"
+							           FontWeight="Bold" FontSize="10" VerticalAlignment="Center" />
+							<TextBlock Text="{Binding GpuArchText}" Foreground="{StaticResource Steel400Brush}" 
+							           FontFamily="{StaticResource MonoFontFamily}"
+							           FontSize="9.5" FontWeight="Bold" HorizontalAlignment="Right" VerticalAlignment="Center" />
+						</Grid>
+					</Border>
+
+					<!-- GPU Device Banner -->
+					<Grid Margin="0,0,0,10">
 						<Grid.ColumnDefinitions>
 							<ColumnDefinition Width="Auto" />
 							<ColumnDefinition Width="*" />
-							<ColumnDefinition Width="Auto" />
 						</Grid.ColumnDefinitions>
-						<Path Grid.Column="0" Fill="#FF4500" Stretch="Uniform" Width="12" Height="12" Margin="0,0,6,0" VerticalAlignment="Center"
+						<Path Grid.Column="0" Fill="{StaticResource Ember500Brush}" Stretch="Uniform" Width="12" Height="12" Margin="0,0,8,0" VerticalAlignment="Center"
 						      Data="M22,9V7H20V5A2,2 0 0,0 18,3H4A2,2 0 0,0 2,5V19A2,2 0 0,0 4,21H18A2,2 0 0,0 20,19V17H22V15H20V13H22V11H20V9H22M18,19H4V5H18V19M6,13H11V17H6V13M12,7H16V10H12V7M6,7H11V12H6V7M12,11H16V17H12V11Z" />
-						<TextBlock Grid.Column="1" Text="{Binding GpuNameText}" Foreground="White" FontSize="12" FontWeight="Bold"
-						           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" Margin="0,0,8,0" ToolTip="{Binding GpuNameText}" />
-						<TextBlock Grid.Column="2" Text="{Binding GpuArchText}" Foreground="#A1A1AA" FontSize="11"
-						           VerticalAlignment="Center" />
+						<TextBlock Grid.Column="1" Text="{Binding GpuNameText}" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="12" FontWeight="Bold"
+						           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
+						           ToolTip="Detected discrete NVIDIA graphics processor." />
 					</Grid>
-					<!-- 2-Column Stats Grid -->
-					<Grid>
-						<Grid.ColumnDefinitions>
-							<ColumnDefinition Width="*" />
-							<ColumnDefinition Width="*" />
-						</Grid.ColumnDefinitions>
-						<Grid.RowDefinitions>
-							<RowDefinition Height="Auto" />
-							<RowDefinition Height="12" />
-							<RowDefinition Height="Auto" />
-							<RowDefinition Height="12" />
-							<RowDefinition Height="Auto" />
-						</Grid.RowDefinitions>
-						<!-- Row 0 -->
-						<StackPanel Grid.Row="0" Grid.Column="0">
-							<TextBlock Text="CORE LOAD" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
-							<TextBlock Text="{Binding GpuLoadText}" Foreground="{Binding GpuLoadColor}" FontSize="15" FontWeight="Bold"
-							           Margin="0,2,0,0" />
-						</StackPanel>
-						<StackPanel Grid.Row="0" Grid.Column="1">
-							<TextBlock Text="CORE TEMP" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
-							<TextBlock Text="{Binding GpuDeepTempText}" Foreground="{Binding GpuDeepTempColor}" FontSize="15"
-							           FontWeight="Bold" Margin="0,2,0,0" />
-						</StackPanel>
-						<!-- Row 2 -->
-						<StackPanel Grid.Row="2" Grid.Column="0">
-							<TextBlock Text="CORE CLOCK" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
-							<TextBlock Text="{Binding GpuCoreClockText}" Foreground="White" FontSize="15" FontWeight="Bold"
-							           Margin="0,2,0,0" />
-						</StackPanel>
-						<StackPanel Grid.Row="2" Grid.Column="1">
-							<TextBlock Text="MEMORY CLOCK" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
-							<TextBlock Text="{Binding GpuMemClockText}" Foreground="White" FontSize="15" FontWeight="Bold"
-							           Margin="0,2,0,0" />
-						</StackPanel>
-						<!-- Row 4 -->
-						<StackPanel Grid.Row="4" Grid.Column="0">
-							<TextBlock Text="VRAM USAGE" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
-							<TextBlock Text="{Binding GpuVramText}" Foreground="White" FontSize="13" FontWeight="Bold" Margin="0,2,0,0" />
-						</StackPanel>
-						<StackPanel Grid.Row="4" Grid.Column="1">
-							<TextBlock Text="POWER / ENFORCED / CAP" Foreground="#A1A1AA" FontSize="9" FontWeight="Bold" />
-							<TextBlock Text="{Binding GpuPowerText}" Foreground="White" FontSize="13" FontWeight="Bold" Margin="0,2,0,0" />
-						</StackPanel>
-					</Grid>
+
+					<!-- 2-Column Chamfered Recessed Metrics Well -->
+					<controls:ChamferCard ChamferSize="4" Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1" Padding="12,10">
+						<Grid>
+							<Grid.ColumnDefinitions>
+								<ColumnDefinition Width="*" />
+								<ColumnDefinition Width="1" />
+								<ColumnDefinition Width="*" />
+							</Grid.ColumnDefinitions>
+
+							<!-- Left Column -->
+							<StackPanel Grid.Column="0" Margin="0,0,12,0">
+								<!-- Metric 1: Core Load -->
+								<TextBlock Text="CORE LOAD" Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}" FontSize="9" FontWeight="Bold" />
+								<TextBlock Text="{Binding GpuLoadText}" Foreground="{Binding GpuLoadColor}" FontFamily="{StaticResource MonoFontFamily}" FontSize="16" FontWeight="Bold" Margin="0,2,0,0" />
+
+								<Border Height="1" Background="{StaticResource Steel800Brush}" Margin="0,8" />
+
+								<!-- Metric 2: Core Clock -->
+								<TextBlock Text="CORE CLOCK" Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}" FontSize="9" FontWeight="Bold" />
+								<TextBlock Text="{Binding GpuCoreClockText}" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="15" FontWeight="Bold" Margin="0,2,0,0" />
+
+								<Border Height="1" Background="{StaticResource Steel800Brush}" Margin="0,8" />
+
+								<!-- Metric 3: VRAM Usage -->
+								<TextBlock Text="VRAM USAGE" Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}" FontSize="9" FontWeight="Bold" />
+								<TextBlock Text="{Binding GpuVramText}" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" Margin="0,2,0,0" />
+							</StackPanel>
+
+							<!-- Vertical Divider -->
+							<Border Grid.Column="1" Background="{StaticResource Steel800Brush}" />
+
+							<!-- Right Column -->
+							<StackPanel Grid.Column="2" Margin="12,0,0,0">
+								<!-- Metric 4: Core Temp -->
+								<TextBlock Text="CORE TEMP" Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}" FontSize="9" FontWeight="Bold" />
+								<TextBlock Text="{Binding GpuDeepTempText}" Foreground="{Binding GpuDeepTempColor}" FontFamily="{StaticResource MonoFontFamily}" FontSize="16" FontWeight="Bold" Margin="0,2,0,0" />
+
+								<Border Height="1" Background="{StaticResource Steel800Brush}" Margin="0,8" />
+
+								<!-- Metric 5: Memory Clock -->
+								<TextBlock Text="MEMORY CLOCK" Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}" FontSize="9" FontWeight="Bold" />
+								<TextBlock Text="{Binding GpuMemClockText}" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="15" FontWeight="Bold" Margin="0,2,0,0" />
+
+								<Border Height="1" Background="{StaticResource Steel800Brush}" Margin="0,8" />
+
+								<!-- Metric 6: Power / Enforced / Cap -->
+								<TextBlock Text="POWER / CAP" Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}" FontSize="9" FontWeight="Bold" />
+								<TextBlock Text="{Binding GpuPowerText}" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold" Margin="0,2,0,0" />
+							</StackPanel>
+						</Grid>
+					</controls:ChamferCard>
 				</StackPanel>
 			</controls:ChamferCard>
-			<!-- CLOCK OFFSETS SLIDERS -->
-			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1" Padding="16,12,16,16"
-			                      Margin="0,0,0,16">
+
+			<!-- 2. CLOCK OFFSETS CARD -->
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}" 
+			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1" 
+			                      Margin="0,0,0,10" Padding="12,10,12,12"
+			                      ToolTip="Hardware discrete GPU frequency tuning via NVML and NvAPI.">
 				<StackPanel>
-					<TextBlock Text="CLOCK OFFSETS" Foreground="#A1A1AA" FontSize="10" FontWeight="Bold" Margin="0,0,0,12" />
-					<!-- Core Slider -->
+					<!-- Card Header with Bottom Divider -->
+					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,12">
+						<TextBlock Text="CLOCK OFFSETS" Foreground="{StaticResource Steel300Brush}" 
+						           FontFamily="{StaticResource MonoFontFamily}"
+						           FontWeight="Bold" FontSize="10" VerticalAlignment="Center" />
+					</Border>
+
+					<!-- Core Clock Offset -->
 					<Grid Margin="0,0,0,4">
-						<TextBlock Text="CORE CLOCK" Foreground="White" FontSize="11" FontWeight="SemiBold" HorizontalAlignment="Left"
-						           VerticalAlignment="Center" />
-						<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-							<TextBox x:Name="GpuCoreInput" Text="{Binding GpuCoreOffset, UpdateSourceTrigger=PropertyChanged}"
-							         Foreground="#FF4500" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0"
-							         MaxLength="4" Width="36" TextAlignment="Right" VerticalContentAlignment="Center"
-							         CaretBrush="#FF4500"
-							         ToolTip="Directly input discrete GPU core clock frequency offset in MHz (-150 to +250)." />
-							<TextBlock Text=" MHZ" Foreground="#FF4500" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+						<TextBlock Text="CORE CLOCK" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+						<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+							<TextBlock Text="{Binding GpuCoreOffset, StringFormat='{}{0:+0;-0;0}'}" Foreground="{StaticResource Ember400Brush}" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" />
+							<TextBlock Text=" MHZ" Foreground="{StaticResource Ember500Brush}" FontFamily="{StaticResource MonoFontFamily}" FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center" />
 						</StackPanel>
 					</Grid>
 					<Slider x:Name="GpuCoreSlider" Style="{StaticResource ModernSliderStyle}" Minimum="-150" Maximum="250"
 					        Value="{Binding GpuCoreOffset, UpdateSourceTrigger=PropertyChanged}" IsSnapToTickEnabled="True"
-					        TickFrequency="5" Margin="0,0,0,12"
+					        TickFrequency="5" Margin="0,0,0,14"
 					        ToolTip="Applies a frequency offset (-150 MHz to +250 MHz) to discrete GPU core clocks via NVML." />
-					<!-- Memory Slider -->
+
+					<!-- Memory Clock Offset -->
 					<Grid Margin="0,0,0,4">
-						<TextBlock Text="MEMORY CLOCK" Foreground="White" FontSize="11" FontWeight="SemiBold"
-						           HorizontalAlignment="Left" VerticalAlignment="Center" />
-						<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-							<TextBox x:Name="GpuMemoryInput" Text="{Binding GpuMemoryOffset, UpdateSourceTrigger=PropertyChanged}"
-							         Foreground="#FF4500" FontSize="11" FontWeight="Bold" Background="Transparent" BorderThickness="0"
-							         MaxLength="5" Width="36" TextAlignment="Right" VerticalContentAlignment="Center"
-							         CaretBrush="#FF4500"
-							         ToolTip="Directly input discrete GPU video memory (VRAM) frequency offset in MHz (-200 to +1000)." />
-							<TextBlock Text=" MHZ" Foreground="#FF4500" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+						<TextBlock Text="MEMORY CLOCK" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+						<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+							<TextBlock Text="{Binding GpuMemoryOffset, StringFormat='{}{0:+0;-0;0}'}" Foreground="{StaticResource Ember400Brush}" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" />
+							<TextBlock Text=" MHZ" Foreground="{StaticResource Ember500Brush}" FontFamily="{StaticResource MonoFontFamily}" FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center" />
 						</StackPanel>
 					</Grid>
 					<Slider x:Name="GpuMemorySlider" Style="{StaticResource ModernSliderStyle}" Minimum="-200" Maximum="1000"
 					        Value="{Binding GpuMemoryOffset, UpdateSourceTrigger=PropertyChanged}" IsSnapToTickEnabled="True"
-					        TickFrequency="10"
+					        TickFrequency="10" Margin="0,0,0,4"
 					        ToolTip="Applies a frequency offset (-200 MHz to +1000 MHz) to discrete GPU video memory (VRAM)." />
 				</StackPanel>
 			</controls:ChamferCard>
-			<!-- ACTION BUTTONS -->
-			<Grid>
+
+			<!-- 3. ACTION BUTTONS (CHAMFER BUTTONS) -->
+			<Grid Margin="0,0,0,10">
 				<Grid.ColumnDefinitions>
 					<ColumnDefinition Width="*" />
-					<ColumnDefinition Width="12" />
+					<ColumnDefinition Width="10" />
 					<ColumnDefinition Width="*" />
 				</Grid.ColumnDefinitions>
-				<!-- Secondary Action (Ghost Button) -->
-				<Button Grid.Column="0" Content="RESET" Command="{Binding ResetGpuClocksCommand}"
-				        Style="{StaticResource GhostBtn}" FontSize="12" FontWeight="Bold" Height="40"
-				        ToolTip="Reverts GPU core and memory clock offsets back to stock factory settings (0 MHz)." />
-				<!-- Primary Action (Accent Button) -->
-				<Button Grid.Column="2" Content="{Binding ApplyBtnText}" Command="{Binding ApplyGpuClocksCommand}"
-				        Background="{Binding ApplyBtnColor}" Style="{StaticResource AccentBtn}" FontSize="12" FontWeight="Heavy"
-				        Height="40"
-				        ToolTip="Commits the selected core and memory clock offsets to the discrete GPU." />
+
+				<!-- Secondary Action: RESET -->
+				<controls:ChamferButton Grid.Column="0" Variant="Secondary" Content="RESET" 
+				                        Command="{Binding ResetGpuClocksCommand}" Height="36" FontSize="11"
+				                        ToolTip="Reverts GPU core and memory clock offsets back to stock factory settings (0 MHz)." />
+
+				<!-- Primary Action: APPLY -->
+				<controls:ChamferButton Grid.Column="2" Variant="Primary" Content="{Binding ApplyBtnText}" 
+				                        Command="{Binding ApplyGpuClocksCommand}" Background="{Binding ApplyBtnColor}"
+				                        Height="36" FontSize="11"
+				                        ToolTip="Commits the selected core and memory clock offsets to the discrete GPU." />
 			</Grid>
 
-			<!-- GPU STATUS & NOTIFICATION -->
-			<StackPanel Margin="0,12,0,0" Visibility="{Binding GpuAlertVisibility}">
-				<TextBlock TextWrapping="Wrap" LineHeight="14">
-					<Run Text="{Binding GpuAlertTitle}" FontWeight="Bold" Foreground="{Binding GpuAlertForeground}" FontSize="11" />
-					<LineBreak />
-					<Run Text="{Binding GpuAlertMessage}" Foreground="#A1A1AA" FontSize="10" />
-				</TextBlock>
-				<Button Content="DISMISS" Command="{Binding DismissGpuAlertCommand}"
-				        HorizontalAlignment="Left" Background="Transparent" BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
-				        Padding="8,2" Margin="0,6,0,0" Cursor="Hand"
-				        ToolTip="Dismiss notification.">
-					<Button.Template>
-						<ControlTemplate TargetType="Button">
-							<Border x:Name="Brd" Background="{StaticResource Steel850Brush}" BorderBrush="{TemplateBinding BorderBrush}"
-							        BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="0"
-							        Padding="{TemplateBinding Padding}">
-								<TextBlock x:Name="Txt" Text="{TemplateBinding Content}" Foreground="{StaticResource Steel300Brush}" FontSize="10"
-								           FontWeight="Bold" />
-							</Border>
-							<ControlTemplate.Triggers>
-								<Trigger Property="IsMouseOver" Value="True">
-									<Setter TargetName="Brd" Property="Background" Value="{StaticResource Steel800Brush}" />
-									<Setter TargetName="Txt" Property="Foreground" Value="{StaticResource Steel100Brush}" />
-								</Trigger>
-							</ControlTemplate.Triggers>
-						</ControlTemplate>
-					</Button.Template>
-				</Button>
-			</StackPanel>
+			<!-- 4. GPU ALERT & NOTIFICATION BANNER -->
+			<controls:ChamferCard ChamferSize="4" Visibility="{Binding GpuAlertVisibility}"
+			                      Background="{Binding GpuAlertBackground}" BorderBrush="{Binding GpuAlertBorder}" BorderThickness="1"
+			                      Padding="10,8" Margin="0,0,0,10"
+			                      ToolTip="Hardware discrete GPU status or tuning warning notification.">
+				<Grid>
+					<Grid.ColumnDefinitions>
+						<ColumnDefinition Width="Auto" />
+						<ColumnDefinition Width="*" />
+						<ColumnDefinition Width="Auto" />
+					</Grid.ColumnDefinitions>
+
+					<!-- Alert Icon -->
+					<Path Grid.Column="0" Data="{Binding GpuAlertIcon}" Fill="{Binding GpuAlertForeground}"
+					      Stretch="Uniform" Width="14" Height="14" Margin="0,2,8,0" VerticalAlignment="Top" />
+
+					<!-- Alert Message -->
+					<StackPanel Grid.Column="1" VerticalAlignment="Center">
+						<TextBlock Text="{Binding GpuAlertTitle}" Foreground="{Binding GpuAlertForeground}"
+						           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="10.5" />
+						<TextBlock Text="{Binding GpuAlertMessage}" Foreground="{StaticResource Steel300Brush}"
+						           FontFamily="{StaticResource MonoFontFamily}" FontSize="9.5" TextWrapping="Wrap" Margin="0,3,0,0" />
+					</StackPanel>
+
+					<!-- Dismiss ChamferButton -->
+					<controls:ChamferButton Grid.Column="2" Variant="Secondary" Content="DISMISS"
+					                        Command="{Binding DismissGpuAlertCommand}" Height="26" FontSize="9"
+					                        Padding="10,0" Margin="8,0,0,0" VerticalAlignment="Center"
+					                        ToolTip="Dismiss this hardware tuning notification." />
+				</Grid>
+			</controls:ChamferCard>
 		</StackPanel>
 	</ScrollViewer>
 </UserControl>

@@ -9,50 +9,50 @@
 			</ResourceDictionary.MergedDictionaries>
 		</ResourceDictionary>
 	</UserControl.Resources>
-	<StackPanel Margin="12,8,12,0">
-		<!-- Custom Hotkeys Setup -->
-		<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel900Brush}" Margin="0,0,0,10" BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
-		                      Padding="15">
-			<StackPanel>
-				<TextBlock
-					Text="CLICK A BOX AND PRESS A KEY COMBINATION TO BIND. PRESS ESC TO CLEAR. RESTART NITROUS TO APPLY CHANGES."
-					Foreground="{StaticResource Steel400Brush}" FontSize="11" Margin="0,0,0,15" TextWrapping="Wrap" />
-				<Grid Margin="0,0,0,8">
-					<TextBlock Text="CYCLE POWER MODE" Foreground="White" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
-					<TextBox x:Name="TxtHkCycle" Style="{StaticResource HotkeyTextBoxStyle}" Width="120"
-					         HorizontalAlignment="Right" IsReadOnly="True" TextAlignment="Center"
-					         PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_CyclePower"
-					         ToolTip="Click and press any key combination to bind a global hotkey for cycling power profiles with on-screen display." />
-				</Grid>
-				<Grid>
-					<TextBlock Text="OPEN DASHBOARD" Foreground="White" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
-					<TextBox x:Name="TxtHkDash" Style="{StaticResource HotkeyTextBoxStyle}" Width="120" HorizontalAlignment="Right"
-					         IsReadOnly="True" TextAlignment="Center" PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_Dashboard"
-					         ToolTip="Click and press any key combination to bind a global hotkey to summon or hide the Nitrous dashboard." />
-				</Grid>
-			</StackPanel>
-		</controls:ChamferCard>
 
-		<!-- Physical Nitro Button Integration (Currently Disabled) -->
-		<controls:ChamferCard ChamferSize="6" Visibility="Collapsed" Background="{StaticResource Steel900Brush}" Margin="0,0,0,10" BorderBrush="{StaticResource Steel700Brush}"
-		                      BorderThickness="1" Padding="15"
-		                      ToolTip="Hooks Acer Sense launchers via Windows IFEO so pressing the physical keyboard Nitro/Predator button opens Nitrous even when the app is completely closed.">
-			<Grid>
-				<Grid.ColumnDefinitions>
-					<ColumnDefinition Width="*" />
-					<ColumnDefinition Width="Auto" />
-				</Grid.ColumnDefinitions>
-				<StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,15,0">
-					<TextBlock Text="NITRO KEY INTEGRATION" Foreground="White" FontWeight="Bold" FontSize="12" />
-					<TextBlock
-						Text="INTERCEPTS THE PHYSICAL NITRO BUTTON TO LAUNCH NITROUS, EVEN WHEN THE APP IS COMPLETELY CLOSED."
-						Foreground="{StaticResource Steel400Brush}" FontSize="10.5" Margin="0,4,0,0" TextWrapping="Wrap" />
+	<ScrollViewer Margin="12,8,12,0" VerticalScrollBarVisibility="Hidden"
+	              HorizontalScrollBarVisibility="Disabled" BorderThickness="0" Padding="0,0,0,12">
+		<StackPanel>
+			<!-- GLOBAL SHORTCUTS CARD -->
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}" 
+			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
+			                      Margin="0,0,0,10" Padding="12,10,12,12"
+			                      ToolTip="Configure global keyboard hotkeys for power mode switching and dashboard access.">
+				<StackPanel>
+					<!-- Card Header with Bottom Divider -->
+					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,12">
+						<TextBlock Text="SHORTCUTS" Foreground="{StaticResource Steel300Brush}" 
+						           FontFamily="{StaticResource MonoFontFamily}"
+						           FontWeight="Bold" FontSize="10" VerticalAlignment="Center" />
+					</Border>
+
+					<!-- Chamfered Hotkeys Well -->
+					<controls:ChamferCard ChamferSize="4" Background="{StaticResource Steel900Brush}" 
+					                      BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1" Padding="14,12">
+						<StackPanel>
+							<!-- Shortcut Row 1: CYCLE POWER MODE -->
+							<Grid Margin="0,0,0,10">
+								<TextBlock Text="CYCLE POWER MODE" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+								<TextBox x:Name="TxtHkCycle" Style="{StaticResource HotkeyTextBoxStyle}" Width="130" Height="28"
+								         VerticalContentAlignment="Center" HorizontalAlignment="Right" IsReadOnly="True" TextAlignment="Center"
+								         PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_CyclePower"
+								         ToolTip="Click and press any key combination to bind. Press ESC while focused to clear." />
+							</Grid>
+
+							<Border Height="1" Background="{StaticResource Steel800Brush}" Margin="0,0,0,10" />
+
+							<!-- Shortcut Row 2: OPEN DASHBOARD -->
+							<Grid>
+								<TextBlock Text="OPEN DASHBOARD" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+								<TextBox x:Name="TxtHkDash" Style="{StaticResource HotkeyTextBoxStyle}" Width="130" Height="28"
+								         VerticalContentAlignment="Center" HorizontalAlignment="Right" IsReadOnly="True" TextAlignment="Center"
+								         PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_Dashboard"
+								         ToolTip="Click and press any key combination to bind. Press ESC while focused to clear." />
+							</Grid>
+						</StackPanel>
+					</controls:ChamferCard>
 				</StackPanel>
-				<CheckBox Grid.Column="1" x:Name="TogNitroKey" Style="{StaticResource ModernToggleStyle}"
-				          HorizontalAlignment="Right"
-				          IsChecked="{Binding IsNitroKeyIntegrated, UpdateSourceTrigger=PropertyChanged}"
-				          ToolTip="Hooks Acer Sense launchers via Windows IFEO so pressing the physical keyboard Nitro/Predator button opens Nitrous even when the app is completely closed." />
-			</Grid>
-		</controls:ChamferCard>
-	</StackPanel>
+			</controls:ChamferCard>
+		</StackPanel>
+	</ScrollViewer>
 </UserControl>
