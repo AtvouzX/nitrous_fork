@@ -57,8 +57,7 @@
 			<!-- 2. BATTERY MANAGEMENT CARD -->
 			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}"
 			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
-			                      Margin="0,0,0,10" Padding="12,10,12,12"
-			                      ToolTip="Displays native battery health, maximum charge capacity, total charge cycles, and charge limit controls.">
+			                      Margin="0,0,0,10" Padding="12,10,12,12">
 				<StackPanel>
 					<!-- Card Header with Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
@@ -119,10 +118,9 @@
 					</controls:ChamferCard>
 
 					<!-- 20-Segment Battery Charge Block Meter -->
-					<controls:BatteryBlockBar Height="8" Margin="0,0,0,12"
-					                          ChargePercent="{Binding BatteryChargePercent}"
-					                          IsLimit80Active="{Binding ChargeLimit}"
-					                          ToolTip="20-segment battery charge meter (5% per block). Highlights the 80% ceiling when battery limit is active." />
+				<controls:BatteryBlockBar Height="8" Margin="0,0,0,12"
+				                          ChargePercent="{Binding BatteryChargePercent}"
+				                          IsLimit80Active="{Binding ChargeLimit}" />
 
 					<!-- 80% Limit Toggle Row -->
 					<Grid Margin="0,2,0,0">
@@ -137,7 +135,7 @@
 						<CheckBox Grid.Column="1" x:Name="TogCharge" Style="{StaticResource ModernToggleStyle}"
 						          HorizontalAlignment="Right" VerticalAlignment="Center"
 						          IsChecked="{Binding ChargeLimit, UpdateSourceTrigger=PropertyChanged}"
-						          ToolTip="Signals the Acer EC to cap battery charging at 80%, reducing chemical stress and extending battery longevity." />
+						          ToolTip="Cap charging at 80% to extend battery lifespan." />
 					</Grid>
 				</StackPanel>
 			</controls:ChamferCard>
@@ -145,8 +143,7 @@
 			<!-- 3. ACER OEM SERVICES CARD -->
 			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}"
 			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
-			                      Margin="0,0,0,10" Padding="12,10,12,12"
-			                      ToolTip="Controls background OEM software (NitroSense and Acer Care Center) to prevent thermal profile conflicts, stop fan revving, and save RAM.">
+			                      Margin="0,0,0,10" Padding="12,10,12,12">
 				<StackPanel>
 					<!-- Card Header with Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
@@ -186,15 +183,15 @@
 									<ItemsControl ItemsSource="{Binding AcerServicesList}">
 										<ItemsControl.ItemTemplate>
 											<DataTemplate>
-												<Grid Margin="0,2" ToolTip="{Binding DisplayName}">
-													<Grid.ColumnDefinitions>
+												<Grid Margin="0,2">
+										<Grid.ColumnDefinitions>
 														<ColumnDefinition Width="Auto" />
 														<ColumnDefinition Width="*" />
 													</Grid.ColumnDefinitions>
 													<Button Grid.Column="0" Style="{StaticResource GhostBtn}" Padding="2" Margin="0,0,6,0"
 													        Command="{Binding DataContext.KillAcerServiceCommand, RelativeSource={RelativeSource AncestorType=ItemsControl}}"
 													        CommandParameter="{Binding ServiceName}"
-													        ToolTip="Stop and disable this specific service.">
+													        ToolTip="Stop and disable this service.">
 														<Path
 															Data="M19.36,2.72L20.78,4.14L15.06,9.85C16.13,11.39 16.28,13.24 15.38,14.44L9.06,8.12C10.26,7.22 12.11,7.37 13.65,8.44L19.36,2.72M5.93,17.57C3.92,15.56 2.69,13.16 2.35,10.92L7.23,8.83L14.67,16.27L12.58,21.15C10.34,20.81 7.94,19.58 5.93,17.57Z"
 															Fill="#FF4500" Stretch="Uniform" Width="10" Height="10" VerticalAlignment="Center" />
@@ -216,7 +213,7 @@
 						                        Command="{Binding ToggleAcerServicesCommand}"
 						                        Height="34" MinWidth="110" Padding="14,0"
 						                        HorizontalAlignment="Right" VerticalAlignment="Center"
-						                        ToolTip="Stops NitroSense and Acer Care Center services to free system RAM, reduce background CPU, and prevent OEM software from overriding Nitrous fan curves." />
+									ToolTip="Stop NitroSense and Acer Care Center to free RAM and prevent OEM fan/profile overrides." />
 					</Grid>
 				</StackPanel>
 			</controls:ChamferCard>
@@ -224,8 +221,7 @@
 			<!-- 4. AUTOMATION RULES CARD (2x2 Grid) -->
 			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}"
 			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
-			                      Margin="0,0,0,10" Padding="12,10,12,12"
-			                      ToolTip="Hardware management automation rules that run in the background.">
+			                      Margin="0,0,0,10" Padding="12,10,12,12">
 				<StackPanel>
 					<!-- Card Header with Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
@@ -250,8 +246,7 @@
 						<controls:ChamferCard Grid.Row="0" Grid.Column="0" ChamferSize="4"
 						                      Background="{StaticResource Steel900Brush}"
 						                      BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
-						                      Padding="10,8" Height="52"
-						                      ToolTip="Synchronizes Windows processor limits per profile: Quiet (85% max, Boost Off), Balanced (99% max, Boost Off), Performance (100% max, Boost Off), and Turbo (100% min/max). Eliminates thermal throttling and fan revving.">
+						                      Padding="10,8" Height="52">
 							<Grid>
 								<Grid.ColumnDefinitions>
 									<ColumnDefinition Width="*" />
@@ -265,7 +260,7 @@
 								</StackPanel>
 								<CheckBox Grid.Column="1" x:Name="TogManageCpu" Style="{StaticResource ChamferMiniToggleStyle}"
 								          IsChecked="{Binding ManageCpuPower, UpdateSourceTrigger=PropertyChanged}"
-								          ToolTip="Synchronizes Windows processor limits per profile: Quiet (85% max, Boost Off), Balanced (99% max, Boost Off), Performance (100% max, Boost Off), and Turbo (100% min/max). Eliminates thermal throttling and fan revving."
+								          ToolTip="Apply per-profile Windows CPU limits automatically (Quiet 85%, Balanced 99%, Performance/Turbo 100%)."
 								          VerticalAlignment="Center" Margin="6,0,0,0" />
 							</Grid>
 						</controls:ChamferCard>
@@ -274,8 +269,7 @@
 						<controls:ChamferCard Grid.Row="0" Grid.Column="2" ChamferSize="4"
 						                      Background="{StaticResource Steel900Brush}"
 						                      BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
-						                      Padding="10,8" Height="52"
-						                      ToolTip="Automatically activates your preferred AC profile when plugged in and DC profile when running on battery.">
+						                      Padding="10,8" Height="52">
 							<Grid>
 								<Grid.ColumnDefinitions>
 									<ColumnDefinition Width="*" />
@@ -289,7 +283,7 @@
 								</StackPanel>
 								<CheckBox Grid.Column="1" x:Name="TogAutoSwitch" Style="{StaticResource ChamferMiniToggleStyle}"
 								          IsChecked="{Binding AutoSwitch, UpdateSourceTrigger=PropertyChanged}"
-								          ToolTip="Automatically activates your preferred AC profile when plugged in and DC profile when running on battery."
+								          ToolTip="Switch to the AC profile when plugged in, and the battery profile on DC."
 								          VerticalAlignment="Center" Margin="6,0,0,0" />
 							</Grid>
 						</controls:ChamferCard>
@@ -298,8 +292,7 @@
 						<controls:ChamferCard Grid.Row="2" Grid.Column="0" ChamferSize="4"
 						                      Background="{StaticResource Steel900Brush}"
 						                      BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
-						                      Padding="10,8" Height="52"
-						                      ToolTip="Automatically applies your saved GPU clock offsets whenever the discrete NVIDIA GPU wakes up from D3Cold sleep on AC power.">
+						                      Padding="10,8" Height="52">
 							<Grid>
 								<Grid.ColumnDefinitions>
 									<ColumnDefinition Width="*" />
@@ -313,7 +306,7 @@
 								</StackPanel>
 								<CheckBox Grid.Column="1" x:Name="TogAutoApplyClocks" Style="{StaticResource ChamferMiniToggleStyle}"
 								          IsChecked="{Binding AutoApplyGpuClocks, UpdateSourceTrigger=PropertyChanged}"
-								          ToolTip="Automatically applies your saved GPU clock offsets whenever the discrete NVIDIA GPU wakes up from D3Cold sleep on AC power."
+								          ToolTip="Reapply saved GPU clock offsets when the GPU wakes from D3Cold sleep on AC power."
 								          VerticalAlignment="Center" Margin="6,0,0,0" />
 							</Grid>
 						</controls:ChamferCard>
@@ -322,8 +315,7 @@
 						<controls:ChamferCard Grid.Row="2" Grid.Column="2" ChamferSize="4"
 						                      Background="{StaticResource Steel900Brush}"
 						                      BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
-						                      Padding="10,8" Height="52"
-						                      ToolTip="Registers an elevated Task Scheduler task to start Nitrous silently in the system tray at Windows logon without UAC prompts.">
+						                      Padding="10,8" Height="52">
 							<Grid>
 								<Grid.ColumnDefinitions>
 									<ColumnDefinition Width="*" />
@@ -337,7 +329,7 @@
 								</StackPanel>
 								<CheckBox Grid.Column="1" x:Name="TogStartup" Style="{StaticResource ChamferMiniToggleStyle}"
 								          IsChecked="{Binding RunOnStartup, UpdateSourceTrigger=PropertyChanged}"
-								          ToolTip="Registers an elevated Task Scheduler task to start Nitrous silently in the system tray at Windows logon without UAC prompts."
+								          ToolTip="Start Nitrous in the tray at logon via an elevated scheduled task (no UAC prompt)."
 								          VerticalAlignment="Center" Margin="6,0,0,0" />
 							</Grid>
 						</controls:ChamferCard>
@@ -348,8 +340,7 @@
 			<!-- 5. DIAGNOSTICS & DEBUG CARD -->
 			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}"
 			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
-			                      Margin="0,0,0,10" Padding="12,10,12,12"
-			                      ToolTip="Diagnostic troubleshooting utilities: configure verbose debug logs, copy hardware diagnostics, or report issues.">
+			                      Margin="0,0,0,10" Padding="12,10,12,12">
 				<StackPanel>
 					<!-- Card Header with Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
@@ -373,7 +364,7 @@
 						<CheckBox Grid.Column="1" x:Name="TogDebugging" Style="{StaticResource ModernToggleStyle}"
 						          HorizontalAlignment="Right" VerticalAlignment="Center"
 						          IsChecked="{Binding IsDebuggingEnabled, UpdateSourceTrigger=PropertyChanged}"
-						          ToolTip="Enables verbose diagnostic logging of Acer EC registers, WMI calls, and GPU sleep transitions to %LOCALAPPDATA%\Nitrous\Logs\nitrous.log. Turn off during normal use for minimal disk writes." />
+						          ToolTip="Log EC registers, WMI calls, and GPU transitions to the Nitrous log. Off = minimal disk writes." />
 					</Grid>
 
 					<!-- 3-Action Buttons Grid (Primary: REPORT, Secondary: COPY & LOGS) -->
@@ -392,7 +383,7 @@
 						                        Content="REPORT"
 						                        Command="{Binding ReportIssueCommand}"
 						                        Height="32" Padding="4,0"
-						                        ToolTip="Opens the GitHub bug report form in your browser with hardware specs pre-filled, and copies complete diagnostics to clipboard." />
+						                        ToolTip="Open the GitHub issue form with diagnostics pre-filled and copied to the clipboard." />
 
 						<!-- COPY (Secondary High-Contrast Steel) -->
 						<controls:ChamferButton Grid.Column="2" x:Name="BtnCopyDiagnostics"
@@ -400,7 +391,7 @@
 						                        Content="COPY"
 						                        Command="{Binding CopyDiagnosticsCommand}"
 						                        Height="32" Padding="4,0"
-						                        ToolTip="Generates an anonymized hardware diagnostics summary and copies it to your clipboard for GitHub issue reports." />
+						                        ToolTip="Copy an anonymized hardware diagnostics summary to the clipboard." />
 
 						<!-- LOGS (Secondary High-Contrast Steel) -->
 						<controls:ChamferButton Grid.Column="4" x:Name="BtnOpenLogsFolder"
@@ -408,7 +399,7 @@
 						                        Content="LOGS"
 						                        Command="{Binding OpenLogsFolderCommand}"
 						                        Height="32" Padding="4,0"
-						                        ToolTip="Opens the directory containing Nitrous diagnostic log files in File Explorer." />
+						                        ToolTip="Open the log folder in File Explorer." />
 					</Grid>
 				</StackPanel>
 			</controls:ChamferCard>

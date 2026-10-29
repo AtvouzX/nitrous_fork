@@ -1,508 +1,451 @@
 <Window x:Class="Nitrous.Ui.FanCurveWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:Nitrous.Ui.Controls"
         Title="Custom Fan Curve" Height="660" Width="880"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
+        UseLayoutRounding="True" SnapsToDevicePixels="True"
         TextOptions.TextFormattingMode="Display"
         RenderOptions.ClearTypeHint="Enabled">
 
     <Window.Resources>
-        <!-- Line Gradient -->
-        <LinearGradientBrush x:Key="CurveStrokeGrad" StartPoint="0,0" EndPoint="1,0">
-            <GradientStop Color="#FFA500" Offset="0.0" />
-            <GradientStop Color="#FF4500" Offset="0.35" />
-            <GradientStop Color="#FF4500" Offset="0.70" />
-            <GradientStop Color="#FF4500" Offset="1.0" />
-        </LinearGradientBrush>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="pack://application:,,,/Nitrous;component/Ui/Styles/DashboardStyles.xaml" />
+            </ResourceDictionary.MergedDictionaries>
 
-        <!-- Tooltip Drop Shadow -->
-        <DropShadowEffect x:Key="PurpleGlowLine" Color="#FF4500" BlurRadius="12" ShadowDepth="2" Opacity="0.5" />
-        <DropShadowEffect x:Key="PurpleGlowTooltip" Color="#FF4500" BlurRadius="12" ShadowDepth="2" Opacity="0.5" />
-        <DropShadowEffect x:Key="CardShadow" Color="#000000" BlurRadius="25" ShadowDepth="10" Opacity="0.6" />
+            <!-- Ember curve stroke (Ignite tokens, flat — no glow effects) -->
+            <LinearGradientBrush x:Key="CurveStrokeGrad" StartPoint="0,0" EndPoint="1,0">
+                <GradientStop Color="#E85D2A" Offset="0.0" />
+                <GradientStop Color="#D94E1F" Offset="1.0" />
+            </LinearGradientBrush>
 
-        <Style x:Key="TabPillStyle" TargetType="RadioButton">
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Foreground" Value="#A1A1AA" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="RadioButton">
-                        <Border x:Name="Bg" Background="{TemplateBinding Background}" CornerRadius="6" Padding="20,6">
-                            <TextBlock Text="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
-                                       FontSize="12" FontWeight="Bold" HorizontalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="Bg" Property="BorderBrush" Value="#FF4500" />
-                                <Setter TargetName="Bg" Property="BorderThickness" Value="1" />
-                                <Setter Property="Foreground" Value="#FFFFFF" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+            <!-- Steel ComboBox toggle (zero radius, Ignite tokens) -->
+            <ControlTemplate x:Key="ComboBoxToggleButton" TargetType="ToggleButton">
+                <Border x:Name="templateRoot" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="0">
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition />
+                            <ColumnDefinition Width="20" />
+                        </Grid.ColumnDefinitions>
+                        <Path x:Name="arrow" Grid.Column="1" Fill="{StaticResource Steel400Brush}" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M0,0 L4,4 L8,0 Z" />
+                    </Grid>
+                </Border>
+                <ControlTemplate.Triggers>
+                    <Trigger Property="IsMouseOver" Value="true">
+                        <Setter TargetName="templateRoot" Property="Background" Value="{StaticResource Steel800Brush}" />
+                        <Setter TargetName="templateRoot" Property="BorderBrush" Value="{StaticResource Steel500Brush}" />
+                        <Setter TargetName="arrow" Property="Fill" Value="{StaticResource Steel100Brush}" />
+                    </Trigger>
+                </ControlTemplate.Triggers>
+            </ControlTemplate>
 
-        <Style x:Key="SimpleCheckBoxStyle" TargetType="CheckBox">
-            <Setter Property="Foreground" Value="#A1A1AA" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="CheckBox">
-                        <StackPanel Orientation="Horizontal" Background="Transparent">
-                            <Border Width="14" Height="14" Background="#151518" BorderBrush="#334155"
-                                    BorderThickness="1" CornerRadius="2" VerticalAlignment="Center">
-                                <Path x:Name="CheckMark" Data="M3,7 L6,10 L11,3" Stroke="#FF4500" StrokeThickness="2"
-                                      Stretch="Uniform" Margin="1" Visibility="Collapsed" />
+            <Style x:Key="DarkComboBoxStyle" TargetType="ComboBox">
+                <Setter Property="Foreground" Value="{StaticResource Steel100Brush}" />
+                <Setter Property="Background" Value="{StaticResource Steel850Brush}" />
+                <Setter Property="BorderBrush" Value="{StaticResource Steel600Brush}" />
+                <Setter Property="BorderThickness" Value="1" />
+                <Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="FontWeight" Value="Bold" />
+                <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
+                <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
+                <Setter Property="Padding" Value="8,3,20,3" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBox">
+                            <Grid x:Name="templateRoot" SnapsToDevicePixels="true">
+                                <ToggleButton x:Name="toggleButton" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" Template="{StaticResource ComboBoxToggleButton}" />
+                                <ContentPresenter x:Name="contentPresenter" IsHitTestVisible="false" Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" />
+                                <Popup x:Name="PART_Popup" AllowsTransparency="true" IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}" Placement="Bottom" PopupAnimation="Fade">
+                                    <Border x:Name="dropDownBorder" MaxHeight="{TemplateBinding MaxDropDownHeight}" Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource Steel600Brush}" BorderThickness="1" CornerRadius="0" Margin="0,4,0,0">
+                                        <ScrollViewer x:Name="DropDownScrollViewer" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Hidden">
+                                            <ItemsPresenter x:Name="ItemsPresenter" KeyboardNavigation.DirectionalNavigation="Contained" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
+                                        </ScrollViewer>
+                                    </Border>
+                                </Popup>
+                            </Grid>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsEnabled" Value="False">
+                                    <Setter TargetName="templateRoot" Property="Opacity" Value="0.3" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <Style TargetType="ComboBoxItem">
+                <Setter Property="Foreground" Value="{StaticResource Steel400Brush}" />
+                <Setter Property="Background" Value="Transparent" />
+                <Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
+                <Setter Property="FontSize" Value="11" />
+                <Setter Property="FontWeight" Value="Bold" />
+                <Setter Property="Padding" Value="8,6" />
+                <Setter Property="Cursor" Value="Hand" />
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ComboBoxItem">
+                            <Border x:Name="Bd" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+                                <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
                             </Border>
-                            <TextBlock Text="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}"
-                                       FontSize="12" Margin="8,0,0,0" VerticalAlignment="Center" />
-                        </StackPanel>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsChecked" Value="True">
-                                <Setter TargetName="CheckMark" Property="Visibility" Value="Visible" />
-                                <Setter Property="Foreground" Value="#FFFFFF" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Modern Dark Tooltip Style -->
-        <Style TargetType="ToolTip">
-            <Setter Property="Background" Value="#1E1E22" />
-            <Setter Property="Foreground" Value="#e2e8f0" />
-            <Setter Property="BorderBrush" Value="#334155" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="FontSize" Value="11" />
-            <Setter Property="Padding" Value="9,6" />
-            <Setter Property="HasDropShadow" Value="True" />
-            <Setter Property="ToolTipService.InitialShowDelay" Value="400" />
-            <Setter Property="ToolTipService.BetweenShowDelay" Value="100" />
-            <Setter Property="ToolTipService.ShowDuration" Value="7000" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ToolTip">
-                        <Border Background="{TemplateBinding Background}"
-                                BorderBrush="{TemplateBinding BorderBrush}"
-                                BorderThickness="{TemplateBinding BorderThickness}"
-                                CornerRadius="6"
-                                Padding="{TemplateBinding Padding}"
-                                SnapsToDevicePixels="True"
-                                MaxWidth="280">
-                            <ContentPresenter />
-                        </Border>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <!-- Custom Dark ComboBox Style -->
-        <ControlTemplate x:Key="ComboBoxToggleButton" TargetType="ToggleButton">
-            <Border x:Name="templateRoot" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4">
-                <Grid>
-                    <Grid.ColumnDefinitions>
-                        <ColumnDefinition />
-                        <ColumnDefinition Width="20" />
-                    </Grid.ColumnDefinitions>
-                    <Path x:Name="arrow" Grid.Column="1" Fill="#A1A1AA" HorizontalAlignment="Center" VerticalAlignment="Center" Data="M0,0 L4,4 L8,0 Z" />
-                </Grid>
-            </Border>
-            <ControlTemplate.Triggers>
-                <Trigger Property="IsMouseOver" Value="true">
-                    <Setter TargetName="templateRoot" Property="Background" Value="#1E1E22" />
-                    <Setter TargetName="templateRoot" Property="BorderBrush" Value="#FF4500" />
-                    <Setter TargetName="arrow" Property="Fill" Value="#FFFFFF" />
-                </Trigger>
-            </ControlTemplate.Triggers>
-        </ControlTemplate>
-
-        <Style x:Key="DarkComboBoxStyle" TargetType="ComboBox">
-            <Setter Property="Foreground" Value="#FFFFFF" />
-            <Setter Property="Background" Value="#151518" />
-            <Setter Property="BorderBrush" Value="#334155" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
-            <Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
-            <Setter Property="Padding" Value="8,3,20,3" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ComboBox">
-                        <Grid x:Name="templateRoot" SnapsToDevicePixels="true">
-                            <ToggleButton x:Name="toggleButton" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" IsChecked="{Binding IsDropDownOpen, Mode=TwoWay, RelativeSource={RelativeSource TemplatedParent}}" Template="{StaticResource ComboBoxToggleButton}" />
-                            <ContentPresenter x:Name="contentPresenter" IsHitTestVisible="false" Margin="{TemplateBinding Padding}" HorizontalAlignment="{TemplateBinding HorizontalContentAlignment}" VerticalAlignment="{TemplateBinding VerticalContentAlignment}" Content="{TemplateBinding SelectionBoxItem}" ContentTemplate="{TemplateBinding SelectionBoxItemTemplate}" ContentTemplateSelector="{TemplateBinding ItemTemplateSelector}" />
-                            <Popup x:Name="PART_Popup" AllowsTransparency="true" IsOpen="{Binding IsDropDownOpen, RelativeSource={RelativeSource TemplatedParent}}" Placement="Bottom" PopupAnimation="Fade">
-                                <Border x:Name="dropDownBorder" MaxHeight="{TemplateBinding MaxDropDownHeight}" Background="#151518" BorderBrush="#334155" BorderThickness="1" CornerRadius="4" Margin="0,4,0,0">
-                                    <ScrollViewer x:Name="DropDownScrollViewer" VerticalScrollBarVisibility="Hidden" HorizontalScrollBarVisibility="Hidden">
-                                        <ItemsPresenter x:Name="ItemsPresenter" KeyboardNavigation.DirectionalNavigation="Contained" SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}" />
-                                    </ScrollViewer>
-                                </Border>
-                            </Popup>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="templateRoot" Property="Opacity" Value="0.3" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style TargetType="ComboBoxItem">
-            <Setter Property="Foreground" Value="#A1A1AA" />
-            <Setter Property="Background" Value="Transparent" />
-            <Setter Property="Padding" Value="8,6" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="ComboBoxItem">
-                        <Border x:Name="Bd" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
-                            <ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#1E1E22" />
-                                <Setter Property="Foreground" Value="#FFFFFF" />
-                            </Trigger>
-                            <Trigger Property="IsSelected" Value="True">
-                                <Setter TargetName="Bd" Property="Background" Value="#1E1E22" />
-                                <Setter Property="Foreground" Value="#FF4500" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
-
-        <Style x:Key="IconButtonStyle" TargetType="Button">
-            <Setter Property="Background" Value="#151518" />
-            <Setter Property="Foreground" Value="#A1A1AA" />
-            <Setter Property="BorderBrush" Value="#334155" />
-            <Setter Property="BorderThickness" Value="1" />
-            <Setter Property="Cursor" Value="Hand" />
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="Button">
-                        <Border x:Name="Bg" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="4">
-                            <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                        </Border>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="True">
-                                <Setter TargetName="Bg" Property="Background" Value="#1E1E22" />
-                                <Setter TargetName="Bg" Property="BorderBrush" Value="#FF4500" />
-                                <Setter Property="Foreground" Value="#FFFFFF" />
-                            </Trigger>
-                            <Trigger Property="IsEnabled" Value="False">
-                                <Setter TargetName="Bg" Property="Opacity" Value="0.3" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
-        </Style>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource Steel800Brush}" />
+                                    <Setter Property="Foreground" Value="{StaticResource Steel100Brush}" />
+                                </Trigger>
+                                <Trigger Property="IsSelected" Value="True">
+                                    <Setter TargetName="Bd" Property="Background" Value="{StaticResource Steel800Brush}" />
+                                    <Setter Property="Foreground" Value="{StaticResource Ember400Brush}" />
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+        </ResourceDictionary>
     </Window.Resources>
 
-    <Grid Background="Transparent" Margin="20">
-        <!-- Main Card -->
-        <Border Background="#0C0C0E" CornerRadius="18" BorderBrush="#222226" BorderThickness="1.2"
-                Effect="{StaticResource CardShadow}">
-            <Grid Margin="26,24,26,26">
-                <Grid.RowDefinitions>
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="*" />
-                    <RowDefinition Height="Auto" />
-                    <RowDefinition Height="Auto" />
-                </Grid.RowDefinitions>
+    <!-- Chamfered window shell (matches NitrousDashboard) -->
+    <Grid x:Name="WindowRoot" Background="Transparent">
+        <Path x:Name="WindowShellFrame"
+              Stroke="{StaticResource Steel600Brush}"
+              StrokeThickness="1"
+              Fill="{StaticResource Steel900Brush}"
+              SnapsToDevicePixels="True" />
 
-                <!-- HEADER -->
-                <Grid Grid.Row="0" MouseLeftButtonDown="TitleBar_MouseDown" Background="Transparent" Margin="0,0,0,25">
-                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                        <!-- Propeller Icon -->
-                        <Grid Width="24" Height="24" Margin="0,0,12,0">
-                            <Ellipse Stroke="#334155" StrokeThickness="1.2" />
-                            <Ellipse Width="6" Height="6" Fill="#FF4500" />
-                            <Path
-                                Data="M12 9a3 3 0 0 1 3-3c1.5 0 2 1.5 1 3l-3 1 M15 12a3 3 0 0 1 3 3c0 1.5-1.5 2-3 1l-1-3 M12 15a3 3 0 0 1-3 3c-1.5 0-2-1.5-1-3l3-1 M9 12a3 3 0 0 1-3-3c0-1.5 1.5-2 3-1l1 3"
-                                Stroke="#FF4500" StrokeThickness="1.8" StrokeStartLineCap="Round"
-                                StrokeEndLineCap="Round" Stretch="Uniform" />
-                        </Grid>
-                        <TextBlock Text="Custom Fan Curve" Foreground="#FFFFFF" FontSize="18" FontWeight="Bold"
-                                   VerticalAlignment="Center" />
-                    </StackPanel>
+        <Grid x:Name="WindowContentGrid" Margin="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="40" />
+                <RowDefinition Height="*" />
+                <RowDefinition Height="Auto" />
+            </Grid.RowDefinitions>
 
-                    <!-- Tabs & Close Button -->
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                        <!-- Profile Selector -->
-                        <Border x:Name="ProfileSelectorContainer" Background="#0A0A0C" BorderBrush="#1d2433" BorderThickness="1" CornerRadius="8"
-                                Padding="3" Margin="0,0,15,0">
-                            <Border.Style>
-                                <Style TargetType="Border">
-                                    <Style.Triggers>
-                                        <Trigger Property="IsEnabled" Value="False">
-                                            <Setter Property="Opacity" Value="0.3" />
-                                        </Trigger>
-                                    </Style.Triggers>
-                                </Style>
-                            </Border.Style>
-                            <StackPanel Orientation="Horizontal">
-                                <RadioButton x:Name="ProfileQuiet" Content="Quiet"
-                                             Style="{StaticResource TabPillStyle}" Checked="Profile_Checked"
-                                             ToolTip="Edit fan curve for Quiet mode." />
-                                <RadioButton x:Name="ProfileBalanced" Content="Balanced"
-                                             Style="{StaticResource TabPillStyle}" Checked="Profile_Checked"
-                                             ToolTip="Edit fan curve for Balanced mode." />
-                                <RadioButton x:Name="ProfilePerformance" Content="Performance"
-                                             Style="{StaticResource TabPillStyle}" Checked="Profile_Checked"
-                                             ToolTip="Edit fan curve for Performance mode." />
-                            </StackPanel>
-                        </Border>
+            <!-- 1. Title Bar (recessed Steel950 with 1px bottom border) -->
+            <Grid Grid.Row="0" MouseLeftButtonDown="TitleBar_MouseDown" Background="{StaticResource Steel950Brush}">
+                <Border VerticalAlignment="Bottom" Height="1" Background="{StaticResource Steel700Brush}" />
 
-                        <Border Background="#0A0A0C" BorderBrush="#1d2433" BorderThickness="1" CornerRadius="8"
-                                Padding="3" Margin="0,0,15,0">
-                            <StackPanel Orientation="Horizontal">
-                                <RadioButton x:Name="TabCpu" Content="CPU" IsChecked="True"
-                                             Style="{StaticResource TabPillStyle}" Checked="Tab_Checked"
-                                             ToolTip="Switch to CPU fan temperature-to-speed curve waypoints." />
-                                <RadioButton x:Name="TabGpu" Content="GPU" Style="{StaticResource TabPillStyle}"
-                                             Checked="Tab_Checked"
-                                             ToolTip="Switch to GPU fan temperature-to-speed curve waypoints." />
-                            </StackPanel>
-                        </Border>
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
+                     <TextBlock Text="FAN CURVE" Foreground="{StaticResource Steel100Brush}"
+                               FontFamily="{StaticResource MonoFontFamily}" FontSize="12.5" FontWeight="Bold"
+                               VerticalAlignment="Center" />
+                   </StackPanel>
 
-                        <!-- Fixed Close Button -->
-                        <Button Content="✕" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="10,0,0,0"
-                                Foreground="#A1A1AA" Cursor="Hand" Click="CloseBtn_Click"
-                                ToolTip="Close fan curve editor.">
-                            <Button.Template>
-                                <ControlTemplate TargetType="Button">
-                                    <Border x:Name="Bg" Background="Transparent" CornerRadius="4" Padding="6,2">
-                                        <TextBlock Text="{TemplateBinding Content}"
-                                                   Foreground="{TemplateBinding Foreground}" FontSize="16"
-                                                   FontWeight="Bold" />
-                                    </Border>
-                                    <ControlTemplate.Triggers>
-                                        <Trigger Property="IsMouseOver" Value="True">
-                                            <Setter TargetName="Bg" Property="Background" Value="#1E1E22" />
-                                            <Setter Property="Foreground" Value="#FFFFFF" />
-                                        </Trigger>
-                                    </ControlTemplate.Triggers>
-                                </ControlTemplate>
-                            </Button.Template>
-                        </Button>
-                    </StackPanel>
-                </Grid>
+                <!-- Close Button (Anvil Box) -->
+                <StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center" Margin="0,0,16,0">
+                    <Button x:Name="CloseBtn" Width="24" Height="24"
+                            Click="CloseBtn_Click" Cursor="Hand"
+                            ToolTip="Close without saving changes.">
+                        <Button.Template>
+                            <ControlTemplate TargetType="Button">
+                                <Border x:Name="CloseBorder"
+                                        Background="{StaticResource Steel850Brush}"
+                                        BorderBrush="{StaticResource Steel700Brush}"
+                                        BorderThickness="1"
+                                        SnapsToDevicePixels="True">
+                                    <Path x:Name="CloseIcon"
+                                          Data="M6,18L18,6M6,6L18,18"
+                                          Stroke="{StaticResource Steel400Brush}"
+                                          StrokeThickness="1.5"
+                                          Stretch="Uniform"
+                                          Width="10" Height="10"
+                                          HorizontalAlignment="Center"
+                                          VerticalAlignment="Center" />
+                                </Border>
+                                <ControlTemplate.Triggers>
+                                    <Trigger Property="IsMouseOver" Value="True">
+                                        <Setter TargetName="CloseBorder" Property="Background" Value="{StaticResource Steel800Brush}" />
+                                        <Setter TargetName="CloseBorder" Property="BorderBrush" Value="{StaticResource Steel600Brush}" />
+                                        <Setter TargetName="CloseIcon" Property="Stroke" Value="{StaticResource Steel100Brush}" />
+                                    </Trigger>
+                                </ControlTemplate.Triggers>
+                            </ControlTemplate>
+                        </Button.Template>
+                    </Button>
+                </StackPanel>
+            </Grid>
 
-                <!-- GRAPH AREA -->
-                <Border Grid.Row="1" Background="#000000" CornerRadius="12" BorderBrush="#222226" BorderThickness="1"
-                        Margin="0,0,0,25">
-                    <Grid Margin="15,20,20,15">
-                        <Grid.ColumnDefinitions>
-                            <ColumnDefinition Width="40" />
-                            <ColumnDefinition Width="*" />
-                        </Grid.ColumnDefinitions>
-                        <Grid.RowDefinitions>
-                            <RowDefinition Height="*" />
-                            <RowDefinition Height="25" />
-                        </Grid.RowDefinitions>
+            <!-- 2. Content (Steel900 main surface) -->
+            <Grid Grid.Row="1" Background="{StaticResource Steel900Brush}">
+                <StackPanel Margin="12,8,12,10">
 
-                        <!-- Y-Axis Labels -->
-                        <Grid Grid.Column="0" Grid.Row="0" Margin="0,-7,5,0">
-                            <Grid.RowDefinitions>
-                                <RowDefinition Height="*" />
-                                <RowDefinition Height="*" />
-                                <RowDefinition Height="*" />
-                                <RowDefinition Height="*" />
-                            </Grid.RowDefinitions>
-                            <TextBlock Grid.Row="0" Text="100%" Foreground="#A1A1AA" FontSize="10"
-                                       FontWeight="SemiBold" TextAlignment="Right" VerticalAlignment="Top" />
-                            <TextBlock Grid.Row="1" Text="75%" Foreground="#71717A" FontSize="10" FontWeight="SemiBold"
-                                       TextAlignment="Right" VerticalAlignment="Top" />
-                            <TextBlock Grid.Row="2" Text="50%" Foreground="#71717A" FontSize="10" FontWeight="SemiBold"
-                                       TextAlignment="Right" VerticalAlignment="Top" />
-                            <TextBlock Grid.Row="3" Text="25%" Foreground="#71717A" FontSize="10" FontWeight="SemiBold"
-                                       TextAlignment="Right" VerticalAlignment="Top" />
-                        </Grid>
-                        <!-- 0% label at absolute bottom -->
-                        <TextBlock Grid.Column="0" Grid.Row="0" Text="0%" Foreground="#A1A1AA" FontSize="10"
-                                   FontWeight="SemiBold" TextAlignment="Right" VerticalAlignment="Bottom"
-                                   Margin="0,0,5,-7" />
+                    <!-- CURVE CARD -->
+                    <controls:ChamferCard Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource BorderCardBrush}"
+                                          BorderThickness="1" ChamferSize="6" Padding="12,10,12,12" Margin="0,0,0,10">
+                        <StackPanel>
+                            <!-- Card Header with Bottom Divider -->
+                            <Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
+                                <Grid>
+                                    <TextBlock Text="TEMPERATURE CURVE" Foreground="{StaticResource Steel300Brush}"
+                                               FontFamily="{StaticResource MonoFontFamily}" FontSize="10" FontWeight="Bold"
+                                               VerticalAlignment="Center" />
+                                </Grid>
+                            </Border>
 
-                        <!-- PLOT AREA -->
-                        <Grid Grid.Column="1" Grid.Row="0">
-                            <!-- Horizontal Grid Lines -->
-                            <Grid>
-                                <Grid.RowDefinitions>
-                                    <RowDefinition Height="*" />
-                                    <RowDefinition Height="*" />
-                                    <RowDefinition Height="*" />
-                                    <RowDefinition Height="*" />
-                                </Grid.RowDefinitions>
-                                <Border Grid.Row="0" BorderBrush="#1A1A1C" BorderThickness="0,1,0,0" />
-                                <Border Grid.Row="1" BorderBrush="#1A1A1C" BorderThickness="0,1,0,0" />
-                                <Border Grid.Row="2" BorderBrush="#1A1A1C" BorderThickness="0,1,0,0" />
-                                <Border Grid.Row="3" BorderBrush="#1A1A1C" BorderThickness="0,1,0,0" />
+                            <!-- Profile + Target Detent Rails -->
+                            <Grid Margin="0,0,0,10">
+                                <Grid.ColumnDefinitions>
+                                    <ColumnDefinition Width="3*" />
+                                    <ColumnDefinition Width="8" />
+                                    <ColumnDefinition Width="2*" />
+                                </Grid.ColumnDefinitions>
+
+                                <!-- Editing Profile Rail -->
+                                <controls:ChamferCard x:Name="ProfileSelectorContainer" Grid.Column="0"
+                                                      Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel600Brush}"
+                                                      BorderThickness="1" ChamferSize="4" Padding="0">
+                                    <controls:ChamferCard.Style>
+                                        <Style TargetType="controls:ChamferCard">
+                                            <Style.Triggers>
+                                                <Trigger Property="IsEnabled" Value="False">
+                                                    <Setter Property="Opacity" Value="0.3" />
+                                                </Trigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </controls:ChamferCard.Style>
+                                    <UniformGrid Rows="1" Height="34">
+                                        <RadioButton x:Name="ProfileQuiet" TabIndex="0" GroupName="FanProfile" Content="Quiet"
+                                                     Style="{StaticResource CompactActionButtonStyle}" Checked="Profile_Checked" />
+                                        <RadioButton x:Name="ProfileBalanced" TabIndex="1" GroupName="FanProfile" Content="Balanced"
+                                                     Style="{StaticResource CompactActionButtonStyle}" Checked="Profile_Checked" />
+                                        <RadioButton x:Name="ProfilePerformance" TabIndex="1" GroupName="FanProfile" Content="Performance"
+                                                     Style="{StaticResource CompactActionButtonStyle}" Checked="Profile_Checked" />
+                                    </UniformGrid>
+                                </controls:ChamferCard>
+
+                                <!-- CPU / GPU Target Rail -->
+                                <controls:ChamferCard Grid.Column="2"
+                                                      Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel600Brush}"
+                                                      BorderThickness="1" ChamferSize="4" Padding="0">
+                                    <UniformGrid Rows="1" Height="34">
+                                        <RadioButton x:Name="TabCpu" TabIndex="0" GroupName="FanTarget" Content="CPU" IsChecked="True"
+                                                     Style="{StaticResource CompactActionButtonStyle}" Checked="Tab_Checked" />
+                                        <RadioButton x:Name="TabGpu" TabIndex="1" GroupName="FanTarget" Content="GPU"
+                                                     Style="{StaticResource CompactActionButtonStyle}" Checked="Tab_Checked" />
+                                    </UniformGrid>
+                                </controls:ChamferCard>
                             </Grid>
-                            <!-- Baseline 0% line -->
-                            <Border BorderBrush="#222226" BorderThickness="0,0,0,1" VerticalAlignment="Bottom" />
 
-                            <!-- Vertical Grid Lines (30, 45, 60, 75, 90, 100) -->
+                            <!-- Graph Well (recessed Steel900) -->
+                            <controls:ChamferCard Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel700Brush}"
+                                                  BorderThickness="1" ChamferSize="4" Padding="14,12,16,10">
+                                <Grid Height="290">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="40" />
+                                        <ColumnDefinition Width="*" />
+                                    </Grid.ColumnDefinitions>
+                                    <Grid.RowDefinitions>
+                                        <RowDefinition Height="*" />
+                                        <RowDefinition Height="25" />
+                                    </Grid.RowDefinitions>
+
+                                    <!-- Y-Axis Labels -->
+                                    <Grid Grid.Column="0" Grid.Row="0" Margin="0,-7,5,0">
+                                        <Grid.RowDefinitions>
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="*" />
+                                            <RowDefinition Height="*" />
+                                        </Grid.RowDefinitions>
+                                        <TextBlock Grid.Row="0" Text="100%" Foreground="{StaticResource Steel400Brush}"
+                                                   FontFamily="{StaticResource MonoFontFamily}" FontSize="10" FontWeight="Bold"
+                                                   TextAlignment="Right" VerticalAlignment="Top" />
+                                        <TextBlock Grid.Row="1" Text="75%" Foreground="{StaticResource Steel400Brush}"
+                                                   FontFamily="{StaticResource MonoFontFamily}" FontSize="10" FontWeight="Bold"
+                                                   TextAlignment="Right" VerticalAlignment="Top" />
+                                        <TextBlock Grid.Row="2" Text="50%" Foreground="{StaticResource Steel400Brush}"
+                                                   FontFamily="{StaticResource MonoFontFamily}" FontSize="10" FontWeight="Bold"
+                                                   TextAlignment="Right" VerticalAlignment="Top" />
+                                        <TextBlock Grid.Row="3" Text="25%" Foreground="{StaticResource Steel400Brush}"
+                                                   FontFamily="{StaticResource MonoFontFamily}" FontSize="10" FontWeight="Bold"
+                                                   TextAlignment="Right" VerticalAlignment="Top" />
+                                    </Grid>
+                                    <!-- 0% label at absolute bottom -->
+                                    <TextBlock Grid.Column="0" Grid.Row="0" Text="0%" Foreground="{StaticResource Steel400Brush}"
+                                               FontFamily="{StaticResource MonoFontFamily}" FontSize="10" FontWeight="Bold"
+                                               TextAlignment="Right" VerticalAlignment="Bottom" Margin="0,0,5,-7" />
+
+                                    <!-- PLOT AREA -->
+                                    <Grid Grid.Column="1" Grid.Row="0">
+                                        <!-- Horizontal Grid Lines -->
+                                        <Grid>
+                                            <Grid.RowDefinitions>
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="*" />
+                                                <RowDefinition Height="*" />
+                                            </Grid.RowDefinitions>
+                                            <Border Grid.Row="0" BorderBrush="{StaticResource Steel800Brush}" BorderThickness="0,1,0,0" />
+                                            <Border Grid.Row="1" BorderBrush="{StaticResource Steel800Brush}" BorderThickness="0,1,0,0" />
+                                            <Border Grid.Row="2" BorderBrush="{StaticResource Steel800Brush}" BorderThickness="0,1,0,0" />
+                                            <Border Grid.Row="3" BorderBrush="{StaticResource Steel800Brush}" BorderThickness="0,1,0,0" />
+                                        </Grid>
+                                        <!-- Baseline 0% line -->
+                                        <Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" VerticalAlignment="Bottom" />
+
+                                        <!-- Vertical Grid Lines (30, 45, 60, 75, 90, 100) -->
+                                        <Grid>
+                                            <Grid.ColumnDefinitions>
+                                                <ColumnDefinition Width="15*" />
+                                                <ColumnDefinition Width="15*" />
+                                                <ColumnDefinition Width="15*" />
+                                                <ColumnDefinition Width="15*" />
+                                                <ColumnDefinition Width="10*" />
+                                            </Grid.ColumnDefinitions>
+                                            <Border Grid.Column="0" BorderBrush="{StaticResource Steel800Brush}" BorderThickness="1,0,0,0" />
+                                            <Border Grid.Column="1" BorderBrush="{StaticResource Steel800Brush}" BorderThickness="1,0,0,0" />
+                                            <Border Grid.Column="2" BorderBrush="{StaticResource Steel800Brush}" BorderThickness="1,0,0,0" />
+                                            <Border Grid.Column="3" BorderBrush="{StaticResource Steel800Brush}" BorderThickness="1,0,0,0" />
+                                            <Border Grid.Column="4" BorderBrush="{StaticResource Steel800Brush}" BorderThickness="1,0,1,0" />
+                                        </Grid>
+
+                                        <!-- Canvas -->
+                                        <Canvas x:Name="GraphCanvas" ClipToBounds="False" MouseMove="GraphCanvas_MouseMove"
+                                                MouseUp="GraphCanvas_MouseUp" MouseLeave="GraphCanvas_MouseLeave"
+                                                Background="Transparent">
+                                            <Polyline x:Name="CurveLine" Stroke="{StaticResource CurveStrokeGrad}"
+                                                      StrokeThickness="2.5" StrokeLineJoin="Round" IsHitTestVisible="False" />
+                                            <Border x:Name="NodeTooltip" Visibility="Hidden" Background="{StaticResource Steel950Brush}"
+                                                    BorderBrush="{StaticResource Steel600Brush}" BorderThickness="1" CornerRadius="0" Padding="8,4"
+                                                    Panel.ZIndex="999" IsHitTestVisible="False">
+                                                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                                    <Ellipse Width="6" Height="6" Fill="{StaticResource Ember500Brush}" Margin="0,0,6,0" />
+                                                    <TextBlock x:Name="TooltipText" Text="68°C · 43%" Foreground="{StaticResource Steel100Brush}"
+                                                               FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" />
+                                                </StackPanel>
+                                            </Border>
+                                        </Canvas>
+                                    </Grid>
+
+                                    <!-- X-Axis Labels -->
+                                    <Grid Grid.Column="1" Grid.Row="1" Margin="0,8,0,0">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="15*" />
+                                            <ColumnDefinition Width="15*" />
+                                            <ColumnDefinition Width="15*" />
+                                            <ColumnDefinition Width="15*" />
+                                            <ColumnDefinition Width="10*" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Grid.Column="0" Text="30°C" Foreground="{StaticResource Steel400Brush}"
+                                                   FontFamily="{StaticResource MonoFontFamily}" FontSize="10" FontWeight="Bold"
+                                                   HorizontalAlignment="Left" Margin="-12,0,0,0" />
+                                        <TextBlock Grid.Column="1" Text="45°C" Foreground="{StaticResource Steel400Brush}"
+                                                   FontFamily="{StaticResource MonoFontFamily}" FontSize="10" FontWeight="Bold"
+                                                   HorizontalAlignment="Left" Margin="-12,0,0,0" />
+                                        <TextBlock Grid.Column="2" Text="60°C" Foreground="{StaticResource Steel400Brush}"
+                                                   FontFamily="{StaticResource MonoFontFamily}" FontSize="10" FontWeight="Bold"
+                                                   HorizontalAlignment="Left" Margin="-12,0,0,0" />
+                                        <TextBlock Grid.Column="3" Text="75°C" Foreground="{StaticResource Steel400Brush}"
+                                                   FontFamily="{StaticResource MonoFontFamily}" FontSize="10" FontWeight="Bold"
+                                                   HorizontalAlignment="Left" Margin="-12,0,0,0" />
+                                        <TextBlock Grid.Column="4" Text="90°C" Foreground="{StaticResource Steel400Brush}"
+                                                   FontFamily="{StaticResource MonoFontFamily}" FontSize="10" FontWeight="Bold"
+                                                   HorizontalAlignment="Left" Margin="-12,0,0,0" />
+                                        <TextBlock Grid.Column="4" Text="100°C" Foreground="{StaticResource Ember400Brush}"
+                                                   FontFamily="{StaticResource MonoFontFamily}" FontSize="10" FontWeight="Bold"
+                                                   HorizontalAlignment="Right" Margin="0,0,-15,0" />
+                                    </Grid>
+                                </Grid>
+                            </controls:ChamferCard>
+                        </StackPanel>
+                    </controls:ChamferCard>
+
+                    <!-- PRESETS CARD -->
+                    <controls:ChamferCard Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource BorderCardBrush}"
+                                          BorderThickness="1" ChamferSize="6" Padding="12,10,12,12">
+                        <StackPanel>
+                            <!-- Card Header with Bottom Divider -->
+                            <Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
+                                <TextBlock Text="PRESETS" Foreground="{StaticResource Steel300Brush}"
+                                           FontFamily="{StaticResource MonoFontFamily}" FontSize="10" FontWeight="Bold"
+                                           VerticalAlignment="Center" />
+                            </Border>
+
                             <Grid>
                                 <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="15*" />
-                                    <ColumnDefinition Width="15*" />
-                                    <ColumnDefinition Width="15*" />
-                                    <ColumnDefinition Width="15*" />
-                                    <ColumnDefinition Width="10*" />
+                                    <ColumnDefinition Width="*" />
+                                    <ColumnDefinition Width="Auto" />
                                 </Grid.ColumnDefinitions>
-                                <Border Grid.Column="0" BorderBrush="#1A1A1C" BorderThickness="1,0,0,0" />
-                                <Border Grid.Column="1" BorderBrush="#1A1A1C" BorderThickness="1,0,0,0" />
-                                <Border Grid.Column="2" BorderBrush="#1A1A1C" BorderThickness="1,0,0,0" />
-                                <Border Grid.Column="3" BorderBrush="#1A1A1C" BorderThickness="1,0,0,0" />
-                                <Border Grid.Column="4" BorderBrush="#1A1A1C" BorderThickness="1,0,1,0" />
-                            </Grid>
 
-                            <!-- Canvas -->
-                            <Canvas x:Name="GraphCanvas" ClipToBounds="False" MouseMove="GraphCanvas_MouseMove"
-                                    MouseUp="GraphCanvas_MouseUp" MouseLeave="GraphCanvas_MouseLeave"
-                                    Background="Transparent">
-                                <Polyline x:Name="CurveLine" Stroke="{StaticResource CurveStrokeGrad}"
-                                          StrokeThickness="3" StrokeLineJoin="Round" IsHitTestVisible="False"
-                                          Effect="{StaticResource PurpleGlowLine}" />
-                                <Border x:Name="NodeTooltip" Visibility="Hidden" Background="#140f22"
-                                        BorderBrush="#FF4500" BorderThickness="1.2" CornerRadius="6" Padding="10,4"
-                                        Panel.ZIndex="999" Effect="{StaticResource PurpleGlowTooltip}"
-                                        IsHitTestVisible="False">
-                                    <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-                                        <Ellipse Width="6" Height="6" Fill="#FF4500" Margin="0,0,6,0" />
-                                        <TextBlock x:Name="TooltipText" Text="68°C Â· 43%" Foreground="#FFFFFF"
-                                                   FontSize="11.5" FontWeight="Bold" />
+                                <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <CheckBox x:Name="TogSnapToGrid" Content="Snap to Grid (5% / 5°C)" IsChecked="True"
+                                              Style="{StaticResource SquareCheckBoxStyle}" Foreground="{StaticResource Steel400Brush}"
+                                              VerticalAlignment="Center" />
+                                    <CheckBox x:Name="TogUseCustomPreset" Content="Use custom preset"
+                                              Style="{StaticResource SquareCheckBoxStyle}" Foreground="{StaticResource Steel400Brush}"
+                                              VerticalAlignment="Center" Margin="20,0,0,0"
+                                              Checked="TogUseCustomPreset_Checked" Unchecked="TogUseCustomPreset_Unchecked"
+                                              ToolTip="Override per-profile curves with this preset." />
+                                </StackPanel>
+
+                                <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                                    <!-- Preset Selection Mode -->
+                                    <StackPanel x:Name="PresetViewPanel" Orientation="Horizontal" VerticalAlignment="Center">
+                                        <ComboBox x:Name="PresetCombo" Width="140" Height="26" SelectionChanged="PresetCombo_SelectionChanged"
+                                                  Style="{StaticResource DarkComboBoxStyle}" VerticalContentAlignment="Center" MaxDropDownHeight="160" />
+                                        <Button x:Name="AddPresetBtn" Content="+" Width="26" Height="26" Margin="6,0,0,0" Click="AddPresetBtn_Click"
+                                                Style="{StaticResource GhostBtn}" FontSize="13" ToolTip="Create a new preset." />
+                                        <Button x:Name="RenPresetBtn" Content="✎" Width="26" Height="26" Margin="6,0,0,0" Click="RenPresetBtn_Click"
+                                                Style="{StaticResource GhostBtn}" FontSize="11" ToolTip="Rename this preset." />
+                                        <Button x:Name="DelPresetBtn" Content="–" Width="26" Height="26" Margin="6,0,0,0" Click="DelPresetBtn_Click"
+                                                Style="{StaticResource GhostBtn}" FontSize="13" ToolTip="Delete this preset." />
                                     </StackPanel>
-                                </Border>
-                            </Canvas>
-                        </Grid>
 
-                        <!-- X-Axis Labels -->
-                        <Grid Grid.Column="1" Grid.Row="1" Margin="0,8,0,0">
+                                    <!-- Preset Rename Mode -->
+                                    <StackPanel x:Name="PresetRenamePanel" Orientation="Horizontal" VerticalAlignment="Center" Visibility="Collapsed">
+                                        <TextBox x:Name="RenameTextBox" Width="140" Height="26" Style="{StaticResource HotkeyTextBoxStyle}"
+                                                 VerticalContentAlignment="Center" FontSize="11" KeyDown="RenameTextBox_KeyDown" />
+                                        <Button x:Name="ConfirmRenameBtn" Content="✔" Width="26" Height="26" Margin="6,0,0,0" Click="ConfirmRenameBtn_Click"
+                                                Style="{StaticResource GhostBtn}" FontSize="11" Foreground="#34C759" />
+                                        <Button x:Name="CancelRenameBtn" Content="✕" Width="26" Height="26" Margin="6,0,0,0" Click="CancelRenameBtn_Click"
+                                                Style="{StaticResource GhostBtn}" FontSize="11" Foreground="#FF453A" />
+                                    </StackPanel>
+                                </StackPanel>
+                            </Grid>
+                        </StackPanel>
+                    </controls:ChamferCard>
+
+                    <!-- Overheat Warning Banner -->
+                    <controls:ChamferCard x:Name="WarningBanner" ChamferSize="4" Background="#201214" BorderBrush="#FF453A"
+                                          BorderThickness="1" Padding="10,8" Margin="0,10,0,0" Visibility="Collapsed">
+                        <Grid>
                             <Grid.ColumnDefinitions>
-                                <ColumnDefinition Width="15*" />
-                                <ColumnDefinition Width="15*" />
-                                <ColumnDefinition Width="15*" />
-                                <ColumnDefinition Width="15*" />
-                                <ColumnDefinition Width="10*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="*" />
                             </Grid.ColumnDefinitions>
-                            <TextBlock Grid.Column="0" Text="30°C" Foreground="#A1A1AA" FontSize="10.5"
-                                       FontWeight="SemiBold" HorizontalAlignment="Left" Margin="-12,0,0,0" />
-                            <TextBlock Grid.Column="1" Text="45°C" Foreground="#A1A1AA" FontSize="10.5"
-                                       FontWeight="SemiBold" HorizontalAlignment="Left" Margin="-12,0,0,0" />
-                            <TextBlock Grid.Column="2" Text="60°C" Foreground="#A1A1AA" FontSize="10.5"
-                                       FontWeight="SemiBold" HorizontalAlignment="Left" Margin="-12,0,0,0" />
-                            <TextBlock Grid.Column="3" Text="75°C" Foreground="#A1A1AA" FontSize="10.5"
-                                       FontWeight="SemiBold" HorizontalAlignment="Left" Margin="-12,0,0,0" />
-                            <TextBlock Grid.Column="4" Text="90°C" Foreground="#A1A1AA" FontSize="10.5"
-                                       FontWeight="SemiBold" HorizontalAlignment="Left" Margin="-12,0,0,0" />
-                            <TextBlock Grid.Column="4" Text="100°C" Foreground="#FF4500" FontSize="10.5"
-                                       FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,-15,0" />
+                            <Path Grid.Column="0" Data="M12,2L1,21H23L12,2Z M11,10V14H13V10H11M11,16V18H13V16H11Z"
+                                  Fill="#FF453A" Stretch="Uniform" Width="14" Height="14" Margin="0,1,8,0" VerticalAlignment="Top" />
+                            <TextBlock x:Name="WarningTempTextBlock" Grid.Column="1" Text="Warning: Using a Quiet curve on Performance mode may cause overheating."
+                                       Foreground="#FF453A" FontFamily="{StaticResource MonoFontFamily}"
+                                       FontSize="10" FontWeight="Bold" TextWrapping="Wrap" VerticalAlignment="Center" />
                         </Grid>
-                    </Grid>
-                </Border>
+                    </controls:ChamferCard>
 
-                <!-- OPTIONS DOCK -->
-                <Grid Grid.Row="2" Margin="0,0,0,25">
-                    <StackPanel Orientation="Horizontal" HorizontalAlignment="Left" VerticalAlignment="Center">
-                        <CheckBox x:Name="TogSnapToGrid" Content="Snap to Grid (5% / 5°C)" IsChecked="True"
-                                  Style="{StaticResource SimpleCheckBoxStyle}"
-                                  ToolTip="Snaps waypoints to 5°C temperature and 5% fan speed intervals while dragging." />
-                        
-                        <CheckBox x:Name="TogUseCustomPreset" Content="Use custom preset" Style="{StaticResource SimpleCheckBoxStyle}" Checked="TogUseCustomPreset_Checked" Unchecked="TogUseCustomPreset_Unchecked" Margin="25,0,0,0" ToolTip="Override power profile curves and use a distinct fan preset."/>
-                        
-                        <!-- Preset Selection Mode -->
-                        <StackPanel x:Name="PresetViewPanel" Orientation="Horizontal">
-                            <ComboBox x:Name="PresetCombo" Width="110" Height="26" SelectionChanged="PresetCombo_SelectionChanged" 
-                                      Style="{StaticResource DarkComboBoxStyle}" FontSize="12" FontWeight="SemiBold"
-                                      VerticalContentAlignment="Center" Margin="10,0,0,0" ToolTip="Select the custom fan preset." MaxDropDownHeight="160">
-                            </ComboBox>
-                            <Button x:Name="AddPresetBtn" Content="+" Width="24" Height="24" Margin="4,0,0,0" Click="AddPresetBtn_Click" 
-                                    Style="{StaticResource IconButtonStyle}" ToolTip="Create a new custom preset"/>
-                            <Button x:Name="RenPresetBtn" Content="✎" Width="24" Height="24" Margin="4,0,0,0" Click="RenPresetBtn_Click" 
-                                    Style="{StaticResource IconButtonStyle}" ToolTip="Rename current preset"/>
-                            <Button x:Name="DelPresetBtn" Content="-" Width="24" Height="24" Margin="4,0,0,0" Click="DelPresetBtn_Click" 
-                                    Style="{StaticResource IconButtonStyle}" ToolTip="Delete current preset"/>
-                        </StackPanel>
+                </StackPanel>
+            </Grid>
 
-                        <!-- Preset Rename Mode -->
-                        <StackPanel x:Name="PresetRenamePanel" Orientation="Horizontal" Visibility="Collapsed">
-                            <TextBox x:Name="RenameTextBox" Width="110" Height="26" Background="#151518" Foreground="White" BorderBrush="#FF4500" BorderThickness="1" 
-                                     VerticalContentAlignment="Center" Padding="4,0" FontSize="12" FontWeight="SemiBold" Margin="10,0,0,0"
-                                     KeyDown="RenameTextBox_KeyDown"/>
-                            <Button x:Name="ConfirmRenameBtn" Content="✔" Width="24" Height="24" Margin="4,0,0,0" Click="ConfirmRenameBtn_Click" 
-                                    Style="{StaticResource IconButtonStyle}" Foreground="#34C759" ToolTip="Save new name"/>
-                            <Button x:Name="CancelRenameBtn" Content="✕" Width="24" Height="24" Margin="4,0,0,0" Click="CancelRenameBtn_Click" 
-                                    Style="{StaticResource IconButtonStyle}" Foreground="#FF453A" ToolTip="Cancel"/>
-                        </StackPanel>
+            <!-- 3. Bottom Action Bar (Steel950 with 1px top border) -->
+            <Border Grid.Row="2" Background="{StaticResource Steel950Brush}"
+                    BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,1,0,0" Padding="12,10">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+
+                    <TextBlock Grid.Column="0" Text="DRAG NODES TO RESHAPE THE CURVE"
+                               Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}"
+                               FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,12,0" />
+
+                    <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
+                        <controls:ChamferButton x:Name="ResetBtn" Variant="Secondary" Content="RESET" Width="110" Height="36"
+                                                FontSize="11" Margin="0,0,10,0" Click="ResetBtn_Click"
+                                                ToolTip="Restore the active curve to stock defaults." />
+                        <controls:ChamferButton x:Name="SaveBtn" Variant="Primary" Content="SAVE &amp; APPLY" Width="150" Height="36"
+                                                FontSize="11" Click="SaveBtn_Click" />
                     </StackPanel>
                 </Grid>
-
-                <Border Grid.Row="3" BorderBrush="#1E1E22" BorderThickness="0,1,0,0" Padding="0,15,0,0">
-                    <Grid>
-                        <StackPanel Orientation="Vertical" VerticalAlignment="Center" HorizontalAlignment="Left">
-                            <TextBlock Text="Tip: Drag any waypoint circle to adjust temperature thresholds."
-                                       Foreground="#A1A1AA" FontSize="11.5" />
-                            <TextBlock x:Name="WarningTempTextBlock" Text="Warning: Using a Quiet curve on Performance mode may cause overheating." 
-                                       Foreground="#FF453A" FontSize="11.5" FontWeight="SemiBold" Visibility="Collapsed" Margin="0,3,0,0"/>
-                        </StackPanel>
-
-                        <StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-                            <Button Content="Reset to Defaults" Click="ResetBtn_Click" Foreground="#FF4500"
-                                    Cursor="Hand" Margin="0,0,15,0"
-                                    ToolTip="Reverts CPU and GPU waypoints to default acoustic curves.">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border x:Name="Bg" Background="Transparent" CornerRadius="6" Padding="10,6">
-                                            <TextBlock Text="{TemplateBinding Content}"
-                                                       Foreground="{TemplateBinding Foreground}" FontSize="12"
-                                                       FontWeight="Bold" VerticalAlignment="Center" />
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="Bg" Property="Background" Value="#1E1E22" />
-                                                <Setter Property="Foreground" Value="#FF4500" />
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
-
-                            <Button Content="SAVE &amp; APPLY" Click="SaveBtn_Click" Foreground="#ffffff" FontSize="12"
-                                    FontWeight="Heavy" Height="36" Width="140" Cursor="Hand"
-                                    ToolTip="Saves the curve waypoints to the registry and applies the active fan curve immediately.">
-                                <Button.Template>
-                                    <ControlTemplate TargetType="Button">
-                                        <Border Background="#FF4500" CornerRadius="6">
-                                            <Grid>
-                                                <!-- Subtle 15% white overlay for a premium hover effect -->
-                                                <Border x:Name="HoverOverlay" Background="White" Opacity="0"
-                                                        CornerRadius="6" />
-                                                <ContentPresenter HorizontalAlignment="Center"
-                                                                  VerticalAlignment="Center" />
-                                            </Grid>
-                                        </Border>
-                                        <ControlTemplate.Triggers>
-                                            <Trigger Property="IsMouseOver" Value="True">
-                                                <Setter TargetName="HoverOverlay" Property="Opacity" Value="0.15" />
-                                            </Trigger>
-                                        </ControlTemplate.Triggers>
-                                    </ControlTemplate>
-                                </Button.Template>
-                            </Button>
-                        </StackPanel>
-                    </Grid>
-                </Border>
-            </Grid>
-        </Border>
+            </Border>
+        </Grid>
     </Grid>
 </Window>
-
-
-

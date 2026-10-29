@@ -764,37 +764,11 @@
 	</Style>
 
 	<!-- ===================================================================== -->
-	<!-- 10. TOOLTIP STYLE (Zero Radius)                                       -->
+	<!-- 10. TOOLTIP STYLE (shared chamfered shell, merged from TooltipStyles) -->
 	<!-- ===================================================================== -->
-	<Style TargetType="ToolTip">
-		<Setter Property="Background" Value="{StaticResource Steel950Brush}" />
-		<Setter Property="Foreground" Value="{StaticResource Steel100Brush}" />
-		<Setter Property="BorderBrush" Value="{StaticResource Steel600Brush}" />
-		<Setter Property="BorderThickness" Value="1" />
-		<Setter Property="FontSize" Value="12" />
-		<Setter Property="FontFamily" Value="{StaticResource SansFontFamily}" />
-		<Setter Property="Padding" Value="9,6" />
-		<Setter Property="HasDropShadow" Value="True" />
-		<Setter Property="ToolTipService.InitialShowDelay" Value="400" />
-		<Setter Property="ToolTipService.BetweenShowDelay" Value="100" />
-		<Setter Property="ToolTipService.ShowDuration" Value="7000" />
-		<Setter Property="TextBlock.TextWrapping" Value="Wrap" />
-		<Setter Property="Template">
-			<Setter.Value>
-				<ControlTemplate TargetType="ToolTip">
-					<Border Background="{TemplateBinding Background}"
-					        BorderBrush="{TemplateBinding BorderBrush}"
-					        BorderThickness="{TemplateBinding BorderThickness}"
-					        CornerRadius="0"
-					        Padding="{TemplateBinding Padding}"
-					        SnapsToDevicePixels="True"
-					        MaxWidth="280">
-						<ContentPresenter />
-					</Border>
-				</ControlTemplate>
-			</Setter.Value>
-		</Setter>
-	</Style>
+	<ResourceDictionary.MergedDictionaries>
+		<ResourceDictionary Source="TooltipStyles.xaml" />
+	</ResourceDictionary.MergedDictionaries>
 
 </ResourceDictionary>
 

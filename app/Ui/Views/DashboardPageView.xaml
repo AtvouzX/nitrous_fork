@@ -21,8 +21,7 @@
 			<!-- CPU Graph & Telemetry -->
 			<controls:ChamferCard Grid.Column="0" Background="{StaticResource Steel900Brush}"
 			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
-			                      ChamferSize="6" Padding="12,10,12,10"
-			                      ToolTip="Real-time CPU temperature, usage, and fan speed read directly from the Acer Embedded Controller (EC) and Windows.">
+			                      ChamferSize="6" Padding="12,10,12,10">
 				<Grid>
 					<Grid.RowDefinitions>
 						<RowDefinition Height="Auto" />
@@ -80,8 +79,7 @@
 			<!-- GPU Graph & Telemetry -->
 			<controls:ChamferCard Grid.Column="2" Background="{StaticResource Steel900Brush}"
 			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
-			                      ChamferSize="6" Padding="12,10,12,10"
-			                      ToolTip="Discrete GPU thermals and usage.">
+			                      ChamferSize="6" Padding="12,10,12,10">
 				<Grid>
 					<Grid.RowDefinitions>
 						<RowDefinition Height="Auto" />
@@ -147,8 +145,7 @@
 		<!-- POWER CARD (Ignite Steel/Ember Card with Chamfered Edges and Recessed Detent Rail) -->
 		<controls:ChamferCard Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource BorderCardBrush}"
 		                      BorderThickness="1"
-		                      ChamferSize="6" Padding="12,10,12,12" Margin="0,0,0,10"
-		                      ToolTip="Hardware power profile: controls Acer EC thermal profiles, Windows processor states, wattage limits, and fan acoustics.">
+		                      ChamferSize="6" Padding="12,10,12,12" Margin="0,0,0,10">
 			<StackPanel>
 				<!-- Card Header with Bottom Divider -->
 				<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
@@ -166,20 +163,20 @@
 						<RadioButton x:Name="BtnPowerQuiet" TabIndex="0" GroupName="Power" Uid="Quiet"
 						             Content="QUIET" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}"
 						             CommandParameter="Quiet"
-						             ToolTip="Quiet Profile: Lowers wattage limits and fan speeds. Windows processor state capped at 85% on AC (80% on DC) with CPU boost disabled for silent, cool operation." />
+						             ToolTip="Lowest noise. Processor capped at 85% on AC (80% on battery), CPU boost off." />
 						<RadioButton x:Name="BtnPowerBal" TabIndex="1" GroupName="Power" Uid="Balanced"
 						             Content="BALANCED" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}"
 						             CommandParameter="Balanced"
-						             ToolTip="Balanced Profile: Balanced fan acoustics and standard performance. Windows processor state set to 99% on AC (95% on DC) with CPU boost disabled to eliminate temperature spikes." />
+						             ToolTip="Everyday balance. Processor capped at 99% on AC (95% on battery), CPU boost off to prevent temperature spikes." />
 						<RadioButton x:Name="BtnPowerPerf" TabIndex="1" GroupName="Power" Uid="Performance"
 						             Content="PERFORMANCE" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}"
 						             CommandParameter="Performance"
-						             ToolTip="Performance Profile: Increases wattage limits and fan speeds. Windows processor state set to 100% on AC with aggressive CPU boost enabled (99% on DC, boost disabled)." />
+						             ToolTip="More power. Processor at 100% on AC with CPU boost on (99% on battery, boost off)." />
 						<RadioButton x:Name="BtnPowerTurbo" TabIndex="1" GroupName="Power" Uid="Turbo"
 						             Content="TURBO" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}"
 						             CommandParameter="Turbo"
 						             Visibility="{Binding IsTurboSupported, Converter={StaticResource BoolToVis}}"
-						             ToolTip="Turbo Profile: Maximum cooling and maximum wattage. Windows processor state locked at 100% min/max on AC with aggressive CPU boost enabled." />
+						             ToolTip="Maximum power. Processor locked at 100% min/max on AC with CPU boost on, fans at full cooling." />
 					</UniformGrid>
 				</controls:ChamferCard>
 			</StackPanel>
@@ -196,8 +193,7 @@
 			<!-- REFRESH CARD (Ignite Steel/Ember Card with Chamfered Edges and Vertical Step Stack) -->
 			<controls:ChamferCard Grid.Column="0" Background="{StaticResource Steel950Brush}"
 			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
-			                      ChamferSize="6" Padding="12,10,12,12"
-			                      ToolTip="Display refresh rate controls: switch between automatic AC/DC rate switching, fixed 60Hz battery saver, or maximum hardware panel refresh rate.">
+			                      ChamferSize="6" Padding="12,10,12,12">
 				<StackPanel>
 					<!-- Card Header with Active Badge and Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
@@ -220,17 +216,17 @@
 							             Content="AUTO" Tag="{Binding AutoRefreshSubtext}"
 							             Style="{StaticResource VerticalDetentButtonStyle}" Command="{Binding SetRefreshCommand}"
 							             CommandParameter="Auto"
-							             ToolTip="Automatically switches to maximum refresh rate on AC power and 60Hz on battery to save power." />
+							             ToolTip="Max refresh rate on AC, 60Hz on battery to save power." />
 							<RadioButton x:Name="BtnRefresh60" TabIndex="1" GroupName="Refresh" Uid="Hz60"
 							             Content="60HZ" Tag="Eco"
 							             Style="{StaticResource VerticalDetentButtonStyle}" Command="{Binding SetRefreshCommand}"
 							             CommandParameter="Hz60"
-							             ToolTip="Locks display to 60Hz to reduce display panel power consumption." />
+							             ToolTip="Lock the panel at 60Hz to reduce power draw." />
 							<RadioButton x:Name="BtnRefreshMax" TabIndex="1" GroupName="Refresh" Uid="MaxHz"
 							             Content="{Binding MaxRefreshText}" Tag="Max"
 							             Style="{StaticResource VerticalDetentButtonStyle}" Command="{Binding SetRefreshCommand}"
 							             CommandParameter="MaxHz"
-							             ToolTip="Forces maximum display refresh rate for fluid, low-latency visuals." />
+							             ToolTip="Lock the panel at its maximum refresh rate." />
 						</StackPanel>
 					</controls:ChamferCard>
 				</StackPanel>
@@ -239,8 +235,7 @@
 			<!-- FANS CARD (Ignite Steel/Ember Card with Dynamic Read/Write Views and Bottom Rail) -->
 			<controls:ChamferCard Grid.Column="2" Background="{StaticResource Steel950Brush}"
 			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
-			                      ChamferSize="6" Padding="12,10,12,12"
-			                      ToolTip="Hardware cooling fan controls: toggle factory EC automatic curve, maximum RPM, or custom fan speed and temperature curves.">
+			                      ChamferSize="6" Padding="12,10,12,12">
 				<StackPanel>
 					<!-- Card Header with Edit Curve Button and Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
@@ -255,10 +250,9 @@
 								              Style="{StaticResource SmallGhostToggleBtn}"
 								              Content="CURVE"
 								              Margin="0,0,4,0"
-								              ToolTip="Toggles active temperature-based fan curve control." />
+								              ToolTip="Switch manual fan control between fixed speeds and the temperature curve." />
 								<!-- EDIT CURVE Button -->
-								<Button x:Name="BtnEditCurve" Click="OpenCurveEditor_Click" Style="{StaticResource GhostBtn}" Padding="4,1"
-								        ToolTip="Opens the interactive fan curve editor.">
+								<Button x:Name="BtnEditCurve" Click="OpenCurveEditor_Click" Style="{StaticResource GhostBtn}" Padding="4,1">
 									<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 										<Path
 											Data="M10.325,4.317c.426-1.756 2.924-1.756 3.35,0a1.724,1.724 0 0,0 2.573,1.066c1.543-.94 3.31.826 2.37,2.37a1.724,1.724 0 0,0 1.065,2.572c1.756.426 1.756,2.924 0,3.35a1.724,1.724 0 0,0-1.066,2.573c.94,1.543-.826,3.31-2.37,2.37a1.724,1.724 0 0,0-2.572,1.065c-.426,1.756-2.924,1.756-3.35,0a1.724,1.724 0 0,0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724,1.724 0 0,0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724,1.724 0 0,0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15,12a3,3 0 1,1 -6,0 3,3 0 0,1 6,0z"
@@ -364,16 +358,16 @@
 							<RadioButton x:Name="BtnFanAuto" TabIndex="0" GroupName="Fans" Uid="Auto"
 							             Content="AUTO" Style="{StaticResource CompactActionButtonStyle}" Command="{Binding SetFanCommand}"
 							             CommandParameter="Auto"
-							             ToolTip="Restores factory Acer Embedded Controller automatic fan management." />
+							             ToolTip="Return fans to factory EC automatic control." />
 							<RadioButton x:Name="BtnFanMax" TabIndex="1" GroupName="Fans" Uid="Max"
 							             Content="MAX" Style="{StaticResource CompactActionButtonStyle}" Command="{Binding SetFanCommand}"
 							             CommandParameter="Max"
-							             ToolTip="Forces all cooling fans to 100% maximum RPM." />
+							             ToolTip="Force both fans to 100% RPM." />
 							<RadioButton x:Name="BtnFanCustom" TabIndex="1" GroupName="Fans" Uid="Medium"
 							             Content="MANUAL" Style="{StaticResource CompactActionButtonStyle}"
 							             Command="{Binding SetFanCommand}"
 							             CommandParameter="Medium"
-							             ToolTip="Enables custom fan speed controls and waypoint temperature curves." />
+							             ToolTip="Set fan speeds manually or via a temperature curve." />
 						</UniformGrid>
 					</controls:ChamferCard>
 				</StackPanel>

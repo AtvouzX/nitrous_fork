@@ -13,6 +13,9 @@ using System.ComponentModel;
 
 using Point = System.Windows.Point;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
+using MouseButtonEventArgs = System.Windows.Input.MouseButtonEventArgs;
+using KeyEventArgs = System.Windows.Input.KeyEventArgs;
+using TextBox = System.Windows.Controls.TextBox;
 using Color = System.Windows.Media.Color;
 using ColorConverter = System.Windows.Media.ColorConverter;
 using Cursors = System.Windows.Input.Cursors;
@@ -69,8 +72,32 @@ public partial class FanCurveWindow : Window
 
         UpdateWarningText();
 
-        this.Loaded += (s, e) => RedrawGraph();
+        this.Loaded += (s, e) =>
+        {
+            UpdateChamferGeometry();
+            RedrawGraph();
+        };
+        this.SizeChanged += (s, e) => UpdateChamferGeometry();
         GraphCanvas.SizeChanged += (s, e) => RedrawGraph();
+        UpdateChamferGeometry();
+    }
+
+    public void UpdateChamferGeometry()
+    {
+        double w = ActualWidth > 0 ? ActualWidth : Width;
+        double h = ActualHeight > 0 ? ActualHeight : Height;
+        if (w <= 0 || double.IsNaN(w)) w = 880;
+        if (h <= 0 || double.IsNaN(h)) h = 660;
+
+        var shellGeom = ChamferGeometryHelper.CreateChamferPathGeometry(w, h, ChamferGeometryHelper.DefaultWindowChamfer);
+        WindowRoot.Clip = shellGeom;
+        WindowShellFrame.Data = shellGeom;
+
+        if (w > 2 && h > 2)
+        {
+            var innerGeom = ChamferGeometryHelper.CreateChamferPathGeometry(w - 2, h - 2, ChamferGeometryHelper.DefaultWindowChamfer - 0.4);
+            WindowContentGrid.Clip = innerGeom;
+        }
     }
 
     private void LoadPresets()
@@ -130,19 +157,19 @@ public partial class FanCurveWindow : Window
 
     private void UpdateWarningText()
     {
-        if (WarningTempTextBlock == null) return;
-        
+        if (WarningTempTextBlock == null || WarningBanner == null) return;
+
         string activeProfile = _viewModel.ActivePowerProfile.ToString();
         string preset = _editingPreset == "Auto" ? activeProfile : _editingPreset;
-        
+
         if (preset == "Quiet" && (activeProfile == "Performance" || activeProfile == "Turbo"))
         {
             WarningTempTextBlock.Text = $"Warning: Using a Quiet curve on {activeProfile} mode may cause overheating.";
-            WarningTempTextBlock.Visibility = Visibility.Visible;
+            WarningBanner.Visibility = Visibility.Visible;
         }
         else
         {
-            WarningTempTextBlock.Visibility = Visibility.Collapsed;
+            WarningBanner.Visibility = Visibility.Collapsed;
         }
     }
 
@@ -475,13 +502,13 @@ public partial class FanCurveWindow : Window
 
             pointCollection.Add(canvasPt);
 
-            // Create the outer stroke ring
+            // Create the outer stroke ring (Ignite Ember tokens)
             var outerRing = new Ellipse
             {
                 Width = 18,
                 Height = 18,
-                Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#0c1018")),
-                Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a855f7")),
+                Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#121215")),
+                Stroke = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#D94E1F")),
                 StrokeThickness = 2.5,
                 Cursor = Cursors.Hand,
                 Tag = i
@@ -492,7 +519,7 @@ public partial class FanCurveWindow : Window
             {
                 Width = 6,
                 Height = 6,
-                Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#a855f7")),
+                Fill = new SolidColorBrush((Color)ColorConverter.ConvertFromString("#E85D2A")),
                 IsHitTestVisible = false // Let the outer ring handle clicks
             };
 

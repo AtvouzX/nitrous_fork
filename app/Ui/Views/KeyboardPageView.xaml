@@ -16,8 +16,7 @@
 			<!-- GLOBAL SHORTCUTS CARD -->
 			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}" 
 			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
-			                      Margin="0,0,0,10" Padding="12,10,12,12"
-			                      ToolTip="Configure global keyboard hotkeys for power mode switching and dashboard access.">
+			                      Margin="0,0,0,10" Padding="12,10,12,12">
 				<StackPanel>
 					<!-- Card Header with Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,12">
@@ -36,18 +35,18 @@
 								<TextBox x:Name="TxtHkCycle" Style="{StaticResource HotkeyTextBoxStyle}" Width="130" Height="28"
 								         VerticalContentAlignment="Center" HorizontalAlignment="Right" IsReadOnly="True" TextAlignment="Center"
 								         PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_CyclePower"
-								         ToolTip="Click and press any key combination to bind. Press ESC while focused to clear." />
-							</Grid>
+			         ToolTip="Click, then press the key combination to bind. ESC clears." />
+				</Grid>
 
-							<Border Height="1" Background="{StaticResource Steel800Brush}" Margin="0,0,0,10" />
+				<Border Height="1" Background="{StaticResource Steel800Brush}" Margin="0,0,0,10" />
 
-							<!-- Shortcut Row 2: OPEN DASHBOARD -->
-							<Grid>
-								<TextBlock Text="OPEN DASHBOARD" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
-								<TextBox x:Name="TxtHkDash" Style="{StaticResource HotkeyTextBoxStyle}" Width="130" Height="28"
-								         VerticalContentAlignment="Center" HorizontalAlignment="Right" IsReadOnly="True" TextAlignment="Center"
-								         PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_Dashboard"
-								         ToolTip="Click and press any key combination to bind. Press ESC while focused to clear." />
+				<!-- Shortcut Row 2: OPEN DASHBOARD -->
+				<Grid>
+					<TextBlock Text="OPEN DASHBOARD" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+					<TextBox x:Name="TxtHkDash" Style="{StaticResource HotkeyTextBoxStyle}" Width="130" Height="28"
+					         VerticalContentAlignment="Center" HorizontalAlignment="Right" IsReadOnly="True" TextAlignment="Center"
+					         PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_Dashboard"
+					         ToolTip="Click, then press the key combination to bind. ESC clears." />
 							</Grid>
 						</StackPanel>
 					</controls:ChamferCard>

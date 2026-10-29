@@ -490,16 +490,21 @@ public class DashboardAndTrayUiTests
     }
 
     [Fact]
-    public void Dashboard_InteractiveControls_AdhereToMandatoryTooltipRule()
+    public void Dashboard_InteractiveControls_TooltipPolicy_IsMinimalAndDescriptive()
     {
         RunInSta(() =>
         {
             var window = new NitrousDashboard();
             try
             {
-                // Fork Rule 9: Every interactive control (Button, RadioButton, CheckBox, Slider)
-                // must include a descriptive, dark-themed ToolTip.
-                var missingTooltips = new List<string>();
+                window.Show();
+                window.ApplyTemplate();
+
+                // Updated tooltip policy: tooltips are a fallback for ambiguity, not decoration.
+                // 1. Any tooltip that exists must be a meaningful, non-empty string.
+                // 2. Interaction points whose behavior is not visible on screen must keep a tooltip
+                //    (clamped ranges, AC/DC differences, tray side effects, hotkey capture).
+                var violations = new List<string>();
 
                 void CheckElement(DependencyObject depObj)
                 {
@@ -508,25 +513,20 @@ public class DashboardAndTrayUiTests
                     {
                         var child = VisualTreeHelper.GetChild(depObj, i);
 
-                        if (child is Button or RadioButton or CheckBox or Slider)
+                        if (child is FrameworkElement fe)
                         {
-                            var fe = (FrameworkElement)child;
                             object? tooltip = fe.ToolTip ?? ToolTipService.GetToolTip(fe);
+                            string name = string.IsNullOrEmpty(fe.Name) ? fe.GetType().Name : fe.Name;
 
-                            bool hasValidTooltip = tooltip switch
+                            switch (tooltip)
                             {
-                                string s => !string.IsNullOrWhiteSpace(s),
-                                System.Windows.Controls.ToolTip tt => tt.Content != null && !string.IsNullOrWhiteSpace(tt.Content.ToString()),
-                                _ => tooltip != null
-                            };
-
-                            // Filter out internal scrollbar/slider subcomponents
-                            string name = fe.Name;
-                            if (string.IsNullOrEmpty(name)) name = fe.GetType().Name;
-
-                            if (!hasValidTooltip && !name.StartsWith("PART_") && !name.Contains("Thumb"))
-                            {
-                                missingTooltips.Add($"{fe.GetType().Name} (Name: '{name}')");
+                                case string s when string.IsNullOrWhiteSpace(s):
+                                    violations.Add($"{fe.GetType().Name} (Name: '{name}') has an empty tooltip string.");
+                                    break;
+                                case System.Windows.Controls.ToolTip tt when tt.Content == null
+                                    || string.IsNullOrWhiteSpace(tt.Content.ToString()):
+                                    violations.Add($"{fe.GetType().Name} (Name: '{name}') has an empty ToolTip element.");
+                                    break;
                             }
                         }
 
@@ -534,21 +534,80 @@ public class DashboardAndTrayUiTests
                     }
                 }
 
-                // Apply template to ensure visual tree is generated
-                window.ApplyTemplate();
                 CheckElement(window);
 
-                // Note: The root elements directly defined in XAML have tooltips; verify none are missing
                 Assert.True(
-                    missingTooltips.Count == 0,
-                    $"Found {missingTooltips.Count} interactive controls missing tooltips:\n" + string.Join("\n", missingTooltips)
-                );
+                    violations.Count == 0,
+                    $"Found {violations.Count} tooltip policy violations:\n" + string.Join("\n", violations));
+
+                // Non-obvious interaction points that must retain descriptive tooltips.
+                var mandatory = new (string Label, object? Tooltip)[]
+                {
+                    ("GPU core slider (clamped range)", window.GpuPage.GpuCoreSlider.ToolTip),
+                    ("GPU memory slider (clamped range)", window.GpuPage.GpuMemorySlider.ToolTip),
+                    ("Power QUIET (AC/DC caps)", window.DashPage.BtnPowerQuiet.ToolTip),
+                    ("Power BALANCED (AC/DC caps)", window.DashPage.BtnPowerBal.ToolTip),
+                    ("Power PERFORMANCE (AC/DC boost difference)", window.DashPage.BtnPowerPerf.ToolTip),
+                    ("Power TURBO (AC-only full boost)", window.DashPage.BtnPowerTurbo.ToolTip),
+                    ("Refresh AUTO (AC/DC rates)", window.DashPage.BtnRefreshAuto.ToolTip),
+                    ("Fan MANUAL (curve behavior)", window.DashPage.BtnFanCustom.ToolTip),
+                    ("Fan CURVE toggle", window.DashPage.BtnCurveToggle.ToolTip),
+                };
+
+                foreach (var (label, tooltip) in mandatory)
+                {
+                    Assert.False(string.IsNullOrWhiteSpace(tooltip?.ToString()), $"Missing mandatory tooltip: {label}");
+                }
+
+                var closeButton = FindVisualChildByName<Button>(window, "CloseWindowButton") ?? FindCloseButtonByTooltip(window);
+                Assert.True(closeButton != null && !string.IsNullOrWhiteSpace(ToolTipService.GetToolTip(closeButton)?.ToString()),
+                    "Close button must explain the tray side effect.");
             }
             finally
             {
                 window.Close();
             }
         });
+    }
+
+    private static T? FindVisualChildByName<T>(DependencyObject root, string name) where T : FrameworkElement
+    {
+        int count = VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is T typed && typed.Name == name)
+            {
+                return typed;
+            }
+
+            var result = FindVisualChildByName<T>(child, name);
+            if (result != null)
+            {
+                return result;
+            }
+        }
+        return null;
+    }
+
+    private static Button? FindCloseButtonByTooltip(DependencyObject root)
+    {
+        int count = VisualTreeHelper.GetChildrenCount(root);
+        for (int i = 0; i < count; i++)
+        {
+            var child = VisualTreeHelper.GetChild(root, i);
+            if (child is Button b && ToolTipService.GetToolTip(b) is string s && s.Contains("tray", StringComparison.OrdinalIgnoreCase))
+            {
+                return b;
+            }
+
+            var result = FindCloseButtonByTooltip(child);
+            if (result != null)
+            {
+                return result;
+            }
+        }
+        return null;
     }
 
     [Fact]
@@ -1434,6 +1493,56 @@ public class DashboardAndTrayUiTests
                 window.DashPage.Measure(new System.Windows.Size(375, 580));
                 window.DashPage.Arrange(new System.Windows.Rect(0, 0, 375, 580));
                 window.DashPage.UpdateLayout();
+            }
+            finally
+            {
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
+    public void ToolTip_Style_IsChamferedAndWrapsLongText()
+    {
+        RunInSta(() =>
+        {
+            var window = new NitrousDashboard();
+            try
+            {
+                var style = window.TryFindResource(typeof(System.Windows.Controls.ToolTip)) as Style;
+                Assert.NotNull(style);
+
+                // Width cap so long text folds instead of clipping off-screen.
+                var maxWidthSetter = style.Setters.OfType<Setter>().FirstOrDefault(s => s.Property == FrameworkElement.MaxWidthProperty);
+                Assert.NotNull(maxWidthSetter);
+                Assert.Equal(320.0, maxWidthSetter.Value);
+
+                // Render a tooltip with long content: it must wrap and produce the chamfered Path frame.
+                var tt = new System.Windows.Controls.ToolTip
+                {
+                    Content = "Cap charging at 80% to extend battery lifespan. " +
+                              "This is deliberately long so the text has to wrap across multiple lines inside the shell.",
+                    PlacementTarget = window.DashPage.BtnFanCustom,
+                    Style = style
+                };
+                tt.IsOpen = true;
+                tt.Measure(new System.Windows.Size(320, 400));
+                tt.Arrange(new System.Windows.Rect(0, 0, 320, 400));
+                tt.UpdateLayout();
+
+                var path = FindVisualChildByName<System.Windows.Shapes.Path>(tt, "Frame");
+                Assert.NotNull(path);
+                var geometry = Assert.IsType<System.Windows.Media.PathGeometry>(path.Data);
+                Assert.True(geometry.Figures.Count > 0 && geometry.Figures[0].Segments.Count == 5,
+                    "Chamfered tooltip frame must be the 6-point chamfer polygon (5 line segments).");
+
+                var textBlock = FindVisualChildByName<TextBlock>(tt, "");
+                if (textBlock != null && textBlock.Text.Contains("deliberately long", StringComparison.Ordinal))
+                {
+                    Assert.Equal(TextWrapping.Wrap, textBlock.TextWrapping);
+                }
+
+                tt.IsOpen = false;
             }
             finally
             {

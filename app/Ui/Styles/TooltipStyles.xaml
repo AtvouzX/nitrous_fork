@@ -1,0 +1,65 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:helpers="clr-namespace:Nitrous.Helpers">
+
+	<!-- ===================================================================== -->
+	<!-- SHARED CHAMFERED TOOLTIP SHELL                                        -->
+	<!-- Matches the Nitrous Ignite component aesthetic: 6px cut at Top-Right  -->
+	<!-- and Bottom-Left, sharp Top-Left / Bottom-Right. Self-contained so it  -->
+	<!-- can be merged by DashboardStyles.xaml and FanCurveWindow.xaml alike.  -->
+	<!-- ===================================================================== -->
+
+	<!-- Palette and type mirror the Steel950/Steel600/Steel100 tokens and SansFontFamily in DashboardStyles.xaml -->
+	<SolidColorBrush x:Key="TooltipBackgroundBrush" Color="#08080A" />
+	<SolidColorBrush x:Key="TooltipBorderBrush" Color="#36363E" />
+	<SolidColorBrush x:Key="TooltipForegroundBrush" Color="#EDEDEF" />
+
+	<helpers:ChamferGeometryConverter x:Key="ChamferGeometryConverter" />
+
+	<Style TargetType="ToolTip">
+		<Setter Property="Background" Value="{StaticResource TooltipBackgroundBrush}" />
+		<Setter Property="Foreground" Value="{StaticResource TooltipForegroundBrush}" />
+		<Setter Property="BorderBrush" Value="{StaticResource TooltipBorderBrush}" />
+		<Setter Property="FontSize" Value="11.5" />
+		<Setter Property="FontFamily" Value="Inter, Segoe UI Variable Text, Segoe UI, Arial, sans-serif" />
+		<Setter Property="Padding" Value="10,7" />
+		<!-- Width cap + wrap: long tooltip text must wrap, never clip -->
+		<Setter Property="MaxWidth" Value="320" />
+		<Setter Property="ToolTipService.InitialShowDelay" Value="500" />
+		<Setter Property="ToolTipService.BetweenShowDelay" Value="200" />
+		<Setter Property="ToolTipService.ShowDuration" Value="10000" />
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ToolTip">
+					<Grid>
+						<!-- Chamfered frame computed from the rendered tooltip size; the Canvas host keeps the
+						     Path out of layout measurement so the geometry can never feed back into sizing. -->
+						<Canvas IsHitTestVisible="False">
+							<Path x:Name="Frame"
+							      Fill="{TemplateBinding Background}"
+							      Stroke="{TemplateBinding BorderBrush}"
+							      StrokeThickness="1"
+							      SnapsToDevicePixels="True">
+								<Path.Data>
+									<MultiBinding Converter="{StaticResource ChamferGeometryConverter}" ConverterParameter="6;0.5">
+										<Binding Path="ActualWidth" RelativeSource="{RelativeSource TemplatedParent}" />
+										<Binding Path="ActualHeight" RelativeSource="{RelativeSource TemplatedParent}" />
+									</MultiBinding>
+								</Path.Data>
+							</Path>
+						</Canvas>
+						<ContentPresenter Margin="{TemplateBinding Padding}">
+							<ContentPresenter.Resources>
+								<!-- String content becomes an auto-generated TextBlock; the implicit style
+								     forces wrapping so long text folds instead of clipping. -->
+								<Style TargetType="TextBlock">
+									<Setter Property="TextWrapping" Value="Wrap" />
+								</Style>
+							</ContentPresenter.Resources>
+						</ContentPresenter>
+					</Grid>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
+	</Style>
+</ResourceDictionary>

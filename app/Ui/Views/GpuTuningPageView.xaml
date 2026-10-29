@@ -16,8 +16,7 @@
 			<!-- 1. GPU TELEMETRY STATS CARD -->
 			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}" 
 			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1" 
-			                      Margin="0,0,0,10" Padding="12,10,12,12"
-			                      ToolTip="Live NVIDIA GPU telemetry via NVML. Statistics update while dashboard is active.">
+			                      Margin="0,0,0,10" Padding="12,10,12,12">
 				<StackPanel>
 					<!-- Card Header with Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
@@ -39,9 +38,8 @@
 						</Grid.ColumnDefinitions>
 						<Path Grid.Column="0" Fill="{StaticResource Ember500Brush}" Stretch="Uniform" Width="12" Height="12" Margin="0,0,8,0" VerticalAlignment="Center"
 						      Data="M22,9V7H20V5A2,2 0 0,0 18,3H4A2,2 0 0,0 2,5V19A2,2 0 0,0 4,21H18A2,2 0 0,0 20,19V17H22V15H20V13H22V11H20V9H22M18,19H4V5H18V19M6,13H11V17H6V13M12,7H16V10H12V7M6,7H11V12H6V7M12,11H16V17H12V11Z" />
-						<TextBlock Grid.Column="1" Text="{Binding GpuNameText}" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="12" FontWeight="Bold"
-						           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap"
-						           ToolTip="Detected discrete NVIDIA graphics processor." />
+					<TextBlock Grid.Column="1" Text="{Binding GpuNameText}" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="12" FontWeight="Bold"
+					           VerticalAlignment="Center" TextTrimming="CharacterEllipsis" TextWrapping="NoWrap" />
 					</Grid>
 
 					<!-- 2-Column Chamfered Recessed Metrics Well -->
@@ -101,8 +99,7 @@
 			<!-- 2. CLOCK OFFSETS CARD -->
 			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}" 
 			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1" 
-			                      Margin="0,0,0,10" Padding="12,10,12,12"
-			                      ToolTip="Hardware discrete GPU frequency tuning via NVML and NvAPI.">
+			                      Margin="0,0,0,10" Padding="12,10,12,12">
 				<StackPanel>
 					<!-- Card Header with Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,12">
@@ -122,7 +119,7 @@
 					<Slider x:Name="GpuCoreSlider" Style="{StaticResource ModernSliderStyle}" Minimum="-200" Maximum="200"
 					        Value="{Binding GpuCoreOffset, UpdateSourceTrigger=PropertyChanged}" IsSnapToTickEnabled="True"
 					        TickFrequency="5" Margin="0,0,0,14"
-					        ToolTip="Applies a frequency offset (-200 MHz to +200 MHz) to discrete GPU core clocks via NVML." />
+					        ToolTip="GPU core clock offset, clamped to -200/+200 MHz." />
 
 					<!-- Memory Clock Offset -->
 					<Grid Margin="0,0,0,4">
@@ -135,7 +132,7 @@
 					<Slider x:Name="GpuMemorySlider" Style="{StaticResource ModernSliderStyle}" Minimum="-500" Maximum="500"
 					        Value="{Binding GpuMemoryOffset, UpdateSourceTrigger=PropertyChanged}" IsSnapToTickEnabled="True"
 					        TickFrequency="10" Margin="0,0,0,4"
-					        ToolTip="Applies a frequency offset (-500 MHz to +500 MHz) to discrete GPU video memory (VRAM)." />
+					        ToolTip="VRAM clock offset, clamped to -500/+500 MHz." />
 				</StackPanel>
 			</controls:ChamferCard>
 
@@ -148,22 +145,20 @@
 				</Grid.ColumnDefinitions>
 
 				<!-- Secondary Action: RESET -->
-				<controls:ChamferButton Grid.Column="0" Variant="Secondary" Content="RESET" 
-				                        Command="{Binding ResetGpuClocksCommand}" Height="36" FontSize="11"
-				                        ToolTip="Reverts GPU core and memory clock offsets back to stock factory settings (0 MHz)." />
+			<controls:ChamferButton Grid.Column="0" Variant="Secondary" Content="RESET" 
+			                        Command="{Binding ResetGpuClocksCommand}" Height="36" FontSize="11"
+			                        ToolTip="Reset both clock offsets to stock (0 MHz)." />
 
-				<!-- Primary Action: APPLY -->
-				<controls:ChamferButton Grid.Column="2" Variant="Primary" Content="{Binding ApplyBtnText}" 
-				                        Command="{Binding ApplyGpuClocksCommand}" Background="{Binding ApplyBtnColor}"
-				                        Height="36" FontSize="11"
-				                        ToolTip="Commits the selected core and memory clock offsets to the discrete GPU." />
+			<!-- Primary Action: APPLY -->
+			<controls:ChamferButton Grid.Column="2" Variant="Primary" Content="{Binding ApplyBtnText}" 
+			                        Command="{Binding ApplyGpuClocksCommand}" Background="{Binding ApplyBtnColor}"
+			                        Height="36" FontSize="11" />
 			</Grid>
 
 			<!-- 4. GPU ALERT & NOTIFICATION BANNER -->
 			<controls:ChamferCard ChamferSize="4" Visibility="{Binding GpuAlertVisibility}"
 			                      Background="{Binding GpuAlertBackground}" BorderBrush="{Binding GpuAlertBorder}" BorderThickness="1"
-			                      Padding="10,8" Margin="0,0,0,10"
-			                      ToolTip="Hardware discrete GPU status or tuning warning notification.">
+			                      Padding="10,8" Margin="0,0,0,10">
 				<Grid>
 					<Grid.ColumnDefinitions>
 						<ColumnDefinition Width="Auto" />
@@ -184,10 +179,9 @@
 					</StackPanel>
 
 					<!-- Dismiss ChamferButton -->
-					<controls:ChamferButton Grid.Column="2" Variant="Secondary" Content="DISMISS"
-					                        Command="{Binding DismissGpuAlertCommand}" Height="26" FontSize="9"
-					                        Padding="10,0" Margin="8,0,0,0" VerticalAlignment="Center"
-					                        ToolTip="Dismiss this hardware tuning notification." />
+				<controls:ChamferButton Grid.Column="2" Variant="Secondary" Content="DISMISS"
+				                        Command="{Binding DismissGpuAlertCommand}" Height="26" FontSize="9"
+				                        Padding="10,0" Margin="8,0,0,0" VerticalAlignment="Center" />
 				</Grid>
 			</controls:ChamferCard>
 		</StackPanel>

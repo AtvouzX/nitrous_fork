@@ -87,7 +87,7 @@
 					              Margin="0,0,4,0"
 					              Width="24" Height="24"
 					              FocusVisualStyle="{x:Null}"
-					              ToolTip="Keeps the Nitrous window floating above all other applications."
+					              ToolTip="Keep this window on top of all other apps."
 					              IsChecked="{Binding Topmost, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}">
 						<ToggleButton.Template>
 							<ControlTemplate TargetType="ToggleButton">
@@ -123,7 +123,7 @@
 					<Button Width="24" Height="24"
 					        Click="CloseBtn_Click"
 					        Cursor="Hand"
-					        ToolTip="Close dashboard window. Nitrous continues running silently in the system tray.">
+					        ToolTip="Close the window — Nitrous keeps running in the tray.">
 						<Button.Template>
 							<ControlTemplate TargetType="Button">
 								<Border x:Name="CloseBorder"
@@ -182,7 +182,7 @@
 					<!-- Dash Nav -->
 					<Button x:Name="NavDashBtn" Style="{StaticResource NavButtonStyle}" Grid.Column="0"
 					        Click="NavDashBtn_Click"
-					        ToolTip="Dashboard: Power modes, fan controls, and thermal monitors.">
+					        ToolTip="Power modes, fans, and thermal monitors.">
 						<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
 							<Path x:Name="NavDashIcon" Data="M3,3H11V11H3V3M13,3H21V11H13V3M3,13H11V21H3V13M13,13H21V21H13V13Z"
 							      Fill="{StaticResource Ember500Brush}" Stretch="Uniform" Width="14" Height="14" HorizontalAlignment="Center" />
@@ -195,7 +195,7 @@
 					<!-- GPU Nav -->
 					<Button x:Name="NavGpuBtn" Style="{StaticResource NavButtonStyle}" Grid.Column="1"
 					        Click="NavGpuBtn_Click"
-					        ToolTip="GPU Tuning: Clock offsets, live wattage, and VRAM telemetry.">
+					        ToolTip="Clock offsets and live GPU telemetry.">
 						<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
 							<Path x:Name="NavGpuIcon"
 							      Data="M22,9V7H20V5A2,2 0 0,0 18,3H4A2,2 0 0,0 2,5V19A2,2 0 0,0 4,21H18A2,2 0 0,0 20,19V17H22V15H20V13H22V11H20V9H22M18,19H4V5H18V19"
@@ -209,7 +209,7 @@
 					<!-- Keyboard Nav -->
 					<Button x:Name="NavKeyboardBtn" Style="{StaticResource NavButtonStyle}" Grid.Column="2"
 					        Click="NavKeyboardBtn_Click"
-					        ToolTip="Keyboard: Global hotkeys and physical Nitro button integration.">
+					        ToolTip="Global hotkeys and Nitro key handling.">
 						<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
 							<Path x:Name="NavKeyboardIcon"
 							      Data="M19,10H17V8H19M19,13H17V11H19M16,10H14V8H16M16,13H14V11H16M13,10H11V8H13M13,13H11V11H13M8,10H6V8H8M8,13H6V11H8M5,10H3V8H5M5,13H3V11H5M4,17H20V15H4M22,5H2A2,2 0 0,0 0,7V17A2,2 0 0,0 2,19H22A2,2 0 0,0 24,17V7A2,2 0 0,0 22,5Z"
@@ -223,7 +223,7 @@
 					<!-- Settings Nav -->
 					<Button x:Name="NavSetBtn" Style="{StaticResource NavButtonStyle}" Grid.Column="3"
 					        Click="NavSetBtn_Click"
-					        ToolTip="Setup: Power schemes, battery charge limit, and startup settings.">
+					        ToolTip="Battery, automation rules, and startup.">
 						<StackPanel Orientation="Vertical" HorizontalAlignment="Center" VerticalAlignment="Center">
 							<Path x:Name="NavSetIcon"
 							      Data="M12,15.5A3.5,3.5 0 0,1 8.5,12A3.5,3.5 0 0,1 12,8.5A3.5,3.5 0 0,1 15.5,12A3.5,3.5 0 0,1 12,15.5M19.43,12.98C19.47,12.65 19.5,12.33 19.5,12C19.5,11.67 19.47,11.34 19.43,11L21.54,9.37C21.73,9.22 21.78,8.95 21.66,8.73L19.66,5.27C19.54,5.05 19.27,4.96 19.05,5.05L16.56,6.05C16.04,5.66 15.5,5.32 14.87,5.07L14.5,2.42C14.46,2.18 14.25,2 14,2H10C9.75,2 9.54,2.18 9.5,2.42L9.13,5.07C8.5,5.32 7.96,5.66 7.44,6.05L4.95,5.05C4.73,4.96 4.46,5.05 4.34,5.27L2.34,8.73C2.21,8.95 2.27,9.22 2.46,9.37L4.57,11C4.53,11.34 4.5,11.67 4.5,12C4.5,12.33 4.53,12.65 4.57,12.98L2.46,14.63C2.27,14.78 2.21,15.05 2.34,15.27L4.34,18.73C4.46,18.95 4.73,19.03 4.95,18.95L7.44,17.94C7.96,18.34 8.5,18.68 9.13,18.93L9.5,21.58C9.54,21.82 9.75,22 10,22H14C14.25,22 14.46,21.82 14.5,21.58L14.87,18.93C15.5,18.68 16.04,18.34 16.56,17.94L19.05,18.95C19.27,19.03 19.54,18.95 19.66,18.73L21.66,15.27C21.78,15.05 21.73,14.78 21.54,14.63L19.43,12.98Z"
