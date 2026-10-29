@@ -16,7 +16,7 @@ namespace Nitrous.Ui;
 
 public partial class DashboardViewModel
 {
-    private string _acerServicesStatusText = "SCANNING...";
+    private string _acerServicesStatusText = "Scanning...";
 
     public string AcerServicesStatusText
     {
@@ -188,7 +188,7 @@ public partial class DashboardViewModel
         {
             if (summary.TotalFound == 0)
             {
-                AcerServicesStatusText = "NO ACER SERVICES FOUND.";
+                AcerServicesStatusText = "No Acer services found.";
                 AcerServicesActionText = "N/A";
                 AcerServicesList.Clear();
                 AcerServicesListVisibility = Visibility.Collapsed;
@@ -197,12 +197,12 @@ public partial class DashboardViewModel
             {
                 if (summary.RunningCount > 0)
                 {
-                    AcerServicesStatusText = $"{summary.RunningCount} OEM SERVICES RUNNING";
+                    AcerServicesStatusText = $"{summary.RunningCount} OEM services running";
                     AcerServicesActionText = "STOP & DISABLE";
                 }
                 else
                 {
-                    AcerServicesStatusText = "ALL ACER SERVICES STOPPED & DISABLED";
+                    AcerServicesStatusText = "All Acer services stopped & disabled";
                     AcerServicesActionText = "RESTORE";
                 }
 

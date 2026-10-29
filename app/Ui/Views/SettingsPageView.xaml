@@ -14,8 +14,8 @@
 	              HorizontalScrollBarVisibility="Disabled" BorderThickness="0" Padding="0,0,0,12">
 		<StackPanel>
 			<!-- 1. APP / SYSTEM INFO BANNER CARD -->
-			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}" 
-			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1" 
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}"
+			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
 			                      Margin="0,0,0,10" Padding="12,10,12,10">
 				<Grid>
 					<Grid.ColumnDefinitions>
@@ -25,7 +25,7 @@
 
 					<StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
 						<!-- Logo container -->
-						<Border Width="34" Height="34" Background="{StaticResource Steel900Brush}" 
+						<Border Width="34" Height="34" Background="{StaticResource Steel900Brush}"
 						        BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
 						        Margin="0,0,12,0" VerticalAlignment="Center">
 							<Image Source="{StaticResource CachedAppLogo}" RenderOptions.BitmapScalingMode="HighQuality" Margin="5"
@@ -33,12 +33,12 @@
 						</Border>
 
 						<StackPanel VerticalAlignment="Center">
-							<TextBlock x:Name="SettingsVersionText" Text="NITROUS" 
-							           Foreground="White" 
+							<TextBlock x:Name="SettingsVersionText" Text="NITROUS"
+							           Foreground="White"
 							           FontFamily="{StaticResource MonoFontFamily}"
 							           FontWeight="Bold" FontSize="12.5" />
-							<TextBlock Text="ACER HARDWARE CONTROL ENGINE" 
-							           Foreground="{StaticResource Steel400Brush}" 
+							<TextBlock Text="Acer hardware control engine"
+							           Foreground="{StaticResource Steel400Brush}"
 							           FontFamily="{StaticResource MonoFontFamily}"
 							           FontSize="9.5" Margin="0,2,0,0" />
 						</StackPanel>
@@ -55,20 +55,21 @@
 			</controls:ChamferCard>
 
 			<!-- 2. BATTERY MANAGEMENT CARD -->
-			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}" 
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}"
 			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
 			                      Margin="0,0,0,10" Padding="12,10,12,12"
 			                      ToolTip="Displays native battery health, maximum charge capacity, total charge cycles, and charge limit controls.">
 				<StackPanel>
 					<!-- Card Header with Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
-						<TextBlock Text="BATTERY" Foreground="{StaticResource Steel300Brush}" 
+						<TextBlock Text="BATTERY" Foreground="{StaticResource Steel300Brush}"
 						           FontFamily="{StaticResource MonoFontFamily}"
 						           FontWeight="Bold" FontSize="10" VerticalAlignment="Center" />
 					</Border>
 
 					<!-- 3-Column Metrics Well (Chamfered Recessed Deep Steel900 Well) -->
-					<controls:ChamferCard ChamferSize="4" Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel700Brush}" 
+					<controls:ChamferCard ChamferSize="4" Background="{StaticResource Steel900Brush}"
+					                      BorderBrush="{StaticResource Steel700Brush}"
 					                      BorderThickness="1" Margin="0,0,0,10" Padding="0,8">
 						<Grid>
 							<Grid.ColumnDefinitions>
@@ -81,10 +82,11 @@
 
 							<!-- Health % -->
 							<StackPanel Grid.Column="0" HorizontalAlignment="Center">
-								<TextBlock Text="HEALTH" Foreground="{StaticResource Steel400Brush}" 
-								           FontFamily="{StaticResource MonoFontFamily}" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" />
-								<TextBlock Text="{Binding BatteryHealthPercentText}" Foreground="White" 
-								           FontFamily="{StaticResource MonoFontFamily}" FontSize="15" FontWeight="Bold" 
+								<TextBlock Text="HEALTH" Foreground="{StaticResource Steel400Brush}"
+								           FontFamily="{StaticResource MonoFontFamily}" FontSize="9" FontWeight="Bold"
+								           HorizontalAlignment="Center" />
+								<TextBlock Text="{Binding BatteryHealthPercentText}" Foreground="White"
+								           FontFamily="{StaticResource MonoFontFamily}" FontSize="15" FontWeight="Bold"
 								           HorizontalAlignment="Center" Margin="0,3,0,0" />
 							</StackPanel>
 
@@ -93,10 +95,11 @@
 
 							<!-- Capacity mWh -->
 							<StackPanel Grid.Column="2" HorizontalAlignment="Center" ToolTip="{Binding BatteryHealthText}">
-								<TextBlock Text="mWh" Foreground="{StaticResource Steel400Brush}" 
-								           FontFamily="{StaticResource MonoFontFamily}" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" />
-								<TextBlock Text="{Binding BatteryMwhText}" Foreground="{StaticResource Ember400Brush}" 
-								           FontFamily="{StaticResource MonoFontFamily}" FontSize="15" FontWeight="Bold" 
+								<TextBlock Text="mWh" Foreground="{StaticResource Steel400Brush}"
+								           FontFamily="{StaticResource MonoFontFamily}" FontSize="9" FontWeight="Bold"
+								           HorizontalAlignment="Center" />
+								<TextBlock Text="{Binding BatteryMwhText}" Foreground="{StaticResource Ember400Brush}"
+								           FontFamily="{StaticResource MonoFontFamily}" FontSize="15" FontWeight="Bold"
 								           HorizontalAlignment="Center" Margin="0,3,0,0" />
 							</StackPanel>
 
@@ -105,19 +108,20 @@
 
 							<!-- Cycle Count -->
 							<StackPanel Grid.Column="4" HorizontalAlignment="Center">
-								<TextBlock Text="CYCLES" Foreground="{StaticResource Steel400Brush}" 
-								           FontFamily="{StaticResource MonoFontFamily}" FontSize="9" FontWeight="Bold" HorizontalAlignment="Center" />
-								<TextBlock Text="{Binding BatteryCycleText}" Foreground="White" 
-								           FontFamily="{StaticResource MonoFontFamily}" FontSize="15" FontWeight="Bold" 
+								<TextBlock Text="CYCLES" Foreground="{StaticResource Steel400Brush}"
+								           FontFamily="{StaticResource MonoFontFamily}" FontSize="9" FontWeight="Bold"
+								           HorizontalAlignment="Center" />
+								<TextBlock Text="{Binding BatteryCycleText}" Foreground="White"
+								           FontFamily="{StaticResource MonoFontFamily}" FontSize="15" FontWeight="Bold"
 								           HorizontalAlignment="Center" Margin="0,3,0,0" />
 							</StackPanel>
 						</Grid>
 					</controls:ChamferCard>
 
 					<!-- 20-Segment Battery Charge Block Meter -->
-					<controls:BatteryBlockBar Height="8" Margin="0,0,0,12" 
-					                          ChargePercent="{Binding BatteryChargePercent}" 
-					                          IsLimit80Active="{Binding ChargeLimit}" 
+					<controls:BatteryBlockBar Height="8" Margin="0,0,0,12"
+					                          ChargePercent="{Binding BatteryChargePercent}"
+					                          IsLimit80Active="{Binding ChargeLimit}"
 					                          ToolTip="20-segment battery charge meter (5% per block). Highlights the 80% ceiling when battery limit is active." />
 
 					<!-- 80% Limit Toggle Row -->
@@ -127,11 +131,8 @@
 							<ColumnDefinition Width="Auto" />
 						</Grid.ColumnDefinitions>
 						<StackPanel Grid.Column="0" VerticalAlignment="Center">
-							<TextBlock Text="80% CHARGE LIMIT" Foreground="White" 
+							<TextBlock Text="80% CHARGE LIMIT" Foreground="White"
 							           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="11.5" />
-							<TextBlock Text="CAPS MAXIMUM CHARGE TO PROLONG CELL LONGEVITY" 
-							           Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}" 
-							           FontSize="10" TextWrapping="Wrap" Margin="0,2,0,0" />
 						</StackPanel>
 						<CheckBox Grid.Column="1" x:Name="TogCharge" Style="{StaticResource ModernToggleStyle}"
 						          HorizontalAlignment="Right" VerticalAlignment="Center"
@@ -142,15 +143,15 @@
 			</controls:ChamferCard>
 
 			<!-- 3. ACER OEM SERVICES CARD -->
-			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}" 
-			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1" 
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}"
+			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
 			                      Margin="0,0,0,10" Padding="12,10,12,12"
 			                      ToolTip="Controls background OEM software (NitroSense and Acer Care Center) to prevent thermal profile conflicts, stop fan revving, and save RAM.">
 				<StackPanel>
 					<!-- Card Header with Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
-						<TextBlock Text="ACER SERVICES" Foreground="{StaticResource Steel300Brush}" 
-						           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="10" 
+						<TextBlock Text="ACER SERVICES" Foreground="{StaticResource Steel300Brush}"
+						           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="10"
 						           VerticalAlignment="Center" />
 					</Border>
 
@@ -171,16 +172,16 @@
 									</ControlTemplate>
 								</ToggleButton.Template>
 								<StackPanel>
-									<TextBlock Text="ACER BACKGROUND SERVICES" Foreground="White" 
+									<TextBlock Text="ACER BACKGROUND SERVICES" Foreground="White"
 									           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="11.5" />
-									<TextBlock Text="{Binding AcerServicesStatusText}" Foreground="{StaticResource Steel400Brush}" 
+									<TextBlock Text="{Binding AcerServicesStatusText}" Foreground="{StaticResource Steel400Brush}"
 									           FontFamily="{StaticResource MonoFontFamily}" FontSize="10" TextWrapping="Wrap" Margin="0,2,0,0" />
 								</StackPanel>
 							</ToggleButton>
 
 							<Popup IsOpen="{Binding IsChecked, ElementName=BtnAcerServicesDetails, Mode=TwoWay}" StaysOpen="False"
 							       PlacementTarget="{Binding ElementName=BtnAcerServicesDetails}" Placement="Bottom">
-								<Border Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource BorderCardBrush}" 
+								<Border Background="{StaticResource Steel950Brush}" BorderBrush="{StaticResource BorderCardBrush}"
 								        BorderThickness="1" Padding="10" Margin="0,4,0,0">
 									<ItemsControl ItemsSource="{Binding AcerServicesList}">
 										<ItemsControl.ItemTemplate>
@@ -198,7 +199,7 @@
 															Data="M19.36,2.72L20.78,4.14L15.06,9.85C16.13,11.39 16.28,13.24 15.38,14.44L9.06,8.12C10.26,7.22 12.11,7.37 13.65,8.44L19.36,2.72M5.93,17.57C3.92,15.56 2.69,13.16 2.35,10.92L7.23,8.83L14.67,16.27L12.58,21.15C10.34,20.81 7.94,19.58 5.93,17.57Z"
 															Fill="#FF4500" Stretch="Uniform" Width="10" Height="10" VerticalAlignment="Center" />
 													</Button>
-													<TextBlock Grid.Column="1" Text="{Binding ServiceName}" Foreground="{StaticResource Steel400Brush}" 
+													<TextBlock Grid.Column="1" Text="{Binding ServiceName}" Foreground="{StaticResource Steel400Brush}"
 													           FontFamily="{StaticResource MonoFontFamily}" FontSize="9.5" VerticalAlignment="Center" />
 												</Grid>
 											</DataTemplate>
@@ -221,15 +222,15 @@
 			</controls:ChamferCard>
 
 			<!-- 4. AUTOMATION RULES CARD (2x2 Grid) -->
-			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}" 
-			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1" 
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}"
+			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
 			                      Margin="0,0,0,10" Padding="12,10,12,12"
 			                      ToolTip="Hardware management automation rules that run in the background.">
 				<StackPanel>
 					<!-- Card Header with Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
-						<TextBlock Text="RULES" Foreground="{StaticResource Steel300Brush}" 
-						           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="10" 
+						<TextBlock Text="RULES" Foreground="{StaticResource Steel300Brush}"
+						           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="10"
 						           VerticalAlignment="Center" />
 					</Border>
 
@@ -257,9 +258,9 @@
 									<ColumnDefinition Width="Auto" />
 								</Grid.ColumnDefinitions>
 								<StackPanel Grid.Column="0" VerticalAlignment="Center">
-									<TextBlock Text="CPU Limits" Foreground="White" 
+									<TextBlock Text="CPU Limits" Foreground="White"
 									           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="11.5" />
-									<TextBlock Text="AC/DC CLAMPS" Foreground="{StaticResource Steel400Brush}" 
+									<TextBlock Text="AC/DC clamps" Foreground="{StaticResource Steel400Brush}"
 									           FontFamily="{StaticResource MonoFontFamily}" FontSize="9.5" Margin="0,2,0,0" />
 								</StackPanel>
 								<CheckBox Grid.Column="1" x:Name="TogManageCpu" Style="{StaticResource ChamferMiniToggleStyle}"
@@ -281,9 +282,9 @@
 									<ColumnDefinition Width="Auto" />
 								</Grid.ColumnDefinitions>
 								<StackPanel Grid.Column="0" VerticalAlignment="Center">
-									<TextBlock Text="Auto Power" Foreground="White" 
+									<TextBlock Text="Auto Power" Foreground="White"
 									           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="11.5" />
-									<TextBlock Text="AC/DC PROFILE" Foreground="{StaticResource Steel400Brush}" 
+									<TextBlock Text="AC/DC profile" Foreground="{StaticResource Steel400Brush}"
 									           FontFamily="{StaticResource MonoFontFamily}" FontSize="9.5" Margin="0,2,0,0" />
 								</StackPanel>
 								<CheckBox Grid.Column="1" x:Name="TogAutoSwitch" Style="{StaticResource ChamferMiniToggleStyle}"
@@ -305,9 +306,9 @@
 									<ColumnDefinition Width="Auto" />
 								</Grid.ColumnDefinitions>
 								<StackPanel Grid.Column="0" VerticalAlignment="Center">
-									<TextBlock Text="GPU Clocks" Foreground="White" 
+									<TextBlock Text="GPU Clocks" Foreground="White"
 									           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="11.5" />
-									<TextBlock Text="WAKE OFFSETS" Foreground="{StaticResource Steel400Brush}" 
+									<TextBlock Text="Wake offsets" Foreground="{StaticResource Steel400Brush}"
 									           FontFamily="{StaticResource MonoFontFamily}" FontSize="9.5" Margin="0,2,0,0" />
 								</StackPanel>
 								<CheckBox Grid.Column="1" x:Name="TogAutoApplyClocks" Style="{StaticResource ChamferMiniToggleStyle}"
@@ -329,9 +330,9 @@
 									<ColumnDefinition Width="Auto" />
 								</Grid.ColumnDefinitions>
 								<StackPanel Grid.Column="0" VerticalAlignment="Center">
-									<TextBlock Text="Startup" Foreground="White" 
+									<TextBlock Text="Startup" Foreground="White"
 									           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="11.5" />
-									<TextBlock Text="LOGON TASK" Foreground="{StaticResource Steel400Brush}" 
+									<TextBlock Text="Logon task" Foreground="{StaticResource Steel400Brush}"
 									           FontFamily="{StaticResource MonoFontFamily}" FontSize="9.5" Margin="0,2,0,0" />
 								</StackPanel>
 								<CheckBox Grid.Column="1" x:Name="TogStartup" Style="{StaticResource ChamferMiniToggleStyle}"
@@ -345,15 +346,15 @@
 			</controls:ChamferCard>
 
 			<!-- 5. DIAGNOSTICS & DEBUG CARD -->
-			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}" 
-			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1" 
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}"
+			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
 			                      Margin="0,0,0,10" Padding="12,10,12,12"
 			                      ToolTip="Diagnostic troubleshooting utilities: configure verbose debug logs, copy hardware diagnostics, or report issues.">
 				<StackPanel>
 					<!-- Card Header with Bottom Divider -->
 					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,10">
-						<TextBlock Text="DEBUG" Foreground="{StaticResource Steel300Brush}" 
-						           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="10" 
+						<TextBlock Text="DEBUG" Foreground="{StaticResource Steel300Brush}"
+						           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="10"
 						           VerticalAlignment="Center" />
 					</Border>
 
@@ -365,10 +366,8 @@
 						</Grid.ColumnDefinitions>
 
 						<StackPanel Grid.Column="0" VerticalAlignment="Center">
-							<TextBlock Text="VERBOSE LOGGING" Foreground="White" 
+							<TextBlock Text="VERBOSE LOGGING" Foreground="White"
 							           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="11.5" />
-							<TextBlock Text="RECORD WMI AND SENSOR REGISTERS TO DISK" Foreground="{StaticResource Steel400Brush}" 
-							           FontFamily="{StaticResource MonoFontFamily}" FontSize="10" Margin="0,2,0,0" />
 						</StackPanel>
 
 						<CheckBox Grid.Column="1" x:Name="TogDebugging" Style="{StaticResource ModernToggleStyle}"
@@ -416,3 +415,4 @@
 		</StackPanel>
 	</ScrollViewer>
 </UserControl>
+

@@ -43,11 +43,6 @@
 				<Border VerticalAlignment="Bottom" Height="1" Background="{StaticResource Steel700Brush}" />
 
 				<StackPanel Orientation="Horizontal" VerticalAlignment="Center" Margin="14,0,0,0">
-					<!-- Nitro Flame / Emblem -->
-					<Border Width="14" Height="14" Background="{StaticResource Ember500Brush}" Margin="0,0,8,0" VerticalAlignment="Center">
-						<Border Width="6" Height="6" Background="{StaticResource Steel950Brush}" HorizontalAlignment="Center" VerticalAlignment="Center" />
-					</Border>
-
 					<!-- System Model -->
 					<TextBlock x:Name="SystemModelText"
 					           Text="NITROUS"
@@ -91,6 +86,7 @@
 					              Cursor="Hand"
 					              Margin="0,0,4,0"
 					              Width="24" Height="24"
+					              FocusVisualStyle="{x:Null}"
 					              ToolTip="Keeps the Nitrous window floating above all other applications."
 					              IsChecked="{Binding Topmost, RelativeSource={RelativeSource AncestorType=Window}, Mode=TwoWay}">
 						<ToggleButton.Template>
@@ -115,7 +111,7 @@
 										<Setter TargetName="PinIcon" Property="Fill" Value="{StaticResource Steel100Brush}" />
 									</Trigger>
 									<Trigger Property="IsChecked" Value="True">
-										<Setter TargetName="PinBorder" Property="BorderBrush" Value="{StaticResource Ember700Brush}" />
+										<Setter TargetName="PinBorder" Property="BorderBrush" Value="{StaticResource Steel600Brush}" />
 										<Setter TargetName="PinIcon" Property="Fill" Value="{StaticResource Ember500Brush}" />
 									</Trigger>
 								</ControlTemplate.Triggers>
