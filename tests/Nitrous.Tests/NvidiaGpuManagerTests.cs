@@ -217,8 +217,12 @@ public class NvidiaGpuManagerTests
     [InlineData(true, true, 1, true, 0, false, false)]
     // Already awake and still awake: zero hold ticks, no auto-apply, no reset
     [InlineData(true, true, 0, true, 0, false, false)]
-    // Genuine wake from confirmed sleep: transition to awake, trigger auto-apply
-    [InlineData(false, true, 0, true, 0, true, false)]
+    // Single-tick wake spike: hold state active, increment hold ticks, no auto-apply, remain asleep
+    [InlineData(false, true, 0, false, 1, false, false)]
+    // Second wake tick: hold threshold reached, transition to awake, trigger auto-apply
+    [InlineData(false, true, 1, true, 0, true, false)]
+    // Instant sleep after 1-tick wake flicker: reset hold ticks, preserve asleep, no auto-apply
+    [InlineData(false, false, 1, false, 0, false, false)]
     // Confirmed asleep, stays asleep: remain asleep, zero hold ticks, no actions
     [InlineData(false, false, 0, false, 0, false, false)]
     public void EvaluateGpuSleepHysteresis_EvaluatesTransitionsCorrectly(

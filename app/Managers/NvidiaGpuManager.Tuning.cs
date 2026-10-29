@@ -202,8 +202,6 @@ public partial class NvidiaGpuManager
             int core = ClampCoreOffset(rawCore);
             int mem = ClampMemoryOffset(rawMem);
 
-            if (core == 0 && mem == 0) return 0;
-
             long now = Environment.TickCount64;
             if (profile == _lastAutoAppliedProfile &&
                 core == _lastAutoAppliedCore &&
@@ -310,6 +308,7 @@ public partial class NvidiaGpuManager
     {
         SettingsManager.Save($"GpuCore_{profile}", GetDefaultCore(profile));
         SettingsManager.Save($"GpuMemory_{profile}", GetDefaultMemory(profile));
-        await ApplyPowerProfileOcAsync(profile);
+        _lastAutoApplyTick = 0;
+        await AutoApplyClocksAsync(profile, true);
     }
 }

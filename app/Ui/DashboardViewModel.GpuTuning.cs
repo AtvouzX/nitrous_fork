@@ -254,11 +254,8 @@ public partial class DashboardViewModel
                 // Wipe custom save and load default config
                 await _gpuManager.ResetProfileToDefaultsAsync(currentProfile);
 
-                if (_gpuManager.GetClocks(out int c, out int m))
-                {
-                    GpuCoreOffset = _gpuManager.ClampCoreOffset(c);
-                    GpuMemoryOffset = _gpuManager.ClampMemoryOffset(m);
-                }
+                GpuCoreOffset = 0;
+                GpuMemoryOffset = 0;
             }
             catch (Exception ex)
             {

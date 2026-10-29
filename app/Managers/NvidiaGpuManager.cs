@@ -62,10 +62,10 @@ public partial class NvidiaGpuManager : IDisposable
 
     /// <summary>
     /// Pure state evaluator for GPU sleep hysteresis.
-    /// Absorbs transient 1-2s RTD3 drops and CM API read flickers by requiring
-    /// <paramref name="holdCycles"/> consecutive sleep readings before marking the GPU
-    /// as asleep and resetting driver handles.
-    /// Waking up is instantaneous (0 delay).
+    /// <summary>
+    /// Symmetrically absorbs transient 1-2s RTD3 drops, CM API read flickers, and transient wake blips
+    /// by requiring <paramref name="holdCycles"/> consecutive readings before confirming transition
+    /// to sleep (resetting handles) or awake (auto-applying clocks).
     /// </summary>
     public static (bool newWasGpuAwake, int newHoldTicks, bool shouldAutoApply, bool shouldResetHandle)
         EvaluateGpuSleepHysteresis(
@@ -76,8 +76,21 @@ public partial class NvidiaGpuManager : IDisposable
     {
         if (isGpuAwake)
         {
-            bool shouldAutoApply = !wasGpuAwake;
-            return (true, 0, shouldAutoApply, false);
+            if (wasGpuAwake)
+            {
+                // Already confirmed awake and still awake
+                return (true, 0, false, false);
+            }
+
+            int nextHold = currentHoldTicks + 1;
+            if (nextHold >= holdCycles)
+            {
+                // Confirmed sustained wake after hold cycles
+                return (true, 0, true, false);
+            }
+
+            // Holding in sleep until sustained wake is confirmed
+            return (false, nextHold, false, false);
         }
         else
         {
@@ -86,12 +99,15 @@ public partial class NvidiaGpuManager : IDisposable
                 int nextHold = currentHoldTicks + 1;
                 if (nextHold >= holdCycles)
                 {
+                    // Confirmed sustained sleep after hold cycles
                     return (false, 0, false, true);
                 }
 
+                // Holding in awake until sustained sleep is confirmed
                 return (true, nextHold, false, false);
             }
 
+            // Already confirmed asleep and still asleep
             return (false, 0, false, false);
         }
     }
@@ -158,7 +174,36 @@ public partial class NvidiaGpuManager : IDisposable
 
     public NvidiaGpuManager()
     {
+        MigrateLegacyDefaultOffsets();
         InitializeNvAPI();
+    }
+
+    public static void MigrateLegacyDefaultOffsets()
+    {
+        try
+        {
+            if (SettingsManager.Get("GpuOffsetsMigratedToStock_v1", 0) == 1) return;
+
+            var profiles = new[] { PowerProfile.Quiet, PowerProfile.Balanced, PowerProfile.Performance, PowerProfile.Turbo };
+            foreach (var p in profiles)
+            {
+                int c = SettingsManager.Get($"GpuCore_{p}", 0);
+                int m = SettingsManager.Get($"GpuMemory_{p}", 0);
+
+                if ((c == 50 && m == 100) || (c == -100 && m == -200) || (c == 100 && m == 150) || (c == 150 && m == 300))
+                {
+                    SettingsManager.Save($"GpuCore_{p}", 0);
+                    SettingsManager.Save($"GpuMemory_{p}", 0);
+                    LogManager.Info($"Migrated legacy GPU offsets for {p} to stock (0/0 MHz)", "NvidiaGpu");
+                }
+            }
+
+            SettingsManager.Save("GpuOffsetsMigratedToStock_v1", 1);
+        }
+        catch (Exception ex)
+        {
+            LogManager.Warn($"MigrateLegacyDefaultOffsets failed: {ex.Message}", "NvidiaGpu");
+        }
     }
 
     private void InitializeNvAPI()

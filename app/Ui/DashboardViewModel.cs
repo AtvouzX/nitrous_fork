@@ -294,16 +294,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             _activePowerProfile = newPowerProfile;
             OnPropertyChanged(nameof(ActivePowerProfile));
 
-            if (_gpuManager.GetClocks(out int c, out int m))
-            {
-                GpuCoreOffset = _gpuManager.ClampCoreOffset(c);
-                GpuMemoryOffset = _gpuManager.ClampMemoryOffset(m);
-            }
-            else
-            {
-                GpuCoreOffset = _gpuManager.ClampCoreOffset(SettingsManager.Get($"GpuCore_{newPowerProfile}", _gpuManager.GetDefaultCore(newPowerProfile)));
-                GpuMemoryOffset = _gpuManager.ClampMemoryOffset(SettingsManager.Get($"GpuMemory_{newPowerProfile}", _gpuManager.GetDefaultMemory(newPowerProfile)));
-            }
+            GpuCoreOffset = _gpuManager.ClampCoreOffset(SettingsManager.Get($"GpuCore_{newPowerProfile}", _gpuManager.GetDefaultCore(newPowerProfile)));
+            GpuMemoryOffset = _gpuManager.ClampMemoryOffset(SettingsManager.Get($"GpuMemory_{newPowerProfile}", _gpuManager.GetDefaultMemory(newPowerProfile)));
         }
 
         var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f)
