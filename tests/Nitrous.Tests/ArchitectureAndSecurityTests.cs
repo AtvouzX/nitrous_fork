@@ -152,6 +152,20 @@ public class ArchitectureAndSecurityTests
     }
 
     [Fact]
+    public void Display_DisplayConfigPathInfo_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.User32.DISPLAYCONFIG_PATH_INFO>();
+        Assert.Equal(72, size);
+    }
+
+    [Fact]
+    public void Display_DisplayConfigModeInfo_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.User32.DISPLAYCONFIG_MODE_INFO>();
+        Assert.Equal(64, size);
+    }
+
+    [Fact]
     public void MemoryHelper_ContainsNoDllImportDeclarations()
     {
         var methods = typeof(Nitrous.Helpers.MemoryHelper)
