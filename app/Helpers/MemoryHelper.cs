@@ -1,15 +1,11 @@
 using System.Diagnostics;
-using System.Runtime.InteropServices;
+using Nitrous.Interop;
 using Nitrous.Managers;
 
 namespace Nitrous.Helpers;
 
 public static class MemoryHelper
 {
-    [DllImport("psapi.dll", SetLastError = true)]
-    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
-    private static extern int EmptyWorkingSet(IntPtr hwProc);
-
     /// <summary>
     /// Flushes unneeded working set memory pages back to the operating system after JIT/startup finishes.
     /// </summary>
@@ -22,7 +18,7 @@ public static class MemoryHelper
             GC.Collect(2, GCCollectionMode.Aggressive, true, true);
 
             using var currentProcess = Process.GetCurrentProcess();
-            EmptyWorkingSet(currentProcess.Handle);
+            Psapi.EmptyWorkingSet(currentProcess.Handle);
         }
         catch (Exception ex)
         {

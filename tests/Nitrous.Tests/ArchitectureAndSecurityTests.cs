@@ -136,4 +136,28 @@ public class ArchitectureAndSecurityTests
         int size = Marshal.SizeOf<Nitrous.Interop.User32.KBDLLHOOKSTRUCT>();
         Assert.Equal(24, size);
     }
+
+    [Fact]
+    public void Cfgmgr32_DevPropKey_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.Cfgmgr32.DEVPROPKEY>();
+        Assert.Equal(20, size);
+    }
+
+    [Fact]
+    public void Cfgmgr32_CmPowerData_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.Cfgmgr32.CM_POWER_DATA>();
+        Assert.Equal(56, size);
+    }
+
+    [Fact]
+    public void MemoryHelper_ContainsNoDllImportDeclarations()
+    {
+        var methods = typeof(Nitrous.Helpers.MemoryHelper)
+            .GetMethods(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Static | BindingFlags.Instance);
+        var pInvokes = methods.Where(m => m.GetCustomAttribute<DllImportAttribute>() != null).ToList();
+
+        Assert.Empty(pInvokes);
+    }
 }
