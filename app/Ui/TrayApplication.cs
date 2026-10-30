@@ -134,7 +134,7 @@ public partial class TrayApplication : ApplicationContext
                 ApplyPowerSettings(true);
 
                 bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
-                if (isOnline)
+                if (ShouldApplyBootOc(isOnline))
                 {
                     var bootProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
                     await _gpuManager.ApplyProfileOcAsync(bootProfile, isOnline);
@@ -250,6 +250,11 @@ public partial class TrayApplication : ApplicationContext
         TriggerExitFanReset();
     }
 
+    internal static bool ShouldApplyBootOc(bool isOnline)
+    {
+        return isOnline && SettingsManager.GetInt("AutoApplyGpuClocks", 1) == 1;
+    }
+
     internal void ApplyPowerSettings(bool isStartup = false, bool? isOnlineOverride = null)
     {
         bool isOnline = isOnlineOverride ?? (SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online);
@@ -274,7 +279,10 @@ public partial class TrayApplication : ApplicationContext
                     SettingsManager.Get("CustomFanSpeedCpu", 50),
                     SettingsManager.Get("CustomFanSpeedGpu", 50));
             else
+            {
                 _ = AcerWmiManager.ApplyPowerProfileAsync(activeMode);
+                _ = AcerWmiManager.SetFansAsync(activeFan);
+            }
 
             SettingsManager.Save("LastFanMode", activeFan.ToString());
 
