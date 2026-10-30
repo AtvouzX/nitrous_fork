@@ -51,6 +51,7 @@ public partial class NitrousDashboard : Window
         else
         {
             SystemEvents.PowerModeChanged += OnPowerStateChanged;
+            SystemEvents.DisplaySettingsChanged += OnDisplaySettingsChanged;
 
             System.Threading.Tasks.Task.Run(() =>
             {
@@ -89,6 +90,11 @@ public partial class NitrousDashboard : Window
             var innerGeom = ChamferGeometryHelper.CreateChamferPathGeometry(w - 2, h - 2, ChamferGeometryHelper.DefaultWindowChamfer - 0.4);
             WindowContentGrid.Clip = innerGeom;
         }
+    }
+
+    private void OnDisplaySettingsChanged(object? sender, EventArgs e)
+    {
+        Dispatcher.InvokeAsync(() => DockToTaskbarCorner(), System.Windows.Threading.DispatcherPriority.ApplicationIdle);
     }
 
     private void OnPowerStateChanged(object sender, PowerModeChangedEventArgs e)
@@ -275,9 +281,58 @@ public partial class NitrousDashboard : Window
         _lastActivationTick = Environment.TickCount64;
         this.Topmost = SettingsManager.Get("IsPinned", false);
 
-        // Dock to Windows Quick Settings position (bottom-right above taskbar)
-        this.Left = SystemParameters.WorkArea.Right - this.Width - 12;
-        this.Top = SystemParameters.WorkArea.Bottom - this.Height - 50;
+        DockToTaskbarCorner();
+    }
+
+    /// <summary>
+    /// Docks bottom-right above the taskbar on the monitor nearest the cursor,
+    /// following taskbar moves and monitor changes. Test hook bypasses Screen lookup.
+    /// </summary>
+    internal void DockToTaskbarCorner(
+        System.Drawing.Rectangle? workAreaOverride = null,
+        System.Drawing.Point? cursorOverride = null)
+    {
+        var screens = System.Windows.Forms.Screen.AllScreens;
+        if (screens.Length == 0) return;
+
+        var cursor = cursorOverride ?? System.Windows.Forms.Cursor.Position;
+        var area = workAreaOverride ?? NearestWorkingArea(screens, cursor);
+
+        // WinForms pixels -> WPF device-independent units.
+        var source = PresentationSource.FromVisual(this);
+        double scaleX = 1.0, scaleY = 1.0;
+        if (source?.CompositionTarget != null)
+        {
+            scaleX = source.CompositionTarget.TransformFromDevice.M11;
+            scaleY = source.CompositionTarget.TransformFromDevice.M22;
+        }
+
+        double dashW = double.IsNaN(Width) || Width <= 0 ? 375 : Width;
+        double dashH = double.IsNaN(Height) || Height <= 0 ? 580 : Height;
+        var (left, top) = Helpers.WindowPlacementHelper.ComputeDashboardDock(
+            area.Left * scaleX, area.Top * scaleY, area.Right * scaleX, area.Bottom * scaleY,
+            dashW, dashH);
+
+        this.Left = left;
+        this.Top = top;
+    }
+
+    private static System.Drawing.Rectangle NearestWorkingArea(
+        System.Windows.Forms.Screen[] screens, System.Drawing.Point cursor)
+    {
+        System.Windows.Forms.Screen? best = null;
+        double bestDist = double.MaxValue;
+        foreach (var s in screens)
+        {
+            if (s.WorkingArea.Contains(cursor)) return s.WorkingArea;
+            double dx = cursor.X < s.WorkingArea.Left ? s.WorkingArea.Left - cursor.X
+                : cursor.X > s.WorkingArea.Right ? cursor.X - s.WorkingArea.Right : 0;
+            double dy = cursor.Y < s.WorkingArea.Top ? s.WorkingArea.Top - cursor.Y
+                : cursor.Y > s.WorkingArea.Bottom ? cursor.Y - s.WorkingArea.Bottom : 0;
+            double dist = dx * dx + dy * dy;
+            if (dist < bestDist) { bestDist = dist; best = s; }
+        }
+        return best?.WorkingArea ?? screens[0].WorkingArea;
     }
 
     private void Window_Deactivated(object sender, EventArgs e)
@@ -315,6 +370,7 @@ public partial class NitrousDashboard : Window
             this.WindowState = WindowState.Normal;
         }
 
+        DockToTaskbarCorner();
         this.Show();
         this.Activate();
         this.Focus();
@@ -339,6 +395,7 @@ public partial class NitrousDashboard : Window
         base.OnClosed(e);
         LogManager.Info("Dashboard window closed; disposing resources.", "UI");
         SystemEvents.PowerModeChanged -= OnPowerStateChanged;
+        SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
         SettingsManager.Save("IsPinned", this.Topmost);
         (DataContext as IDisposable)?.Dispose();
     }
@@ -367,15 +424,27 @@ public partial class NitrousDashboard : Window
             ? (SystemParameters.WorkArea.Height / 2) - (this.Height / 2)
             : this.Top;
 
-        double targetLeft = currentLeft - _activeCurveWindow.Width - 10;
-
-        if (targetLeft < 0)
+        // Clamp to the monitor nearest the dashboard (not just primary).
+        // Screens report device pixels; dashboard Left/Top are DIPs — convert first.
+        var source = PresentationSource.FromVisual(this);
+        var toDevice = source?.CompositionTarget?.TransformToDevice;
+        var centerDip = new System.Windows.Point(currentLeft + this.Width / 2, currentTop + this.Height / 2);
+        var centerDev = toDevice.HasValue ? toDevice.Value.Transform(centerDip) : centerDip;
+        var cursorDev = new System.Drawing.Point((int)centerDev.X, (int)centerDev.Y);
+        var area = NearestWorkingArea(System.Windows.Forms.Screen.AllScreens, cursorDev);
+        double scaleX = 1.0, scaleY = 1.0;
+        if (source?.CompositionTarget != null)
         {
-            targetLeft = currentLeft + this.Width + 10;
+            scaleX = source.CompositionTarget.TransformFromDevice.M11;
+            scaleY = source.CompositionTarget.TransformFromDevice.M22;
         }
+        var (targetLeft, targetTop) = Helpers.WindowPlacementHelper.ComputeCurveEditorPosition(
+            currentLeft, currentTop, this.Width, this.Height,
+            _activeCurveWindow.Width, _activeCurveWindow.Height,
+            area.Left * scaleX, area.Top * scaleY, area.Right * scaleX, area.Bottom * scaleY);
 
         _activeCurveWindow.Left = targetLeft;
-        _activeCurveWindow.Top = currentTop;
+        _activeCurveWindow.Top = targetTop;
 
         // Attach an event to clear the flag when the window closes
         _activeCurveWindow.Closed += (s, args) => _isDialogOpen = false;
