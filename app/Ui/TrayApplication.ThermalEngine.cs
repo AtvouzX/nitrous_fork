@@ -31,6 +31,17 @@ public partial class TrayApplication : ApplicationContext
         return tipText.Length > 63 ? tipText[..63] : tipText;
     }
 
+    private int _lastTipCpu = int.MinValue;
+    private int _lastTipGpu = int.MinValue;
+    private bool _lastTipAwake;
+
+    // Ticket 8: skip tooltip string interp when inputs unchanged. Behavior-identical:
+    // tray text ends up the same, but idle ticks allocate nothing.
+    public static bool TooltipInputsChanged(int cpuTemp, int gpuTemp, bool gpuAwake, int lastCpu, int lastGpu, bool lastAwake)
+    {
+        return cpuTemp != lastCpu || gpuTemp != lastGpu || gpuAwake != lastAwake;
+    }
+
     private void StartBackgroundEngine()
     {
         Task.Run(async () =>
@@ -92,10 +103,16 @@ public partial class TrayApplication : ApplicationContext
                         var telemetry = AcerWmiManager.GetSystemTelemetry();
                         int effectiveGpuTemp = telemetry.GpuTemp;
                         bool gpuAwakeForTooltip = isAutoApplyActive ? _wasGpuAwake : (effectiveGpuTemp > 0);
-                        string truncatedTip = FormatTrayTooltip(telemetry.CpuTemp, effectiveGpuTemp, gpuAwakeForTooltip);
-                        if (trayIcon.Text != truncatedTip)
+                        if (TooltipInputsChanged(telemetry.CpuTemp, effectiveGpuTemp, gpuAwakeForTooltip, _lastTipCpu, _lastTipGpu, _lastTipAwake))
                         {
-                            trayIcon.Text = truncatedTip;
+                            _lastTipCpu = telemetry.CpuTemp;
+                            _lastTipGpu = effectiveGpuTemp;
+                            _lastTipAwake = gpuAwakeForTooltip;
+                            string truncatedTip = FormatTrayTooltip(telemetry.CpuTemp, effectiveGpuTemp, gpuAwakeForTooltip);
+                            if (trayIcon.Text != truncatedTip)
+                            {
+                                trayIcon.Text = truncatedTip;
+                            }
                         }
 
                         if (isCurveActive && telemetry.CpuTemp > 0)
