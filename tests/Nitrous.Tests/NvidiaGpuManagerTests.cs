@@ -301,6 +301,109 @@ public class NvidiaGpuManagerTests
         Assert.True(field.IsLiteral && !field.IsInitOnly, $"{fieldName} must be a compile-time const.");
         Assert.Equal(expectedValue, (int)field.GetValue(null)!);
     }
+
+    [Fact]
+    public void ResolveProfileOffsets_WhenSettingsExceedLimits_ReturnsClampedMaximums()
+    {
+        SettingsManager.Save("GpuCore_Performance", 300);
+        SettingsManager.Save("GpuMemory_Performance", 1200);
+        try
+        {
+            using var manager = new NvidiaGpuManager();
+            var (core, memory) = manager.ResolveProfileOffsets(Nitrous.Enums.PowerProfile.Performance);
+            Assert.Equal(200, core);
+            Assert.Equal(500, memory);
+        }
+        finally
+        {
+            SettingsManager.Delete("GpuCore_Performance");
+            SettingsManager.Delete("GpuMemory_Performance");
+        }
+    }
+
+    [Fact]
+    public void ResolveProfileOffsets_WhenSettingsBelowLimits_ReturnsClampedMinimums()
+    {
+        SettingsManager.Save("GpuCore_Performance", -300);
+        SettingsManager.Save("GpuMemory_Performance", -1200);
+        try
+        {
+            using var manager = new NvidiaGpuManager();
+            var (core, memory) = manager.ResolveProfileOffsets(Nitrous.Enums.PowerProfile.Performance);
+            Assert.Equal(-200, core);
+            Assert.Equal(-500, memory);
+        }
+        finally
+        {
+            SettingsManager.Delete("GpuCore_Performance");
+            SettingsManager.Delete("GpuMemory_Performance");
+        }
+    }
+
+    [Fact]
+    public void ResolveProfileOffsets_WhenNoCustomValues_ReturnsStockDefaults()
+    {
+        SettingsManager.Delete("GpuCore_Balanced");
+        SettingsManager.Delete("GpuMemory_Balanced");
+        using var manager = new NvidiaGpuManager();
+        var (core, memory) = manager.ResolveProfileOffsets(Nitrous.Enums.PowerProfile.Balanced);
+        Assert.Equal(0, core);
+        Assert.Equal(0, memory);
+    }
+
+    [Theory]
+    // Second consecutive wake tick on AC with auto-apply enabled -> confirmed awake, auto-apply
+    [InlineData(false, 1, true, true, 1, true, 0)]
+    // Second consecutive sleep tick on AC with auto-apply enabled -> confirmed asleep, reset handle
+    [InlineData(true, 1, false, true, 1, false, 0)]
+    public void UpdateSleepState_DelegatesToHysteresis_WhenAcEnabled(
+        bool wasAwake, int holdTicks, bool isGpuAwake, bool isAcOnline, int setting,
+        bool expectedNewWasAwake, int expectedNewHoldTicks)
+    {
+        var (newWasAwake, newHoldTicks, action) = NvidiaGpuManager.UpdateSleepState(
+            wasAwake, holdTicks, isGpuAwake, isAcOnline, setting);
+
+        var (hWasAwake, hHoldTicks, hAutoApply, hReset) = NvidiaGpuManager.EvaluateGpuSleepHysteresis(
+            wasAwake, isGpuAwake, holdTicks, NvidiaGpuManager.GpuSleepHysteresisCycles);
+
+        Assert.Equal(hWasAwake, newWasAwake);
+        Assert.Equal(hHoldTicks, newHoldTicks);
+        Assert.Equal(expectedNewWasAwake, newWasAwake);
+        Assert.Equal(expectedNewHoldTicks, newHoldTicks);
+        var expectedAction = hAutoApply
+            ? NvidiaGpuManager.GpuSleepAction.AutoApply
+            : hReset ? NvidiaGpuManager.GpuSleepAction.ResetHandle : NvidiaGpuManager.GpuSleepAction.None;
+        Assert.Equal(expectedAction, action);
+    }
+
+    [Theory]
+    // Battery bypass: was awake -> collapse to asleep with handle reset, never auto-apply
+    [InlineData(true, 1, true, false, 0, false, 0)]
+    // Battery bypass: already asleep -> stay asleep, no action
+    [InlineData(false, 0, false, false, 0, false, 0)]
+    // Auto-apply disabled on AC: was awake -> collapse to asleep with handle reset, never auto-apply
+    [InlineData(true, 1, true, true, 0, false, 0)]
+    public void UpdateSleepState_BatteryOrDisabledBypass_NeverAutoApplies(
+        bool wasAwake, int holdTicks, bool isGpuAwake, bool isAcOnline, int setting,
+        bool expectedNewWasAwake, int expectedNewHoldTicks)
+    {
+        var (newWasAwake, newHoldTicks, action) = NvidiaGpuManager.UpdateSleepState(
+            wasAwake, holdTicks, isGpuAwake, isAcOnline, setting);
+
+        Assert.Equal(expectedNewWasAwake, newWasAwake);
+        Assert.Equal(expectedNewHoldTicks, newHoldTicks);
+        Assert.NotEqual(NvidiaGpuManager.GpuSleepAction.AutoApply, action);
+    }
+
+    [Fact]
+    public async Task ApplyProfileOcAsync_WhenOnDcPower_ReturnsZeroWithoutWakingGpu()
+    {
+        using var manager = new NvidiaGpuManager();
+
+        // Unified OC entry must bypass NvAPI completely on battery to preserve D3Cold sleep
+        int result = await manager.ApplyProfileOcAsync(Nitrous.Enums.PowerProfile.Performance, isAcOnline: false);
+        Assert.Equal(0, result);
+    }
 }
 
 
