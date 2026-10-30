@@ -244,8 +244,8 @@ public partial class DashboardViewModel
                 int currentCpuTemp = telemetry.CpuTemp > 0 ? telemetry.CpuTemp : 50;
                 int currentGpuTemp = telemetry.GpuTemp > 0 ? telemetry.GpuTemp : currentCpuTemp;
 
-                int cpuSpd = Math.Clamp(FanCurveHelper.InterpolateSpeed(cpuCurve, currentCpuTemp), 0, 100);
-                int gpuSpd = Math.Clamp(FanCurveHelper.InterpolateSpeed(gpuCurve, currentGpuTemp), 0, 100);
+                int cpuSpd = FanCurveHelper.GetClampedSpeed(cpuCurve, currentCpuTemp);
+                int gpuSpd = FanCurveHelper.GetClampedSpeed(gpuCurve, currentGpuTemp);
 
                 await AcerWmiManager.SetCustomFansAsync(cpuSpd, gpuSpd);
             }

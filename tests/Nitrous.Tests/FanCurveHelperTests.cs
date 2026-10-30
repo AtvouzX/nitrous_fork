@@ -144,4 +144,48 @@ public class FanCurveHelperTests
         int percentage = FanCurveHelper.RpmToPercentage(rpm);
         Assert.Equal(expectedPercentage, percentage);
     }
+
+    [Fact]
+    public void GetClampedSpeed_NullCurve_ReturnsDefault50()
+    {
+        Assert.Equal(50, FanCurveHelper.GetClampedSpeed(null, 50));
+    }
+
+    [Fact]
+    public void GetClampedSpeed_EmptyCurve_ReturnsDefault50()
+    {
+        Assert.Equal(50, FanCurveHelper.GetClampedSpeed(new List<Point>(), 50));
+    }
+
+    [Theory]
+    [InlineData(30, 20)]
+    [InlineData(40, 30)]
+    [InlineData(110, 80)]
+    public void GetClampedSpeed_ValidCurve_MatchesClampedInterpolation(int temp, int expected)
+    {
+        var curve = new List<Point>
+        {
+            new(30, 20),
+            new(50, 40),
+            new(70, 60),
+            new(90, 80),
+        };
+
+        int speed = FanCurveHelper.GetClampedSpeed(curve, temp);
+        Assert.Equal(expected, speed);
+        Assert.Equal(Math.Clamp(FanCurveHelper.InterpolateSpeed(curve, temp), 0, 100), speed);
+    }
+
+    [Fact]
+    public void GetClampedSpeed_OutOfRangeCurve_ClampsToUnitRange()
+    {
+        var curve = new List<Point>
+        {
+            new(30, -20),
+            new(90, 150),
+        };
+
+        Assert.Equal(0, FanCurveHelper.GetClampedSpeed(curve, 10));
+        Assert.Equal(100, FanCurveHelper.GetClampedSpeed(curve, 110));
+    }
 }

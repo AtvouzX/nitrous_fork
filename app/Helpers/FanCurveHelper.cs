@@ -67,6 +67,11 @@ public static class FanCurveHelper
         return (int)curve[^1].Y;
     }
 
+    public static int GetClampedSpeed(IReadOnlyList<Point>? curve, int currentTemp)
+    {
+        return Math.Clamp(InterpolateSpeed(curve, currentTemp), 0, 100);
+    }
+
     public static void SaveCurveToRegistry(string keyName, List<Point> points)
     {
         // Ensure points are sorted by temperature (X) before saving

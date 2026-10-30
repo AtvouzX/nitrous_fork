@@ -94,9 +94,9 @@ public partial class TrayApplication : ApplicationContext
                             var cpuCurve = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{pName}", FanCurveHelper.GetDefaultCpuCurve(activeMode));
                             var gpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}", FanCurveHelper.GetDefaultGpuCurve(activeMode));
                             var telem = AcerWmiManager.GetSystemTelemetry();
-                            int cpuSpd = Math.Clamp(FanCurveHelper.InterpolateSpeed(cpuCurve, telem.CpuTemp > 0 ? telem.CpuTemp : 50), 0, 100);
+                            int cpuSpd = FanCurveHelper.GetClampedSpeed(cpuCurve, telem.CpuTemp > 0 ? telem.CpuTemp : 50);
                             int gpuTemp = telem.GpuTemp > 0 ? telem.GpuTemp : telem.CpuTemp;
-                            int gpuSpd = Math.Clamp(FanCurveHelper.InterpolateSpeed(gpuCurve, gpuTemp > 0 ? gpuTemp : 50), 0, 100);
+                            int gpuSpd = FanCurveHelper.GetClampedSpeed(gpuCurve, gpuTemp > 0 ? gpuTemp : 50);
 
                             _lastAppliedCpuSpeed = cpuSpd;
                             _lastAppliedGpuSpeed = gpuSpd;

@@ -15,6 +15,7 @@ using NvAPIWrapper.Native.GPU;
 using NvAPIWrapper.Native.GPU.Structures;
 using NvAPIWrapper.Native.Interfaces.GPU;
 using Nitrous.Enums;
+using Nitrous.Helpers;
 using Nitrous.Interop;
 
 namespace Nitrous.Managers;
@@ -592,16 +593,16 @@ public partial class NvidiaGpuManager : IDisposable
 
                 // Power Limits (Convert milliwatts to Watts)
                 if (NativeNvml.DeviceGetPowerUsage(_nvmlDeviceHandle, out uint powerDraw) == NvmlReturn.Success)
-                    t.PowerDrawW = Math.Round(powerDraw / 1000.0, 1);
+                    t.PowerDrawW = UnitConverter.MwToWRounded(powerDraw);
 
                 if (NativeNvml.DeviceGetEnforcedPowerLimit(_nvmlDeviceHandle, out uint enforced) == NvmlReturn.Success)
-                    t.EnforcedPowerLimitW = Math.Round(enforced / 1000.0, 1);
+                    t.EnforcedPowerLimitW = UnitConverter.MwToWRounded(enforced);
 
                 if (NativeNvml.DeviceGetPowerManagementLimitConstraints(_nvmlDeviceHandle, out uint minLimit,
                         out uint maxLimit) == NvmlReturn.Success)
                 {
-                    t.MinPowerLimitW = Math.Round(minLimit / 1000.0, 1);
-                    t.MaxPowerLimitW = Math.Round(maxLimit / 1000.0, 1);
+                    t.MinPowerLimitW = UnitConverter.MwToWRounded(minLimit);
+                    t.MaxPowerLimitW = UnitConverter.MwToWRounded(maxLimit);
                 }
             }
             catch (Exception ex)
