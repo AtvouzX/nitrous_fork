@@ -451,7 +451,7 @@ public partial class FanCurveWindow : Window
             int cpuSpd = FanCurveHelper.GetClampedSpeed(_cpuPoints, currentCpuTemp);
             int gpuSpd = FanCurveHelper.GetClampedSpeed(_gpuPoints, currentGpuTemp);
 
-            await AcerWmiManager.SetCustomFansAsync(cpuSpd, gpuSpd);
+            await AcerWmiManager.SetFansAsync(FanProfile.Medium, cpuSpd, gpuSpd);
         }
         catch (Exception ex)
         {

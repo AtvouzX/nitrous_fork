@@ -263,17 +263,18 @@ public partial class TrayApplication : ApplicationContext
             string keyMode = isOnline ? "LastAcPowerMode" : "LastDcPowerMode";
             var activeMode = (PowerProfile)SettingsManager.Get(keyMode,
                 (int)(isOnline ? PowerProfile.Performance : PowerProfile.Quiet));
-            _ = AcerWmiManager.SetPowerModeAsync(activeMode);
+
             SettingsManager.Save("LastPowerMode", (int)activeMode);
 
             string keyFan = isOnline ? "LastAcFanMode" : "LastDcFanMode";
             var activeFan = Enum.TryParse(SettingsManager.Get(keyFan, "Auto"), out FanProfile f) ? f : FanProfile.Auto;
 
             if (activeFan == FanProfile.Medium)
-                _ = AcerWmiManager.SetCustomFansAsync(SettingsManager.Get("CustomFanSpeedCpu", 50),
+                _ = AcerWmiManager.ApplyPowerProfileAsync(activeMode,
+                    SettingsManager.Get("CustomFanSpeedCpu", 50),
                     SettingsManager.Get("CustomFanSpeedGpu", 50));
             else
-                _ = AcerWmiManager.SetFansAsync(activeFan);
+                _ = AcerWmiManager.ApplyPowerProfileAsync(activeMode);
 
             SettingsManager.Save("LastFanMode", activeFan.ToString());
 
@@ -397,8 +398,8 @@ public partial class TrayApplication : ApplicationContext
         }
 
         // Apply the new mode
-        _ = AcerWmiManager.SetPowerModeAsync(nextProfile);
         SettingsManager.Save("LastPowerMode", (int)nextProfile);
+        _ = AcerWmiManager.ApplyPowerProfileAsync(nextProfile);
         SettingsManager.Save(acDcKey, (int)nextProfile);
 
         if (SettingsManager.Get("ManageCpuPower", 0) == 1)

@@ -222,7 +222,7 @@ public partial class DashboardViewModel
         {
             SettingsManager.Save("CustomFanSpeedCpu", CpuFanSpeed);
             SettingsManager.Save("CustomFanSpeedGpu", GpuFanSpeed);
-            _ = AcerWmiManager.SetCustomFansAsync(CpuFanSpeed, GpuFanSpeed);
+            _ = AcerWmiManager.SetFansAsync(FanProfile.Medium, CpuFanSpeed, GpuFanSpeed);
         });
     }
 
@@ -247,7 +247,7 @@ public partial class DashboardViewModel
                 int cpuSpd = FanCurveHelper.GetClampedSpeed(cpuCurve, currentCpuTemp);
                 int gpuSpd = FanCurveHelper.GetClampedSpeed(gpuCurve, currentGpuTemp);
 
-                await AcerWmiManager.SetCustomFansAsync(cpuSpd, gpuSpd);
+                await AcerWmiManager.SetFansAsync(FanProfile.Medium, cpuSpd, gpuSpd);
             }
             catch (Exception ex)
             {
@@ -290,8 +290,8 @@ public partial class DashboardViewModel
                     ActivePowerProfile = mode;
                     DismissGpuAlert();
 
-                    _ = AcerWmiManager.SetPowerModeAsync(mode);
                     SettingsManager.Save("LastPowerMode", (int)mode);
+                    _ = AcerWmiManager.ApplyPowerProfileAsync(mode);
                     bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
                     SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)mode);
 
@@ -334,7 +334,7 @@ public partial class DashboardViewModel
                     {
                         CpuFanPercentage = CpuFanSpeed;
                         GpuFanPercentage = GpuFanSpeed;
-                        _ = AcerWmiManager.SetCustomFansAsync(CpuFanSpeed, GpuFanSpeed);
+                        _ = AcerWmiManager.SetFansAsync(FanProfile.Medium, CpuFanSpeed, GpuFanSpeed);
                     }
                 }
                 else if (mode == FanProfile.Max)

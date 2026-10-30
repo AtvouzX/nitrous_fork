@@ -30,8 +30,8 @@ public partial class TrayApplication : ApplicationContext
             {
                 try
                 {
-                    await AcerWmiManager.SetPowerModeAsync(profile);
                     SettingsManager.Save("LastPowerMode", (int)profile);
+                    await AcerWmiManager.ApplyPowerProfileAsync(profile);
                     bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
                     SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)profile);
 
@@ -100,11 +100,11 @@ public partial class TrayApplication : ApplicationContext
 
                             _lastAppliedCpuSpeed = cpuSpd;
                             _lastAppliedGpuSpeed = gpuSpd;
-                            await AcerWmiManager.SetCustomFansAsync(cpuSpd, gpuSpd);
+                            await AcerWmiManager.SetFansAsync(FanProfile.Medium, cpuSpd, gpuSpd);
                         }
                         else
                         {
-                            await AcerWmiManager.SetCustomFansAsync(
+                            await AcerWmiManager.SetFansAsync(FanProfile.Medium, 
                                 SettingsManager.Get("CustomFanSpeedCpu", 50),
                                 SettingsManager.Get("CustomFanSpeedGpu", 50));
                         }
