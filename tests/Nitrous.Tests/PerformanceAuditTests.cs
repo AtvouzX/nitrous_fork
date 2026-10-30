@@ -306,4 +306,50 @@ public class PerformanceAuditTests
         Assert.StartsWith(@"Local\", Program.DashboardMutexName);
         Assert.StartsWith(@"Local\", Program.DashboardEventName);
     }
+
+    // =========================================================================
+    // 4. Settings Hot-Path Cache Invariants (Ticket 3)
+    // =========================================================================
+
+    [Fact]
+    public void SettingsHotPath_IntAndLongGetters_AgreeWithLegacyGenericGet()
+    {
+        const string intKey = "T3_PerfAudit_Int";
+        const string longKey = "T3_PerfAudit_Long";
+        try
+        {
+            SettingsManager.Save(intKey, 42);
+            SettingsManager.Save(longKey, 9876543210L);
+
+            Assert.Equal(SettingsManager.Get(intKey, 0), SettingsManager.GetInt(intKey, -1));
+            Assert.Equal(SettingsManager.Get(longKey, 0L), SettingsManager.GetLong(longKey, -1L));
+        }
+        finally
+        {
+            SettingsManager.Delete(intKey);
+            SettingsManager.Delete(longKey);
+            SettingsManager.InvalidateCache();
+        }
+    }
+
+    [Fact]
+    public void SettingsHotPath_RepeatedReads_DoNotThrowAndReturnStableValues()
+    {
+        const string key = "T3_PerfAudit_Stable";
+        try
+        {
+            SettingsManager.Save(key, 1);
+            for (int i = 0; i < 25; i++)
+            {
+                Assert.Equal(1, SettingsManager.GetInt(key, 0));
+            }
+            // Same key via both APIs stays consistent after repeated cached reads.
+            Assert.Equal(SettingsManager.Get(key, 0), SettingsManager.GetInt(key, -1));
+        }
+        finally
+        {
+            SettingsManager.Delete(key);
+            SettingsManager.InvalidateCache();
+        }
+    }
 }

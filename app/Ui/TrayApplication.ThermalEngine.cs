@@ -48,7 +48,7 @@ public partial class TrayApplication : ApplicationContext
                     // Bypassed completely if the user disabled AutoApplyGpuClocks or is on battery (DC) power.
                     // Debounced via EvaluateGpuSleepHysteresis to absorb transient 1-2s RTD3 drops and CM API read flickers.
                     bool isAcOnline = NvidiaGpuManager.IsAcPowerConnected();
-                    int autoApplySetting = SettingsManager.Get("AutoApplyGpuClocks", 1);
+                    int autoApplySetting = SettingsManager.GetInt("AutoApplyGpuClocks", 1);
                     bool isAutoApplyActive = isAcOnline && autoApplySetting == 1;
 
                     if (isAutoApplyActive)
@@ -62,7 +62,7 @@ public partial class TrayApplication : ApplicationContext
 
                         if (shouldAutoApply)
                         {
-                            var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+                            var activeMode = (PowerProfile)SettingsManager.GetInt("LastPowerMode", (int)PowerProfile.Performance);
                             _ = _gpuManager.AutoApplyClocksAsync(activeMode, isAcOnline);
                         }
                         else if (shouldResetHandle)
@@ -78,10 +78,10 @@ public partial class TrayApplication : ApplicationContext
                     }
 
                     // 2. Check if the user wants Custom Fan Mode and if the Curve is enabled
-                    string currentFanMode = SettingsManager.Get("LastFanMode", "Auto");
-                    bool isCurveEnabled = SettingsManager.Get("IsCurveModeEnabled", 0) == 1;
+                    string currentFanMode = SettingsManager.GetString("LastFanMode", "Auto");
+                    bool isCurveEnabled = SettingsManager.GetInt("IsCurveModeEnabled", 0) == 1;
                     bool isCurveActive = currentFanMode == "Medium" && isCurveEnabled;
-                    long currentCurveVersion = SettingsManager.Get("FanCurveVersion", 0L);
+                    long currentCurveVersion = SettingsManager.GetLong("FanCurveVersion", 0L);
 
                     // Reset tracking state if fan mode or curve override changed
                     if (currentFanMode != _lastObservedFanMode || isCurveEnabled != _lastObservedCurveEnabled)
@@ -110,8 +110,8 @@ public partial class TrayApplication : ApplicationContext
                         if (isCurveActive && telemetry.CpuTemp > 0)
                         {
                             // 3. Load curves from cache or Registry if profile changed or curve updated
-                            var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-                            string pName = SettingsManager.Get("ActiveFanCurvePreset", "Auto");
+                            var activeMode = (PowerProfile)SettingsManager.GetInt("LastPowerMode", (int)PowerProfile.Performance);
+                            string pName = SettingsManager.GetString("ActiveFanCurvePreset", "Auto");
                             if (pName == "Auto") pName = activeMode.ToString();
 
                             if (_cachedCpuCurve == null || _cachedGpuCurve == null || _cachedProfile != activeMode || _lastObservedFanPreset != pName || _cachedCurveVersion != currentCurveVersion)

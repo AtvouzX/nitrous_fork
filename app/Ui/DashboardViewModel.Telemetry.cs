@@ -599,7 +599,7 @@ public partial class DashboardViewModel
                         else
                         {
                             var activeFanMode =
-                                Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile fMode)
+                                Enum.TryParse(SettingsManager.GetString("LastFanMode", "Auto"), out FanProfile fMode)
                                     ? fMode
                                     : FanProfile.Auto;
                             if (activeFanMode == FanProfile.Max)
@@ -611,8 +611,8 @@ public partial class DashboardViewModel
                             {
                                 int curCpu = telemetry.CpuTemp > 0 ? telemetry.CpuTemp : 50;
                                 int curGpu = telemetry.GpuTemp > 0 ? telemetry.GpuTemp : curCpu;
-                                long currentCurveVersion = SettingsManager.Get("FanCurveVersion", 0L);
-                                string pName = SettingsManager.Get("ActiveFanCurvePreset", "Auto");
+                                long currentCurveVersion = SettingsManager.GetLong("FanCurveVersion", 0L);
+                                string pName = SettingsManager.GetString("ActiveFanCurvePreset", "Auto");
                                 if (pName == "Auto") pName = ActivePowerProfile.ToString();
 
                                 EnsureCachedCurvesLoaded(currentCurveVersion, pName);
