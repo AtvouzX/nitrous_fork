@@ -8,19 +8,61 @@ public static class FanCurveHelper
 {
     public const double MinRpm = 1800.0;
     public const double MaxRpm = 5850.0;
+    public const int DefaultMaxRpm = 5850;
+    public const int MaxPlausibleRpm = 12000;
     public const double MinDutyPercentage = 30.0;
     public const double MaxDutyPercentage = 100.0;
+    public const string MaxCpuRpmKey = "MaxCpuRpm";
+    public const string MaxGpuRpmKey = "MaxGpuRpm";
 
     /// <summary>
-    /// Converts physical fan tachometer RPM into an estimated duty-cycle percentage (30% - 100%).
+    /// Converts physical fan tachometer RPM into an estimated duty-cycle percentage (30% - 100%)
+    /// using the provided or default ceiling RPM.
     /// Returns 0 if RPM is zero or negative (fan stopped/idle).
     /// </summary>
-    public static int RpmToPercentage(int rpm)
+    public static int RpmToPercentage(int rpm, double maxRpm = MaxRpm)
     {
         if (rpm <= 0) return 0;
+        double effectiveMax = Math.Max(maxRpm, MinRpm + 1.0);
         return Math.Clamp(
-            (int)Math.Round((rpm - MinRpm) / (MaxRpm - MinRpm) * (MaxDutyPercentage - MinDutyPercentage) +
+            (int)Math.Round((rpm - MinRpm) / (effectiveMax - MinRpm) * (MaxDutyPercentage - MinDutyPercentage) +
                             MinDutyPercentage), 0, 100);
+    }
+
+    /// <summary>
+    /// Pure helper that evaluates whether a newly observed tachometer RPM beats the current calibrated ceiling
+    /// while remaining within physically plausible hardware bounds.
+    /// </summary>
+    public static int TryCalibrateCeiling(int observedRpm, int currentCeiling, out bool updated)
+    {
+        int baseline = currentCeiling >= DefaultMaxRpm && currentCeiling <= MaxPlausibleRpm
+            ? currentCeiling
+            : DefaultMaxRpm;
+
+        if (observedRpm > baseline && observedRpm <= MaxPlausibleRpm)
+        {
+            updated = true;
+            return observedRpm;
+        }
+
+        updated = false;
+        return baseline;
+    }
+
+    /// <summary>
+    /// Reads the persisted fan RPM ceiling from settings, updates and saves it if the observed RPM
+    /// establishes a new valid high-water mark, and returns the active ceiling.
+    /// </summary>
+    public static int ObserveAndGetCalibratedMaxRpm(string settingKey, int observedRpm)
+    {
+        int currentCeiling = SettingsManager.GetInt(settingKey, DefaultMaxRpm);
+        int newCeiling = TryCalibrateCeiling(observedRpm, currentCeiling, out bool updated);
+        if (updated)
+        {
+            SettingsManager.Save(settingKey, newCeiling);
+            LogManager.Info($"Calibrated new fan RPM ceiling for '{settingKey}': {newCeiling} RPM", "FanCurve");
+        }
+        return newCeiling;
     }
 
     public static List<Point> GetDefaultCpuCurve(PowerProfile profile)

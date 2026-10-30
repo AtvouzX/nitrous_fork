@@ -95,6 +95,12 @@ public partial class DashboardViewModel
                         GpuRpmText = telemetry.GpuRpm > 0 ? $"{telemetry.GpuRpm} RPM" : "-- RPM";
                         GpuTempColor = telemetry.GpuTemp > 85 ? "#FF453A" : "White";
 
+                        // Self-calibrate per-fan maximum RPM ceiling when a new high-water mark is observed
+                        int calibratedMaxCpuRpm = FanCurveHelper.ObserveAndGetCalibratedMaxRpm(
+                            FanCurveHelper.MaxCpuRpmKey, telemetry.CpuRpm);
+                        int calibratedMaxGpuRpm = FanCurveHelper.ObserveAndGetCalibratedMaxRpm(
+                            FanCurveHelper.MaxGpuRpmKey, telemetry.GpuRpm);
+
                         // Update Fan read percentage indicators
                         if (IsCustomFanEnabled && !IsCurveModeEnabled)
                         {
@@ -127,8 +133,8 @@ public partial class DashboardViewModel
                             }
                             else
                             {
-                                CpuFanPercentage = FanCurveHelper.RpmToPercentage(telemetry.CpuRpm);
-                                GpuFanPercentage = FanCurveHelper.RpmToPercentage(telemetry.GpuRpm);
+                                CpuFanPercentage = FanCurveHelper.RpmToPercentage(telemetry.CpuRpm, calibratedMaxCpuRpm);
+                                GpuFanPercentage = FanCurveHelper.RpmToPercentage(telemetry.GpuRpm, calibratedMaxGpuRpm);
                             }
                         }
 

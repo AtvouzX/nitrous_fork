@@ -249,6 +249,7 @@ public static class LogManager
                 sb.AppendLine($"Turbo Mode Bit 5:    {(AcerWmiManager.IsTurboModeSupported() ? "Supported" : "Unsupported")}");
                 var activePower = AcerWmiManager.GetActivePowerMode();
                 sb.AppendLine($"Active Power Mode:   {(activePower.HasValue ? activePower.Value.ToString() : "Unknown")}");
+                sb.AppendLine($"Calibrated Max RPM:  CPU={SettingsManager.GetInt(Nitrous.Helpers.FanCurveHelper.MaxCpuRpmKey, Nitrous.Helpers.FanCurveHelper.DefaultMaxRpm)} RPM, GPU={SettingsManager.GetInt(Nitrous.Helpers.FanCurveHelper.MaxGpuRpmKey, Nitrous.Helpers.FanCurveHelper.DefaultMaxRpm)} RPM");
             }
         }
         catch (Exception ex)

@@ -1,6 +1,7 @@
 using System.Windows;
 using Nitrous.Enums;
 using Nitrous.Helpers;
+using Nitrous.Managers;
 using Xunit;
 using Point = System.Windows.Point;
 
@@ -187,5 +188,72 @@ public class FanCurveHelperTests
 
         Assert.Equal(0, FanCurveHelper.GetClampedSpeed(curve, 10));
         Assert.Equal(100, FanCurveHelper.GetClampedSpeed(curve, 110));
+    }
+
+    [Theory]
+    [InlineData(7500, 7500, 100)]     // At calibrated 7500 RPM ceiling -> 100%
+    [InlineData(4650, 7500, 65)]      // Midpoint between 1800 and 7500 -> 65%
+    [InlineData(5850, 7500, 80)]      // Old ceiling (5850) on a 7500 RPM fan is ~80%
+    [InlineData(1800, 7500, 30)]      // Floor remains 30%
+    [InlineData(3000, 1000, 100)]     // Degenerate maxRpm <= MinRpm safely guarded against div-by-zero
+    public void RpmToPercentage_WithCustomCeiling_ScalesProportionally(int rpm, double maxRpm, int expectedPercentage)
+    {
+        int percentage = FanCurveHelper.RpmToPercentage(rpm, maxRpm);
+        Assert.Equal(expectedPercentage, percentage);
+    }
+
+    [Theory]
+    [InlineData(5000, 5850, 5850, false)]  // Below default ceiling -> no update
+    [InlineData(5850, 5850, 5850, false)]  // Equal to ceiling -> no update
+    [InlineData(6200, 5850, 6200, true)]   // New high-water mark -> updates ceiling
+    [InlineData(7100, 6200, 7100, true)]   // Higher high-water mark -> updates again
+    [InlineData(6500, 7100, 7100, false)]  // Lower than calibrated ceiling -> retains 7100
+    [InlineData(65535, 5850, 5850, false)] // WMI 0xFFFF spike (> 12000) -> rejected
+    [InlineData(15000, 6400, 6400, false)] // Implausible spike -> rejected, retains 6400
+    [InlineData(6000, 2000, 6000, true)]   // Corrupted low ceiling (<5850) normalizes to 5850 then updates to 6000
+    [InlineData(4000, 2000, 5850, false)]  // Corrupted low ceiling (<5850) normalizes to 5850
+    [InlineData(4000, 99999, 5850, false)] // Corrupted high ceiling (>12000) normalizes to 5850
+    public void TryCalibrateCeiling_EvaluatesHighWaterMarkAndRejectsSpikes(
+        int observedRpm, int currentCeiling, int expectedCeiling, bool expectedUpdated)
+    {
+        int result = FanCurveHelper.TryCalibrateCeiling(observedRpm, currentCeiling, out bool updated);
+        Assert.Equal(expectedCeiling, result);
+        Assert.Equal(expectedUpdated, updated);
+    }
+
+    [Fact]
+    public void ObserveAndGetCalibratedMaxRpm_PersistsOnlyWhenNewCeilingReached()
+    {
+        const string testKey = "Test_MaxFanRpm_SelfCalibrate";
+        try
+        {
+            SettingsManager.Delete(testKey);
+            SettingsManager.InvalidateCache();
+
+            // Initial observation below 5850 -> returns 5850 and does not write to registry
+            Assert.Equal(5850, FanCurveHelper.ObserveAndGetCalibratedMaxRpm(testKey, 4200));
+            Assert.Equal(-1, SettingsManager.GetInt(testKey, -1));
+
+            // Observation above 5850 -> calibrates and persists 6400
+            Assert.Equal(6400, FanCurveHelper.ObserveAndGetCalibratedMaxRpm(testKey, 6400));
+            Assert.Equal(6400, SettingsManager.GetInt(testKey, -1));
+
+            // Subsequent lower observation -> keeps 6400
+            Assert.Equal(6400, FanCurveHelper.ObserveAndGetCalibratedMaxRpm(testKey, 5900));
+            Assert.Equal(6400, SettingsManager.GetInt(testKey, -1));
+
+            // WMI 0xFFFF glitch -> rejected, keeps 6400
+            Assert.Equal(6400, FanCurveHelper.ObserveAndGetCalibratedMaxRpm(testKey, 65535));
+            Assert.Equal(6400, SettingsManager.GetInt(testKey, -1));
+
+            // Higher valid observation -> updates to 7200
+            Assert.Equal(7200, FanCurveHelper.ObserveAndGetCalibratedMaxRpm(testKey, 7200));
+            Assert.Equal(7200, SettingsManager.GetInt(testKey, -1));
+        }
+        finally
+        {
+            SettingsManager.Delete(testKey);
+            SettingsManager.InvalidateCache();
+        }
     }
 }

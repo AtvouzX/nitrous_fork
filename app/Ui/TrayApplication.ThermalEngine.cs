@@ -101,6 +101,9 @@ public partial class TrayApplication : ApplicationContext
                     if (isCurveActive || (tickCounter % 5 == 0))
                     {
                         var telemetry = AcerWmiManager.GetSystemTelemetry();
+                        _ = FanCurveHelper.ObserveAndGetCalibratedMaxRpm(FanCurveHelper.MaxCpuRpmKey, telemetry.CpuRpm);
+                        _ = FanCurveHelper.ObserveAndGetCalibratedMaxRpm(FanCurveHelper.MaxGpuRpmKey, telemetry.GpuRpm);
+
                         int effectiveGpuTemp = telemetry.GpuTemp;
                         bool gpuAwakeForTooltip = isAutoApplyActive ? _wasGpuAwake : (effectiveGpuTemp > 0);
                         if (TooltipInputsChanged(telemetry.CpuTemp, effectiveGpuTemp, gpuAwakeForTooltip, _lastTipCpu, _lastTipGpu, _lastTipAwake))
