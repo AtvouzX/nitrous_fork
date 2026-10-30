@@ -103,13 +103,19 @@ public class ChamferCard : ContentControl
         var template = new ControlTemplate(typeof(ChamferCard));
         var grid = new FrameworkElementFactory(typeof(Grid));
 
+        // Canvas host keeps the frame Path out of layout measurement so stale
+        // (larger) geometry can never pin DesiredSize and block shrinking.
+        var canvas = new FrameworkElementFactory(typeof(Canvas));
+        canvas.SetValue(UIElement.IsHitTestVisibleProperty, false);
+
         var path = new FrameworkElementFactory(typeof(Path));
         path.Name = "PART_Frame";
         path.SetValue(Shape.StrokeProperty, new TemplateBindingExtension(BorderBrushProperty));
         path.SetValue(Shape.FillProperty, new TemplateBindingExtension(BackgroundProperty));
         path.SetValue(Shape.StrokeThicknessProperty, 1.0);
         path.SetValue(SnapsToDevicePixelsProperty, true);
-        grid.AppendChild(path);
+        canvas.AppendChild(path);
+        grid.AppendChild(canvas);
 
         var border = new FrameworkElementFactory(typeof(Border));
         border.Name = "PART_ContentHost";

@@ -261,12 +261,6 @@ public partial class DashboardViewModel
         set => SetProperty(ref _gpuTempColor, value);
     }
 
-    public const string AcBadgeIcon =
-        "M16,7V3H14V7H10V3H8V7C8,10 9.79,11.4 11,11.83V16H13V11.83C14.21,11.4 16,10 16,7M10,18H14V22H10V18Z";
-
-    public const string BattBadgeIcon =
-        "M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z";
-
     private double _batteryChargePercent = 100.0;
 
     public double BatteryChargePercent
@@ -283,15 +277,7 @@ public partial class DashboardViewModel
         set => SetProperty(ref _batteryBadgeText, value);
     }
 
-    private string _batteryBadgeBorder = "#FF4500";
-
-    public string BatteryBadgeBorder
-    {
-        get => _batteryBadgeBorder;
-        set => SetProperty(ref _batteryBadgeBorder, value);
-    }
-
-    private string _batteryBadgeForeground = "White";
+    private string _batteryBadgeForeground = "#8A8A96";
 
     public string BatteryBadgeForeground
     {
@@ -299,12 +285,20 @@ public partial class DashboardViewModel
         set => SetProperty(ref _batteryBadgeForeground, value);
     }
 
-    private string _batteryBadgeIcon = AcBadgeIcon;
+    private string _batteryBadgeBackground = "#121215";
 
-    public string BatteryBadgeIcon
+    public string BatteryBadgeBackground
     {
-        get => _batteryBadgeIcon;
-        set => SetProperty(ref _batteryBadgeIcon, value);
+        get => _batteryBadgeBackground;
+        set => SetProperty(ref _batteryBadgeBackground, value);
+    }
+
+    private string _batteryBadgeBorderBrush = "#26262B";
+
+    public string BatteryBadgeBorderBrush
+    {
+        get => _batteryBadgeBorderBrush;
+        set => SetProperty(ref _batteryBadgeBorderBrush, value);
     }
 
     private int _lastBatteryRate = int.MinValue;
@@ -352,16 +346,16 @@ public partial class DashboardViewModel
             {
                 BatteryBadgeText =
                     $"CHARGING • {watts.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}W";
-                BatteryBadgeBorder = "#34C759";
-                BatteryBadgeForeground = "#34C759";
-                BatteryBadgeIcon = AcBadgeIcon;
+                BatteryBadgeForeground = "#E85D2A";
+                BatteryBadgeBackground = "#121215";
+                BatteryBadgeBorderBrush = "#26262B";
             }
             else
             {
-                BatteryBadgeText = "AC POWER";
-                BatteryBadgeBorder = "#FF453A";
-                BatteryBadgeForeground = "White";
-                BatteryBadgeIcon = AcBadgeIcon;
+                BatteryBadgeText = "CHARGED";
+                BatteryBadgeForeground = "#EDEDEF";
+                BatteryBadgeBackground = "#121215";
+                BatteryBadgeBorderBrush = "#26262B";
             }
         }
         else
@@ -369,9 +363,9 @@ public partial class DashboardViewModel
             BatteryBadgeText = watts > 0.1
                 ? $"BATTERY • {watts.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}W"
                 : "BATTERY";
-            BatteryBadgeBorder = "#32D74B";
-            BatteryBadgeForeground = "#64D2FF";
-            BatteryBadgeIcon = BattBadgeIcon;
+            BatteryBadgeForeground = "#EDEDEF";
+            BatteryBadgeBackground = "#18181C";
+            BatteryBadgeBorderBrush = "#26262B";
         }
     }
 

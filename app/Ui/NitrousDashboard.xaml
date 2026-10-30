@@ -1,6 +1,7 @@
 <Window x:Class="Nitrous.Ui.NitrousDashboard"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:controls="clr-namespace:Nitrous.Ui.Controls"
         xmlns:views="clr-namespace:Nitrous.Ui.Views"
         Title="Nitrous Dashboard" Height="580" Width="375"
         WindowStyle="None" AllowsTransparency="True" Background="Transparent"
@@ -54,29 +55,21 @@
 					           Margin="0,0,8,0" />
 
 					<!-- Power Pill Badge -->
-					<Border Background="{StaticResource Steel850Brush}"
-					        BorderBrush="{StaticResource Steel700Brush}"
-					        BorderThickness="1"
-					        Padding="6,1.5"
-					        Margin="4,0,0,0"
-					        VerticalAlignment="Center">
-						<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-							<Path x:Name="DashPowerPillIcon"
-							      Fill="{Binding BatteryBadgeForeground}"
-							      Stretch="Uniform"
-							      Width="9" Height="9"
-							      VerticalAlignment="Center"
-							      Margin="0,0,4,0"
-							      Data="{Binding BatteryBadgeIcon}" />
-							<TextBlock x:Name="DashPowerPillText"
-							           Text="{Binding BatteryBadgeText}"
-							           Foreground="{Binding BatteryBadgeForeground}"
-							           FontFamily="{StaticResource MonoFontFamily}"
-							           FontSize="10.5"
-							           FontWeight="Bold"
-							           VerticalAlignment="Center" />
-						</StackPanel>
-					</Border>
+					<controls:ChamferCard Background="{Binding BatteryBadgeBackground}"
+					                      BorderBrush="{Binding BatteryBadgeBorderBrush}"
+					                      BorderThickness="1"
+					                      ChamferSize="4"
+					                      Padding="7,2"
+					                      Margin="4,0,0,0"
+					                      VerticalAlignment="Center">
+						<TextBlock x:Name="DashPowerPillText"
+						           Text="{Binding BatteryBadgeText}"
+						           Foreground="{Binding BatteryBadgeForeground}"
+						           FontFamily="{StaticResource MonoFontFamily}"
+						           FontSize="10.5"
+						           FontWeight="Bold"
+						           VerticalAlignment="Center" />
+					</controls:ChamferCard>
 				</StackPanel>
 
 				<!-- Right Side: Pin to Top & Close -->
