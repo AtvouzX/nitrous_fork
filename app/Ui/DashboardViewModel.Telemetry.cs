@@ -309,17 +309,16 @@ public partial class DashboardViewModel
 
     public void UpdateBatteryBadge(Powrprof.SYSTEM_BATTERY_STATE batteryState)
     {
-        double watts = Math.Abs(batteryState.Rate) / 1000.0;
+        double watts = UnitConverter.MwToW(Math.Abs((double)batteryState.Rate));
 
         if (batteryState.MaxCapacity > 0)
         {
-            BatteryChargePercent = Math.Clamp((double)batteryState.RemainingCapacity / batteryState.MaxCapacity * 100.0,
-                0.0, 100.0);
+            BatteryChargePercent = UnitConverter.BatteryPercent(batteryState.RemainingCapacity, batteryState.MaxCapacity);
         }
         else
         {
             var pStatus = System.Windows.Forms.SystemInformation.PowerStatus;
-            BatteryChargePercent = Math.Clamp(pStatus.BatteryLifePercent * 100.0, 0.0, 100.0);
+            BatteryChargePercent = UnitConverter.BatteryPercentFromFraction(pStatus.BatteryLifePercent);
         }
 
         if (!batteryState.BatteryPresent || batteryState.AcOnLine)
@@ -618,10 +617,8 @@ public partial class DashboardViewModel
 
                                 EnsureCachedCurvesLoaded(currentCurveVersion, pName);
 
-                                CpuFanPercentage = Math.Clamp(FanCurveHelper.InterpolateSpeed(_cachedCpuCurve, curCpu),
-                                    0, 100);
-                                GpuFanPercentage = Math.Clamp(FanCurveHelper.InterpolateSpeed(_cachedGpuCurve, curGpu),
-                                    0, 100);
+                                CpuFanPercentage = FanCurveHelper.GetClampedSpeed(_cachedCpuCurve, curCpu);
+                                GpuFanPercentage = FanCurveHelper.GetClampedSpeed(_cachedGpuCurve, curGpu);
                             }
                             else
                             {

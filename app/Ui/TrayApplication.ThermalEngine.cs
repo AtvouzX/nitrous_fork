@@ -126,10 +126,10 @@ public partial class TrayApplication : ApplicationContext
                             }
 
                             // 4. Interpolate raw target speeds
-                            int targetCpuSpeed = Math.Clamp(FanCurveHelper.InterpolateSpeed(_cachedCpuCurve, telemetry.CpuTemp), 0, 100);
+                            int targetCpuSpeed = FanCurveHelper.GetClampedSpeed(_cachedCpuCurve, telemetry.CpuTemp);
                             int targetGpuSpeed = effectiveGpuTemp == 0
                                 ? targetCpuSpeed
-                                : Math.Clamp(FanCurveHelper.InterpolateSpeed(_cachedGpuCurve, effectiveGpuTemp), 0, 100);
+                                : FanCurveHelper.GetClampedSpeed(_cachedGpuCurve, effectiveGpuTemp);
 
                             // 5. Apply Hysteresis (Anti-Revving):
                             // Ramp-up: Immediate (protects hardware)
