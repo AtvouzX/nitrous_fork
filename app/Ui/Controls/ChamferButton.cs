@@ -60,6 +60,26 @@ public class ChamferButton : Button
         set => SetValue(VariantProperty, value);
     }
 
+    public static readonly DependencyProperty IsActiveProperty =
+        DependencyProperty.Register(
+            nameof(IsActive),
+            typeof(bool),
+            typeof(ChamferButton),
+            new FrameworkPropertyMetadata(
+                false,
+                FrameworkPropertyMetadataOptions.AffectsRender,
+                OnActiveChanged));
+
+    /// <summary>
+    /// When true, renders Primary (Ember) visuals. Lets a plain Button act as a
+    /// state toggle (e.g. CURVE on/off) while keeping the chamfered shell.
+    /// </summary>
+    public bool IsActive
+    {
+        get => (bool)GetValue(IsActiveProperty);
+        set => SetValue(IsActiveProperty, value);
+    }
+
     private Path? _framePath;
     private Border? _contentHost;
 
@@ -139,7 +159,8 @@ public class ChamferButton : Button
     protected override void OnPropertyChanged(DependencyPropertyChangedEventArgs e)
     {
         base.OnPropertyChanged(e);
-        if (e.Property == IsEnabledProperty || e.Property == BorderBrushProperty || e.Property == BackgroundProperty)
+        if (e.Property == IsEnabledProperty || e.Property == BorderBrushProperty || e.Property == BackgroundProperty
+            || e.Property == IsActiveProperty || e.Property == VariantProperty)
         {
             UpdateVisualBrushes();
             UpdateButtonGeometry();
@@ -155,6 +176,14 @@ public class ChamferButton : Button
     }
 
     private static void OnVariantChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
+    {
+        if (d is ChamferButton btn)
+        {
+            btn.UpdateVisualBrushes();
+        }
+    }
+
+    private static void OnActiveChanged(DependencyObject d, DependencyPropertyChangedEventArgs e)
     {
         if (d is ChamferButton btn)
         {
@@ -178,8 +207,9 @@ public class ChamferButton : Button
 
         bool hasCustomBg = ReadLocalValue(BackgroundProperty) != DependencyProperty.UnsetValue && Background != Brushes.Transparent && Background != null;
         bool hasCustomBorder = ReadLocalValue(BorderBrushProperty) != DependencyProperty.UnsetValue && BorderBrush != null;
+        bool isPrimary = Variant == ChamferButtonVariant.Primary || (Variant == ChamferButtonVariant.Secondary && IsActive);
 
-        if (Variant == ChamferButtonVariant.Primary)
+        if (isPrimary)
         {
             if (IsPressed)
             {

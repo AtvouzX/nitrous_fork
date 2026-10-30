@@ -243,24 +243,27 @@
 							<TextBlock Text="FANS" Foreground="{StaticResource Steel300Brush}" FontFamily="{StaticResource MonoFontFamily}"
 							           FontSize="10" FontWeight="Bold" VerticalAlignment="Center" />
 							<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
-								<!-- USE CURVE Toggle Button (visible when Custom Fan is enabled) -->
-								<ToggleButton x:Name="BtnCurveToggle"
-								              IsChecked="{Binding IsCurveModeEnabled, UpdateSourceTrigger=PropertyChanged}"
-								              Visibility="{Binding IsCustomFanEnabled, Converter={StaticResource BoolToVis}}"
-								              Style="{StaticResource SmallGhostToggleBtn}"
-								              Content="CURVE"
-								              Margin="0,0,4,0"
-								              ToolTip="Switch manual fan control between fixed speeds and the temperature curve." />
-								<!-- EDIT CURVE Button -->
-								<Button x:Name="BtnEditCurve" Click="OpenCurveEditor_Click" Style="{StaticResource GhostBtn}" Padding="4,1">
+								<!-- USE CURVE toggle (visible when Custom Fan is enabled) -->
+								<controls:ChamferButton x:Name="BtnCurveToggle"
+								                       Variant="Secondary" ChamferSize="3" Height="20" FontSize="8" Padding="8,0" FontWeight="Bold"
+								                       Visibility="{Binding IsCustomFanEnabled, Converter={StaticResource BoolToVis}}"
+								                       IsActive="{Binding IsCurveModeEnabled, Mode=OneWay}"
+								                       Click="CurveToggle_Click"
+								                       Margin="0,0,4,0"
+								                       ToolTip="Switch manual fan control between fixed speeds and the temperature curve.">
 									<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
-										<Path
-											Data="M10.325,4.317c.426-1.756 2.924-1.756 3.35,0a1.724,1.724 0 0,0 2.573,1.066c1.543-.94 3.31.826 2.37,2.37a1.724,1.724 0 0,0 1.065,2.572c1.756.426 1.756,2.924 0,3.35a1.724,1.724 0 0,0-1.066,2.573c.94,1.543-.826,3.31-2.37,2.37a1.724,1.724 0 0,0-2.572,1.065c-.426,1.756-2.924,1.756-3.35,0a1.724,1.724 0 0,0-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724,1.724 0 0,0-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724,1.724 0 0,0 1.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z M15,12a3,3 0 1,1 -6,0 3,3 0 0,1 6,0z"
-											Fill="{Binding Foreground, RelativeSource={RelativeSource AncestorType=Button}}"
-											Stretch="Uniform" Width="8" Height="8" Margin="0,0,3,0" />
+										<TextBlock Text="CURVE" FontFamily="{StaticResource MonoFontFamily}" FontSize="8" FontWeight="Bold" />
+									</StackPanel>
+								</controls:ChamferButton>
+								<!-- EDIT CURVE Button -->
+								<controls:ChamferButton x:Name="BtnEditCurve" Variant="Secondary" ChamferSize="3"
+								                       Click="OpenCurveEditor_Click" Height="20" FontSize="8" Padding="8,0"
+								                       Margin="0,0,0,0"
+								                       ToolTip="Open the temperature curve editor.">
+									<StackPanel Orientation="Horizontal" VerticalAlignment="Center">
 										<TextBlock Text="EDIT CURVE" FontFamily="{StaticResource MonoFontFamily}" FontSize="8" FontWeight="Bold" />
 									</StackPanel>
-								</Button>
+								</controls:ChamferButton>
 							</StackPanel>
 						</Grid>
 					</Border>

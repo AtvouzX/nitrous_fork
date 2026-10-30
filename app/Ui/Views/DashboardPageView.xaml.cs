@@ -13,6 +13,14 @@ public partial class DashboardPageView : UserControl
         InitializeComponent();
     }
 
+    private void CurveToggle_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is DashboardViewModel vm)
+        {
+            vm.IsCurveModeEnabled = !vm.IsCurveModeEnabled;
+        }
+    }
+
     private void OpenCurveEditor_Click(object sender, RoutedEventArgs e)
     {
         if (Window.GetWindow(this) is NitrousDashboard dash)
