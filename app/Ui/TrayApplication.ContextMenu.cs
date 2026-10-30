@@ -30,8 +30,8 @@ public partial class TrayApplication : ApplicationContext
             {
                 try
                 {
-                    await AcerWmiManager.SetPowerModeAsync(profile);
                     SettingsManager.Save("LastPowerMode", (int)profile);
+                    await AcerWmiManager.ApplyPowerProfileAsync(profile);
                     bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
                     SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)profile);
 
@@ -40,7 +40,7 @@ public partial class TrayApplication : ApplicationContext
                         _ = CpuPowerManager.ApplyProfileLimitsAsync(profile, isOnline);
                     }
 
-                    await _gpuManager.ApplyPowerProfileOcAsync(profile, isOnline);
+                    await _gpuManager.ApplyProfileOcAsync(profile, isOnline);
                     TriggerProfileOsd(profile);
 
                     foreach (ToolStripItem sibling in powerMenu.DropDownItems)
@@ -94,17 +94,17 @@ public partial class TrayApplication : ApplicationContext
                             var cpuCurve = FanCurveHelper.LoadCurveFromRegistry($"CpuCurve_{pName}", FanCurveHelper.GetDefaultCpuCurve(activeMode));
                             var gpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}", FanCurveHelper.GetDefaultGpuCurve(activeMode));
                             var telem = AcerWmiManager.GetSystemTelemetry();
-                            int cpuSpd = Math.Clamp(FanCurveHelper.InterpolateSpeed(cpuCurve, telem.CpuTemp > 0 ? telem.CpuTemp : 50), 0, 100);
+                            int cpuSpd = FanCurveHelper.GetClampedSpeed(cpuCurve, telem.CpuTemp > 0 ? telem.CpuTemp : 50);
                             int gpuTemp = telem.GpuTemp > 0 ? telem.GpuTemp : telem.CpuTemp;
-                            int gpuSpd = Math.Clamp(FanCurveHelper.InterpolateSpeed(gpuCurve, gpuTemp > 0 ? gpuTemp : 50), 0, 100);
+                            int gpuSpd = FanCurveHelper.GetClampedSpeed(gpuCurve, gpuTemp > 0 ? gpuTemp : 50);
 
                             _lastAppliedCpuSpeed = cpuSpd;
                             _lastAppliedGpuSpeed = gpuSpd;
-                            await AcerWmiManager.SetCustomFansAsync(cpuSpd, gpuSpd);
+                            await AcerWmiManager.SetFansAsync(FanProfile.Medium, cpuSpd, gpuSpd);
                         }
                         else
                         {
-                            await AcerWmiManager.SetCustomFansAsync(
+                            await AcerWmiManager.SetFansAsync(FanProfile.Medium, 
                                 SettingsManager.Get("CustomFanSpeedCpu", 50),
                                 SettingsManager.Get("CustomFanSpeedGpu", 50));
                         }

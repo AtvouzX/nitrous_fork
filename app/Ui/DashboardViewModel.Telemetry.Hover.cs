@@ -106,6 +106,11 @@ public partial class DashboardViewModel
         set => SetProperty(ref _gpuHoverUsageStr, value);
     }
 
+    private double _lastCpuHoverTemp = double.NaN;
+    private double _lastCpuHoverUsage = double.NaN;
+    private double _lastGpuHoverTemp = double.NaN;
+    private double _lastGpuHoverUsage = double.NaN;
+
     public void UpdateCpuHover(double pixelX, double actualWidth)
     {
         long now = Environment.TickCount64;
@@ -118,8 +123,13 @@ public partial class DashboardViewModel
             CpuHoverMargin = new Thickness(clampedX, 0, 0, 0);
             CpuTooltipMargin = new Thickness(clampedX > (actualWidth / 2) ? clampedX - 85 : clampedX + 5, 5, 0, 0);
             CpuHoverTime = $"-{(int)diff.TotalMinutes}M {(int)diff.Seconds}S";
+        if (_lastCpuHoverTemp != point.Temp || _lastCpuHoverUsage != point.Usage)
+        {
+            _lastCpuHoverTemp = point.Temp;
+            _lastCpuHoverUsage = point.Usage;
             CpuHoverTempStr = $"{point.Temp}°C";
             CpuHoverUsageStr = $"{point.Usage:0}%";
+        }
         }
         else
         {
@@ -139,8 +149,13 @@ public partial class DashboardViewModel
             GpuHoverMargin = new Thickness(clampedX, 0, 0, 0);
             GpuTooltipMargin = new Thickness(clampedX > (actualWidth / 2) ? clampedX - 85 : clampedX + 5, 5, 0, 0);
             GpuHoverTime = $"-{(int)diff.TotalMinutes}M {(int)diff.Seconds}S";
+        if (_lastGpuHoverTemp != point.Temp || _lastGpuHoverUsage != point.Usage)
+        {
+            _lastGpuHoverTemp = point.Temp;
+            _lastGpuHoverUsage = point.Usage;
             GpuHoverTempStr = $"{point.Temp}°C";
             GpuHoverUsageStr = $"{point.Usage:0}%";
+        }
             if (point.Temp == 0)
             {
                 GpuHoverStatsVisibility = Visibility.Collapsed;

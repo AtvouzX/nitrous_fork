@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -105,6 +105,8 @@ public partial class NvidiaGpuManager
     {
         public uint Pid;
         public ulong UsedGpuMemory;
+        public uint GpuInstanceId;
+        public uint ComputeInstanceId;
     }
 
     private static class NativeNvml

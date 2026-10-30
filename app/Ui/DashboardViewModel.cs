@@ -32,7 +32,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             if (SetProperty(ref _chargeLimit, value))
             {
                 SettingsManager.Save("ChargeLimit", value ? 1 : 0);
-                _ = AcerWmiManager.SetChargeLimitAsync(value);
+                _ = BatteryManager.SetChargeLimitAsync(value);
             }
         }
     }
@@ -169,8 +169,9 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
                 if (!hasClocks)
                 {
-                    core = SettingsManager.Get($"GpuCore_{ActivePowerProfile}", _gpuManager.GetDefaultCore(ActivePowerProfile));
-                    memory = SettingsManager.Get($"GpuMemory_{ActivePowerProfile}", _gpuManager.GetDefaultMemory(ActivePowerProfile));
+                    var (fallbackCore, fallbackMemory) = _gpuManager.ResolveProfileOffsets(ActivePowerProfile);
+                    core = fallbackCore;
+                    memory = fallbackMemory;
                     hasClocks = true;
                 }
 
@@ -294,8 +295,9 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             _activePowerProfile = newPowerProfile;
             OnPropertyChanged(nameof(ActivePowerProfile));
 
-            GpuCoreOffset = _gpuManager.ClampCoreOffset(SettingsManager.Get($"GpuCore_{newPowerProfile}", _gpuManager.GetDefaultCore(newPowerProfile)));
-            GpuMemoryOffset = _gpuManager.ClampMemoryOffset(SettingsManager.Get($"GpuMemory_{newPowerProfile}", _gpuManager.GetDefaultMemory(newPowerProfile)));
+            var (syncedCore, syncedMemory) = _gpuManager.ResolveProfileOffsets(newPowerProfile);
+            GpuCoreOffset = syncedCore;
+            GpuMemoryOffset = syncedMemory;
         }
 
         var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f)

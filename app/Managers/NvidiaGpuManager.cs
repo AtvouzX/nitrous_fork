@@ -15,6 +15,7 @@ using NvAPIWrapper.Native.GPU;
 using NvAPIWrapper.Native.GPU.Structures;
 using NvAPIWrapper.Native.Interfaces.GPU;
 using Nitrous.Enums;
+using Nitrous.Helpers;
 using Nitrous.Interop;
 
 namespace Nitrous.Managers;
@@ -47,17 +48,6 @@ public partial class NvidiaGpuManager : IDisposable
         catch
         {
         }
-    }
-
-    public static bool ShouldAutoApplyGpuClocks(bool wasGpuAwake, bool isGpuAwake, bool isAcOnline,
-        int autoApplySetting)
-    {
-        return !wasGpuAwake && isGpuAwake && isAcOnline && autoApplySetting == 1;
-    }
-
-    public static bool ShouldResetGpuHandle(bool wasGpuAwake, bool isGpuAwake)
-    {
-        return wasGpuAwake && !isGpuAwake;
     }
 
     /// <summary>
@@ -178,7 +168,7 @@ public partial class NvidiaGpuManager : IDisposable
         InitializeNvAPI();
     }
 
-    public static void MigrateLegacyDefaultOffsets()
+    private static void MigrateLegacyDefaultOffsets()
     {
         try
         {
@@ -247,8 +237,10 @@ public partial class NvidiaGpuManager : IDisposable
             // Initialize NVML for Telemetry
             if (NativeNvml.Init() == NvmlReturn.Success)
             {
-                // Grab the handle for the primary GPU (index 0)
-                NativeNvml.DeviceGetHandleByIndex(0, out _nvmlDeviceHandle);
+                // Grab the handle for the primary GPU (index 0).
+                // Must check return: failed out-param may hold garbage and AV native calls.
+                if (NativeNvml.DeviceGetHandleByIndex(0, out _nvmlDeviceHandle) != NvmlReturn.Success)
+                    _nvmlDeviceHandle = IntPtr.Zero;
 
                 // Fetch architecture to set the correct memory divisor for GDDR7 (Blackwell+)
                 if (NativeNvml.DeviceGetArchitecture(_nvmlDeviceHandle, out NvmlDeviceArchitecture arch) ==
@@ -424,11 +416,29 @@ public partial class NvidiaGpuManager : IDisposable
         }
     }
 
+    public static bool IsTestHost()
+    {
+        string procName = Process.GetCurrentProcess().ProcessName;
+        return procName.Contains("testhost", StringComparison.OrdinalIgnoreCase) ||
+               procName.Contains("vstest", StringComparison.OrdinalIgnoreCase);
+    }
+
     public async Task<GpuTelemetry> GetNvmlTelemetryAsync(CancellationToken cancellationToken = default)
     {
         return await Task.Run(() =>
         {
             var t = new GpuTelemetry { Architecture = _cachedArchName };
+
+            // Never touch live NVML from the test host: parallel tests racing
+            // Init/Shutdown/handle reads AV the process (FailFast, uncatchable).
+            if (IsTestHost())
+            {
+                t.PState = "Sleep";
+                t.CoreTemp = 0;
+                t.GpuLoad = 0;
+                t.Name = "NVIDIA (Asleep)";
+                return t;
+            }
 
             // Phase 1: Native Sleep Check wrapper
             // If the GPU is asleep, bypass NVML completely to preserve D3Cold power state.
@@ -465,7 +475,8 @@ public partial class NvidiaGpuManager : IDisposable
             {
                 if (NativeNvml.Init() == NvmlReturn.Success)
                 {
-                    NativeNvml.DeviceGetHandleByIndex(0, out _nvmlDeviceHandle);
+                    if (NativeNvml.DeviceGetHandleByIndex(0, out _nvmlDeviceHandle) != NvmlReturn.Success)
+                        _nvmlDeviceHandle = IntPtr.Zero;
                     if (NativeNvml.DeviceGetArchitecture(_nvmlDeviceHandle, out NvmlDeviceArchitecture arch) ==
                         NvmlReturn.Success)
                     {
@@ -592,16 +603,16 @@ public partial class NvidiaGpuManager : IDisposable
 
                 // Power Limits (Convert milliwatts to Watts)
                 if (NativeNvml.DeviceGetPowerUsage(_nvmlDeviceHandle, out uint powerDraw) == NvmlReturn.Success)
-                    t.PowerDrawW = Math.Round(powerDraw / 1000.0, 1);
+                    t.PowerDrawW = UnitConverter.MwToWRounded(powerDraw);
 
                 if (NativeNvml.DeviceGetEnforcedPowerLimit(_nvmlDeviceHandle, out uint enforced) == NvmlReturn.Success)
-                    t.EnforcedPowerLimitW = Math.Round(enforced / 1000.0, 1);
+                    t.EnforcedPowerLimitW = UnitConverter.MwToWRounded(enforced);
 
                 if (NativeNvml.DeviceGetPowerManagementLimitConstraints(_nvmlDeviceHandle, out uint minLimit,
                         out uint maxLimit) == NvmlReturn.Success)
                 {
-                    t.MinPowerLimitW = Math.Round(minLimit / 1000.0, 1);
-                    t.MaxPowerLimitW = Math.Round(maxLimit / 1000.0, 1);
+                    t.MinPowerLimitW = UnitConverter.MwToWRounded(minLimit);
+                    t.MaxPowerLimitW = UnitConverter.MwToWRounded(maxLimit);
                 }
             }
             catch (Exception ex)

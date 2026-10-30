@@ -196,13 +196,13 @@ public class PerformanceAuditTests
     [InlineData(PowerProfile.Balanced)]
     [InlineData(PowerProfile.Performance)]
     [InlineData(PowerProfile.Turbo)]
-    public async Task ApplyPowerProfileOcAsync_WhenOnBattery_BypassesNvApiAndReturnsZero(PowerProfile profile)
+    public async Task ApplyProfileOcAsync_WhenOnBattery_BypassesNvApiAndReturnsZero(PowerProfile profile)
     {
         using var manager = new NvidiaGpuManager();
 
         // Core Battery Invariant: discrete NVIDIA GPU must remain in D3Cold sleep on battery (DC power).
         // Overclocking and NvAPI calls must be completely bypassed.
-        int result = await manager.ApplyPowerProfileOcAsync(profile, isAcOnline: false);
+        int result = await manager.ApplyProfileOcAsync(profile, isAcOnline: false);
 
         Assert.Equal(0, result);
     }
@@ -212,26 +212,26 @@ public class PerformanceAuditTests
     [InlineData(PowerProfile.Balanced)]
     [InlineData(PowerProfile.Performance)]
     [InlineData(PowerProfile.Turbo)]
-    public async Task ApplyOnBootAsync_WhenOnBattery_BypassesNvApiAndPreservesD3Cold(PowerProfile profile)
+    public async Task ApplyProfileOcAsync_WhenOnBattery_BypassesNvApiAndPreservesD3Cold_BootAlias(PowerProfile profile)
     {
         using var manager = new NvidiaGpuManager();
 
         // Boot OC must abort immediately without initializing NvAPI on battery power
-        var ex = await Record.ExceptionAsync(() => manager.ApplyOnBootAsync(profile, isAcOnline: false));
+        var ex = await Record.ExceptionAsync(() => manager.ApplyProfileOcAsync(profile, isAcOnline: false));
 
         Assert.Null(ex);
     }
 
     [Fact]
-    public async Task ApplyPowerProfileOcAsync_WhenGpuIsSleeping_PreservesD3Cold()
+    public async Task ApplyProfileOcAsync_WhenGpuIsSleeping_PreservesD3Cold()
     {
         using var manager = new NvidiaGpuManager();
 
         if (!NvidiaGpuManager.IsGpuAwake())
         {
-            // If the physical dGPU is currently in D3Cold sleep, ApplyPowerProfileOcAsync must return 0
+            // If the physical dGPU is currently in D3Cold sleep, ApplyProfileOcAsync must return 0
             // and must NOT wake the GPU up.
-            int result = await manager.ApplyPowerProfileOcAsync(PowerProfile.Performance, isAcOnline: true);
+            int result = await manager.ApplyProfileOcAsync(PowerProfile.Performance, isAcOnline: true);
             Assert.Equal(0, result);
             Assert.False(NvidiaGpuManager.IsGpuAwake(), "GPU should remain asleep after bypassed OC attempt.");
         }
@@ -305,5 +305,51 @@ public class PerformanceAuditTests
         // Dashboard primitives must use Local\ namespace for session isolation
         Assert.StartsWith(@"Local\", Program.DashboardMutexName);
         Assert.StartsWith(@"Local\", Program.DashboardEventName);
+    }
+
+    // =========================================================================
+    // 4. Settings Hot-Path Cache Invariants (Ticket 3)
+    // =========================================================================
+
+    [Fact]
+    public void SettingsHotPath_IntAndLongGetters_AgreeWithLegacyGenericGet()
+    {
+        const string intKey = "T3_PerfAudit_Int";
+        const string longKey = "T3_PerfAudit_Long";
+        try
+        {
+            SettingsManager.Save(intKey, 42);
+            SettingsManager.Save(longKey, 9876543210L);
+
+            Assert.Equal(SettingsManager.Get(intKey, 0), SettingsManager.GetInt(intKey, -1));
+            Assert.Equal(SettingsManager.Get(longKey, 0L), SettingsManager.GetLong(longKey, -1L));
+        }
+        finally
+        {
+            SettingsManager.Delete(intKey);
+            SettingsManager.Delete(longKey);
+            SettingsManager.InvalidateCache();
+        }
+    }
+
+    [Fact]
+    public void SettingsHotPath_RepeatedReads_DoNotThrowAndReturnStableValues()
+    {
+        const string key = "T3_PerfAudit_Stable";
+        try
+        {
+            SettingsManager.Save(key, 1);
+            for (int i = 0; i < 25; i++)
+            {
+                Assert.Equal(1, SettingsManager.GetInt(key, 0));
+            }
+            // Same key via both APIs stays consistent after repeated cached reads.
+            Assert.Equal(SettingsManager.Get(key, 0), SettingsManager.GetInt(key, -1));
+        }
+        finally
+        {
+            SettingsManager.Delete(key);
+            SettingsManager.InvalidateCache();
+        }
     }
 }

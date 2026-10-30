@@ -31,6 +31,17 @@ public partial class TrayApplication : ApplicationContext
         return tipText.Length > 63 ? tipText[..63] : tipText;
     }
 
+    private int _lastTipCpu = int.MinValue;
+    private int _lastTipGpu = int.MinValue;
+    private bool _lastTipAwake;
+
+    // Ticket 8: skip tooltip string interp when inputs unchanged. Behavior-identical:
+    // tray text ends up the same, but idle ticks allocate nothing.
+    public static bool TooltipInputsChanged(int cpuTemp, int gpuTemp, bool gpuAwake, int lastCpu, int lastGpu, bool lastAwake)
+    {
+        return cpuTemp != lastCpu || gpuTemp != lastGpu || gpuAwake != lastAwake;
+    }
+
     private void StartBackgroundEngine()
     {
         Task.Run(async () =>
@@ -46,42 +57,33 @@ public partial class TrayApplication : ApplicationContext
 
                     // 1. Detect discrete GPU wake state transitions and auto-apply clock offsets on AC.
                     // Bypassed completely if the user disabled AutoApplyGpuClocks or is on battery (DC) power.
-                    // Debounced via EvaluateGpuSleepHysteresis to absorb transient 1-2s RTD3 drops and CM API read flickers.
+                    // Debounced via UpdateSleepState to absorb transient 1-2s RTD3 drops and CM API read flickers.
                     bool isAcOnline = NvidiaGpuManager.IsAcPowerConnected();
-                    int autoApplySetting = SettingsManager.Get("AutoApplyGpuClocks", 1);
+                    int autoApplySetting = SettingsManager.GetInt("AutoApplyGpuClocks", 1);
                     bool isAutoApplyActive = isAcOnline && autoApplySetting == 1;
 
-                    if (isAutoApplyActive)
+                    bool gpuIsAwake = NvidiaGpuManager.IsGpuAwake();
+                    var (newWasAwake, newHoldTicks, sleepAction) =
+                        NvidiaGpuManager.UpdateSleepState(_wasGpuAwake, _gpuSleepHoldTicks, gpuIsAwake, isAcOnline, autoApplySetting);
+
+                    _wasGpuAwake = newWasAwake;
+                    _gpuSleepHoldTicks = newHoldTicks;
+
+                    if (sleepAction == NvidiaGpuManager.GpuSleepAction.AutoApply)
                     {
-                        bool gpuIsAwake = NvidiaGpuManager.IsGpuAwake();
-                        var (newWasAwake, newHoldTicks, shouldAutoApply, shouldResetHandle) =
-                            NvidiaGpuManager.EvaluateGpuSleepHysteresis(_wasGpuAwake, gpuIsAwake, _gpuSleepHoldTicks, HysteresisHoldCycles);
-
-                        _wasGpuAwake = newWasAwake;
-                        _gpuSleepHoldTicks = newHoldTicks;
-
-                        if (shouldAutoApply)
-                        {
-                            var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-                            _ = _gpuManager.AutoApplyClocksAsync(activeMode, isAcOnline);
-                        }
-                        else if (shouldResetHandle)
-                        {
-                            _gpuManager.ResetGpuHandle();
-                        }
+                        var activeMode = (PowerProfile)SettingsManager.GetInt("LastPowerMode", (int)PowerProfile.Performance);
+                        _ = _gpuManager.ApplyProfileOcAsync(activeMode, isAcOnline);
                     }
-                    else if (_wasGpuAwake)
+                    else if (sleepAction == NvidiaGpuManager.GpuSleepAction.ResetHandle)
                     {
-                        _wasGpuAwake = false;
-                        _gpuSleepHoldTicks = 0;
                         _gpuManager.ResetGpuHandle();
                     }
 
                     // 2. Check if the user wants Custom Fan Mode and if the Curve is enabled
-                    string currentFanMode = SettingsManager.Get("LastFanMode", "Auto");
-                    bool isCurveEnabled = SettingsManager.Get("IsCurveModeEnabled", 0) == 1;
+                    string currentFanMode = SettingsManager.GetString("LastFanMode", "Auto");
+                    bool isCurveEnabled = SettingsManager.GetInt("IsCurveModeEnabled", 0) == 1;
                     bool isCurveActive = currentFanMode == "Medium" && isCurveEnabled;
-                    long currentCurveVersion = SettingsManager.Get("FanCurveVersion", 0L);
+                    long currentCurveVersion = SettingsManager.GetLong("FanCurveVersion", 0L);
 
                     // Reset tracking state if fan mode or curve override changed
                     if (currentFanMode != _lastObservedFanMode || isCurveEnabled != _lastObservedCurveEnabled)
@@ -101,17 +103,23 @@ public partial class TrayApplication : ApplicationContext
                         var telemetry = AcerWmiManager.GetSystemTelemetry();
                         int effectiveGpuTemp = telemetry.GpuTemp;
                         bool gpuAwakeForTooltip = isAutoApplyActive ? _wasGpuAwake : (effectiveGpuTemp > 0);
-                        string truncatedTip = FormatTrayTooltip(telemetry.CpuTemp, effectiveGpuTemp, gpuAwakeForTooltip);
-                        if (trayIcon.Text != truncatedTip)
+                        if (TooltipInputsChanged(telemetry.CpuTemp, effectiveGpuTemp, gpuAwakeForTooltip, _lastTipCpu, _lastTipGpu, _lastTipAwake))
                         {
-                            trayIcon.Text = truncatedTip;
+                            _lastTipCpu = telemetry.CpuTemp;
+                            _lastTipGpu = effectiveGpuTemp;
+                            _lastTipAwake = gpuAwakeForTooltip;
+                            string truncatedTip = FormatTrayTooltip(telemetry.CpuTemp, effectiveGpuTemp, gpuAwakeForTooltip);
+                            if (trayIcon.Text != truncatedTip)
+                            {
+                                trayIcon.Text = truncatedTip;
+                            }
                         }
 
                         if (isCurveActive && telemetry.CpuTemp > 0)
                         {
                             // 3. Load curves from cache or Registry if profile changed or curve updated
-                            var activeMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-                            string pName = SettingsManager.Get("ActiveFanCurvePreset", "Auto");
+                            var activeMode = (PowerProfile)SettingsManager.GetInt("LastPowerMode", (int)PowerProfile.Performance);
+                            string pName = SettingsManager.GetString("ActiveFanCurvePreset", "Auto");
                             if (pName == "Auto") pName = activeMode.ToString();
 
                             if (_cachedCpuCurve == null || _cachedGpuCurve == null || _cachedProfile != activeMode || _lastObservedFanPreset != pName || _cachedCurveVersion != currentCurveVersion)
@@ -126,10 +134,10 @@ public partial class TrayApplication : ApplicationContext
                             }
 
                             // 4. Interpolate raw target speeds
-                            int targetCpuSpeed = Math.Clamp(FanCurveHelper.InterpolateSpeed(_cachedCpuCurve, telemetry.CpuTemp), 0, 100);
+                            int targetCpuSpeed = FanCurveHelper.GetClampedSpeed(_cachedCpuCurve, telemetry.CpuTemp);
                             int targetGpuSpeed = effectiveGpuTemp == 0
                                 ? targetCpuSpeed
-                                : Math.Clamp(FanCurveHelper.InterpolateSpeed(_cachedGpuCurve, effectiveGpuTemp), 0, 100);
+                                : FanCurveHelper.GetClampedSpeed(_cachedGpuCurve, effectiveGpuTemp);
 
                             // 5. Apply Hysteresis (Anti-Revving):
                             // Ramp-up: Immediate (protects hardware)
@@ -171,7 +179,7 @@ public partial class TrayApplication : ApplicationContext
                             {
                                 _lastAppliedCpuSpeed = appliedCpuSpeed;
                                 _lastAppliedGpuSpeed = appliedGpuSpeed;
-                                await AcerWmiManager.SetCustomFansAsync(appliedCpuSpeed, appliedGpuSpeed);
+                                await AcerWmiManager.SetFansAsync(FanProfile.Medium, appliedCpuSpeed, appliedGpuSpeed);
                             }
                         }
                     }

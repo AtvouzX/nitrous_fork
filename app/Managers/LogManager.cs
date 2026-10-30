@@ -63,6 +63,8 @@ public static class LogManager
 
     public static void SyncSettings()
     {
+        // Cross-process writes signaled via settings-changed event: drop stale hot-path entries.
+        SettingsManager.InvalidateCache();
         // Check CLI flags, environment variable, or persistent registry setting
         bool envDebug = string.Equals(Environment.GetEnvironmentVariable("NITROUS_DEBUG"), "1", StringComparison.OrdinalIgnoreCase);
         bool regDebug = SettingsManager.Get("Debugging", SettingsManager.Get("DebugLogging", false));

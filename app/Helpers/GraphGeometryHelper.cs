@@ -16,6 +16,15 @@ public static class GraphGeometryHelper
     public const double DefaultGraphHeight = 94.0;
     public const long DefaultWindowDurationMs = 300000; // 5 minutes
 
+    private static readonly PointCollection SharedEmptyPoints = CreateSharedEmpty();
+
+    private static PointCollection CreateSharedEmpty()
+    {
+        var empty = new PointCollection();
+        empty.Freeze();
+        return empty;
+    }
+
     private static bool HasPositiveValue(IReadOnlyList<DashboardViewModel.TelemetryPoint> history, bool isTemp)
     {
         for (int i = 0; i < history.Count; i++)
@@ -40,11 +49,10 @@ public static class GraphGeometryHelper
         double graphHeight = DefaultGraphHeight,
         long windowDurationMs = DefaultWindowDurationMs)
     {
-        var points = new PointCollection();
+        var points = new PointCollection(history.Count);
         if (history.Count == 0 || !HasPositiveValue(history, isTemp))
         {
-            points.Freeze();
-            return points;
+            return SharedEmptyPoints;
         }
 
         long windowStart = now - windowDurationMs;
@@ -73,11 +81,10 @@ public static class GraphGeometryHelper
         double graphHeight = DefaultGraphHeight,
         long windowDurationMs = DefaultWindowDurationMs)
     {
-        var points = new PointCollection();
+        var points = new PointCollection(history.Count + 2);
         if (history.Count == 0 || !HasPositiveValue(history, isTemp))
         {
-            points.Freeze();
-            return points;
+            return SharedEmptyPoints;
         }
 
         long windowStart = now - windowDurationMs;

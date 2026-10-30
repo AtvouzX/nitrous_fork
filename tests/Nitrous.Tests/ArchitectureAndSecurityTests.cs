@@ -1,4 +1,4 @@
-using System.IO;
+﻿using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Nitrous.Managers;
@@ -173,5 +173,96 @@ public class ArchitectureAndSecurityTests
         var pInvokes = methods.Where(m => m.GetCustomAttribute<DllImportAttribute>() != null).ToList();
 
         Assert.Empty(pInvokes);
+    }
+
+    [Fact]
+    public void Display_Luid_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.User32.LUID>();
+        Assert.Equal(8, size);
+    }
+
+    [Fact]
+    public void Display_DisplayConfigRational_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.User32.DISPLAYCONFIG_RATIONAL>();
+        Assert.Equal(8, size);
+    }
+
+    [Fact]
+    public void Display_DisplayConfigPathSourceInfo_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.User32.DISPLAYCONFIG_PATH_SOURCE_INFO>();
+        Assert.Equal(20, size);
+    }
+
+    [Fact]
+    public void Display_DisplayConfigPathTargetInfo_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.User32.DISPLAYCONFIG_PATH_TARGET_INFO>();
+        Assert.Equal(48, size);
+    }
+
+    [Fact]
+    public void Display_DisplayConfig2DRegion_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.User32.DISPLAYCONFIG_2DREGION>();
+        Assert.Equal(8, size);
+    }
+
+    [Fact]
+    public void Display_DisplayConfigVideoSignalInfo_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.User32.DISPLAYCONFIG_VIDEO_SIGNAL_INFO>();
+        Assert.Equal(48, size);
+    }
+
+    [Fact]
+    public void Display_DisplayConfigTargetMode_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.User32.DISPLAYCONFIG_TARGET_MODE>();
+        Assert.Equal(48, size);
+    }
+
+    [Fact]
+    public void Display_PointL_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.User32.POINTL>();
+        Assert.Equal(8, size);
+    }
+
+    [Fact]
+    public void Display_DisplayConfigSourceMode_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.User32.DISPLAYCONFIG_SOURCE_MODE>();
+        Assert.Equal(20, size);
+    }
+
+    [Fact]
+    public void Display_DisplayConfigModeInfoUnion_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.User32.DISPLAYCONFIG_MODE_INFO_UNION>();
+        Assert.Equal(48, size);
+    }
+
+    [Fact]
+    public void Nvml_Utilization_StructSize_MatchesNvmlAbi()
+    {
+        int size = Marshal.SizeOf<Nitrous.Managers.NvidiaGpuManager.NvmlUtilization>();
+        Assert.Equal(8, size);
+    }
+
+    [Fact]
+    public void Nvml_Memory_StructSize_MatchesNvmlAbi()
+    {
+        int size = Marshal.SizeOf<Nitrous.Managers.NvidiaGpuManager.NvmlMemory>();
+        Assert.Equal(24, size);
+    }
+
+    [Fact]
+    public void Nvml_ProcessInfo_StructSize_MatchesNvmlAbi()
+    {
+        int size = Marshal.SizeOf<Nitrous.Managers.NvidiaGpuManager.NvmlProcessInfo>();
+        Assert.Equal(24, size);
     }
 }
