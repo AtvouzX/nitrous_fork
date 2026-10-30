@@ -50,17 +50,6 @@ public partial class NvidiaGpuManager : IDisposable
         }
     }
 
-    public static bool ShouldAutoApplyGpuClocks(bool wasGpuAwake, bool isGpuAwake, bool isAcOnline,
-        int autoApplySetting)
-    {
-        return !wasGpuAwake && isGpuAwake && isAcOnline && autoApplySetting == 1;
-    }
-
-    public static bool ShouldResetGpuHandle(bool wasGpuAwake, bool isGpuAwake)
-    {
-        return wasGpuAwake && !isGpuAwake;
-    }
-
     /// <summary>
     /// Pure state evaluator for GPU sleep hysteresis.
     /// <summary>
@@ -179,7 +168,7 @@ public partial class NvidiaGpuManager : IDisposable
         InitializeNvAPI();
     }
 
-    public static void MigrateLegacyDefaultOffsets()
+    private static void MigrateLegacyDefaultOffsets()
     {
         try
         {

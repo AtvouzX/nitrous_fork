@@ -34,7 +34,7 @@ public class DisplayManagerTests
         SettingsManager.Save("GpuOffsetsMigratedToStock_v1", 0);
 
         // Run migration
-        NvidiaGpuManager.MigrateLegacyDefaultOffsets();
+        new NvidiaGpuManager(); // ctor runs private legacy migration once
 
         // Verify stock offsets (0/0)
         Assert.Equal(0, SettingsManager.Get("GpuCore_Balanced", -1));

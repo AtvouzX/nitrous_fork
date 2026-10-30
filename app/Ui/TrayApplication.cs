@@ -137,7 +137,7 @@ public partial class TrayApplication : ApplicationContext
                 if (isOnline)
                 {
                     var bootProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-                    await _gpuManager.ApplyOnBootAsync(bootProfile, isOnline);
+                    await _gpuManager.ApplyProfileOcAsync(bootProfile, isOnline);
                 }
 
                 // Final trim after all boot settings are applied
@@ -298,7 +298,7 @@ public partial class TrayApplication : ApplicationContext
         var refreshMode = (RefreshProfile)SettingsManager.Get("RefreshMode", (int)RefreshProfile.Auto);
         DisplayManager.ApplyRefreshProfile(refreshMode, isOnline);
 
-        _ = _gpuManager.ApplyPowerProfileOcAsync(currentProfile, isOnline);
+        _ = _gpuManager.ApplyProfileOcAsync(currentProfile, isOnline);
     }
 
 
@@ -406,7 +406,7 @@ public partial class TrayApplication : ApplicationContext
             _ = CpuPowerManager.ApplyProfileLimitsAsync(nextProfile, isOnline);
         }
 
-        _ = _gpuManager.ApplyPowerProfileOcAsync(nextProfile, isOnline);
+        _ = _gpuManager.ApplyProfileOcAsync(nextProfile, isOnline);
         TriggerProfileOsd(nextProfile);
     }
 

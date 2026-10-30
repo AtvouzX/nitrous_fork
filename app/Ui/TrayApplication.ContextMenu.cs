@@ -40,7 +40,7 @@ public partial class TrayApplication : ApplicationContext
                         _ = CpuPowerManager.ApplyProfileLimitsAsync(profile, isOnline);
                     }
 
-                    await _gpuManager.ApplyPowerProfileOcAsync(profile, isOnline);
+                    await _gpuManager.ApplyProfileOcAsync(profile, isOnline);
                     TriggerProfileOsd(profile);
 
                     foreach (ToolStripItem sibling in powerMenu.DropDownItems)
