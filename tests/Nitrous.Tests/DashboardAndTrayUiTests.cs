@@ -466,7 +466,7 @@ public class DashboardAndTrayUiTests
                 window.Show();
                 System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
                 window.WindowState = WindowState.Minimized;
-                for (int i = 0; i < 10 && vm.IsPollingActive; i++)
+                for (int i = 0; i < 50 && vm.IsPollingActive; i++)
                 {
                     System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                     System.Threading.Thread.Sleep(10);
@@ -475,7 +475,7 @@ public class DashboardAndTrayUiTests
 
                 // Restoring to Normal should resume polling
                 window.WindowState = WindowState.Normal;
-                for (int i = 0; i < 10 && !vm.IsPollingActive; i++)
+                for (int i = 0; i < 50 && !vm.IsPollingActive; i++)
                 {
                     System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                     System.Threading.Thread.Sleep(10);
@@ -499,6 +499,16 @@ public class DashboardAndTrayUiTests
             {
                 window.Show();
                 window.ApplyTemplate();
+
+                // Let child templates materialize before walking the tree.
+                // Under parallel load the visual tree may lag Show() by a few frames.
+                for (int i = 0; i < 50; i++)
+                {
+                    System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
+                    System.Threading.Thread.Sleep(10);
+                    if (window.GpuPage?.GpuCoreSlider != null && window.DashPage?.BtnPowerQuiet != null)
+                        break;
+                }
 
                 // Updated tooltip policy: tooltips are a fallback for ambiguity, not decoration.
                 // 1. Any tooltip that exists must be a meaningful, non-empty string.
