@@ -21,13 +21,28 @@ public class NvidiaGpuManagerTests
     {
         var manager = new NvidiaGpuManager();
         var token = new CancellationToken();
-        
+
         // This validates the NVML architecture loads properly (or fails gracefully if NVML missing).
         var telemetry = await manager.GetNvmlTelemetryAsync(token);
-        
+
         // If the system has an awake Nvidia GPU, it should return a non-null object.
         // If it's asleep or not Nvidia, it returns an object with PState = "Sleep" or handles the fallback.
         Assert.NotNull(telemetry);
+    }
+
+    [Fact]
+    public async Task GetNvmlTelemetryAsync_InTestHost_ReturnsSleepWithoutLiveNvml()
+    {
+        // Native AVs (0xC0000005) FailFast the test host and are uncatchable,
+        // so live NVML reads must be bypassed here. This pins that contract.
+        Assert.True(NvidiaGpuManager.IsTestHost());
+
+        using var manager = new NvidiaGpuManager();
+        var telemetry = await manager.GetNvmlTelemetryAsync();
+
+        Assert.NotNull(telemetry);
+        Assert.Equal("Sleep", telemetry.PState);
+        Assert.Equal("NVIDIA (Asleep)", telemetry.Name);
     }
 
     [Fact]
