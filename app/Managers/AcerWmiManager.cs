@@ -239,7 +239,7 @@ public static AcerCapabilities GetCapabilities()
         {
             int cpu = Math.Clamp(cpuFanSpeed, 0, 100);
             int gpu = Math.Clamp(gpuFanSpeed, 0, 100);
-            await SetCustomFansAsync(cpu, gpu).ConfigureAwait(false);
+            await SetFansAsync(FanProfile.Medium, cpu, gpu).ConfigureAwait(false);
             SettingsManager.Save("CustomFanSpeedCpu", cpu);
             SettingsManager.Save("CustomFanSpeedGpu", gpu);
         }
@@ -262,9 +262,9 @@ public static AcerCapabilities GetCapabilities()
         }
     }
 
-    public static async Task SetFansAsync(FanProfile profile)
+    public static async Task SetFansAsync(FanProfile profile, int cpuSpeed = 0, int gpuSpeed = 0)
     {
-        LogManager.Info($"Setting fans to {profile}", "AcerWmi");
+        LogManager.Info($"Setting fans to {profile} (CPU={cpuSpeed}%, GPU={gpuSpeed}%)", "AcerWmi");
         if (profile == FanProfile.Auto)
         {
             await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", FanBehaviorAuto);
@@ -273,23 +273,21 @@ public static AcerCapabilities GetCapabilities()
         {
             await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", FanBehaviorMax);
         }
-        else // Custom (Unified)
+        else // Custom (Quiet/Medium or explicit speeds)
         {
+            int cpu = Math.Clamp(cpuSpeed, 0, 100);
+            int gpu = Math.Clamp(gpuSpeed, 0, 100);
+            if (cpu <= 0 && gpu <= 0)
+            {
+                int unified = Math.Clamp((int)profile, 0, 100);
+                cpu = unified;
+                gpu = unified;
+            }
             await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", FanBehaviorCustom);
-            ulong speedPercent = (ulong)profile;
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 1ul | (speedPercent << 8));
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 2ul | (speedPercent << 8));
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 4ul | (speedPercent << 8));
+            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 1ul | ((ulong)cpu << 8));
+            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 2ul | ((ulong)gpu << 8));
+            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 4ul | ((ulong)gpu << 8));
         }
-    }
-
-    public static async Task SetCustomFansAsync(int cpuSpeed, int gpuSpeed)
-    {
-        LogManager.Info($"Setting custom fans: CPU={cpuSpeed}%, GPU={gpuSpeed}%", "AcerWmi");
-        await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", FanBehaviorCustom);
-        await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 1ul | ((ulong)cpuSpeed << 8));
-        await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 2ul | ((ulong)gpuSpeed << 8));
-        await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 4ul | ((ulong)gpuSpeed << 8));
     }
 
     public static (int CpuTemp, int CpuRpm, int GpuTemp, int GpuRpm) GetSystemTelemetry()
@@ -359,38 +357,7 @@ public static AcerCapabilities GetCapabilities()
         return 0;
     }
 
-    public static async Task SetChargeLimitAsync(bool enable)
-    {
-        byte param = enable ? (byte)1 : (byte)0;
-        await Task.Run(() =>
-        {
-            try
-            {
-                using var searcher = new ManagementObjectSearcher(@"root\wmi", "SELECT * FROM BatteryControl");
-                using var collection = searcher.Get();
-                foreach (ManagementObject instance in collection)
-                {
-                    using (instance)
-                    {
-                        using var inParams = instance.GetMethodParameters("SetBatteryHealthControl");
-                        inParams["uBatteryNo"] = (byte)1;
-                        inParams["uFunctionMask"] = (byte)1;
-                        inParams["uFunctionStatus"] = param;
-                        inParams["uReservedIn"] = new byte[] { 0, 0, 0, 0, 0 };
-                        instance.InvokeMethod("SetBatteryHealthControl", inParams, null);
-
-                        break;
-                    }
-                }
-            }
-            catch (Exception ex)
-            {
-                LogManager.Error($"Failed to set battery charge limit: {ex.Message}", ex, "AcerWmi");
-            }
-        });
-    }
-
-    internal static bool InvokeWmiSync(string className, string methodName, ulong gmInput)
+    private static bool InvokeWmiSync(string className, string methodName, ulong gmInput)
     {
         WmiInvokeDelegate? testOverride;
         lock (_wmiLock)

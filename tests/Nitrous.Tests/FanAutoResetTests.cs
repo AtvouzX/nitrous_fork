@@ -1,3 +1,7 @@
+using System.Collections.Generic;
+using System.Reflection;
+using System.Threading.Tasks;
+using Nitrous.Enums;
 using Nitrous.Managers;
 using Nitrous.Ui;
 using Xunit;
@@ -100,5 +104,63 @@ public class FanAutoResetTests
         var ex = Record.Exception(() => TrayApplication.TriggerExitFanReset());
         Assert.Null(ex);
         TrayApplication.ResetExitFlagForTesting();
+    }
+
+    [Fact]
+    public async Task SetFansAsync_WithProfileAndCustomSpeeds_RoutesThroughCanonicalFanPath()
+    {
+        List<(string Class, string Method, ulong Input)> wmiCalls = new();
+        AcerWmiManager.SetWmiInvokeForTesting((cls, method, input) =>
+        {
+            lock (wmiCalls)
+            {
+                wmiCalls.Add((cls, method, input));
+            }
+            return true;
+        });
+        try
+        {
+            await AcerWmiManager.SetFansAsync(FanProfile.Auto);
+            Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanBehavior" && c.Input == AcerWmiManager.FanBehaviorAuto);
+            wmiCalls.Clear();
+            await AcerWmiManager.SetFansAsync(FanProfile.Max);
+            Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanBehavior" && c.Input == AcerWmiManager.FanBehaviorMax);
+            wmiCalls.Clear();
+            await AcerWmiManager.SetFansAsync(FanProfile.Medium, 60, 70);
+            Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanBehavior" && c.Input == AcerWmiManager.FanBehaviorCustom);
+            Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanSpeed" && c.Input == (1ul | (60ul << 8)));
+            Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanSpeed" && c.Input == (2ul | (70ul << 8)));
+            Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanSpeed" && c.Input == (4ul | (70ul << 8)));
+        }
+        finally
+        {
+            AcerWmiManager.SetWmiInvokeForTesting(null);
+        }
+    }
+
+    [Fact]
+    public void SetCustomFansAsync_DoesNotExistAsPublicContract()
+    {
+        MethodInfo? dupe = typeof(AcerWmiManager).GetMethod("SetCustomFansAsync");
+        Assert.Null(dupe);
+    }
+
+    [Fact]
+    public void InvokeWmiSync_IsPrivate()
+    {
+        MethodInfo? sync = typeof(AcerWmiManager).GetMethod("InvokeWmiSync", BindingFlags.NonPublic | BindingFlags.Static);
+        Assert.NotNull(sync);
+        Assert.True(sync!.IsPrivate);
+        MethodInfo? leaked = typeof(AcerWmiManager).GetMethod("InvokeWmiSync");
+        Assert.Null(leaked);
+    }
+
+    [Fact]
+    public void SetChargeLimitAsync_MovedToBatteryManagerOnly()
+    {
+        MethodInfo? legacy = typeof(AcerWmiManager).GetMethod("SetChargeLimitAsync");
+        Assert.Null(legacy);
+        MethodInfo? canonical = typeof(BatteryManager).GetMethod("SetChargeLimitAsync");
+        Assert.NotNull(canonical);
     }
 }

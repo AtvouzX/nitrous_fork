@@ -162,7 +162,7 @@ public partial class TrayApplication : ApplicationContext
                             {
                                 _lastAppliedCpuSpeed = appliedCpuSpeed;
                                 _lastAppliedGpuSpeed = appliedGpuSpeed;
-                                await AcerWmiManager.SetCustomFansAsync(appliedCpuSpeed, appliedGpuSpeed);
+                                await AcerWmiManager.SetFansAsync(FanProfile.Medium, appliedCpuSpeed, appliedGpuSpeed);
                             }
                         }
                     }

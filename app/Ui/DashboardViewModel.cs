@@ -32,7 +32,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             if (SetProperty(ref _chargeLimit, value))
             {
                 SettingsManager.Save("ChargeLimit", value ? 1 : 0);
-                _ = AcerWmiManager.SetChargeLimitAsync(value);
+                _ = BatteryManager.SetChargeLimitAsync(value);
             }
         }
     }
