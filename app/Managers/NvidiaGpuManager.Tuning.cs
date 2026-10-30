@@ -174,123 +174,6 @@ public partial class NvidiaGpuManager
     private long _lastAutoApplyTick;
     public const int AutoApplyCooldownMs = 30000; // 30s cooldown per profile to prevent NvAPI hammering on transient wakes
 
-    public async Task<int> AutoApplyClocksAsync(PowerProfile? activeProfile = null, bool? isAcOnline = null)
-    {
-        bool online = isAcOnline ?? IsAcPowerConnected();
-        if (!online || !IsGpuAwake())
-        {
-            LogManager.Debug("AutoApplyClocksAsync: dGPU is on battery or asleep; skipping auto-apply.", "NvidiaGpu");
-            return 0;
-        }
-
-        if (SettingsManager.Get("AutoApplyGpuClocks", 1) != 1)
-        {
-            LogManager.Debug("AutoApplyClocksAsync: AutoApplyGpuClocks disabled in settings.", "NvidiaGpu");
-            return 0;
-        }
-
-        if (Interlocked.CompareExchange(ref _isAutoApplyingClocks, 1, 0) != 0)
-        {
-            return 0;
-        }
-
-        try
-        {
-            var profile = activeProfile ?? (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
-            int rawCore = SettingsManager.Get($"GpuCore_{profile}", GetDefaultCore(profile));
-            int rawMem = SettingsManager.Get($"GpuMemory_{profile}", GetDefaultMemory(profile));
-            int core = ClampCoreOffset(rawCore);
-            int mem = ClampMemoryOffset(rawMem);
-
-            long now = Environment.TickCount64;
-            if (profile == _lastAutoAppliedProfile &&
-                core == _lastAutoAppliedCore &&
-                mem == _lastAutoAppliedMem &&
-                (now - _lastAutoApplyTick) < AutoApplyCooldownMs)
-            {
-                LogManager.Debug($"AutoApplyClocksAsync: Clocks were recently applied for {profile}; cooldown active.", "NvidiaGpu");
-                return 1;
-            }
-
-            const int maxAttempts = 5;
-            const int delayMs = 1000;
-
-            for (int attempt = 1; attempt <= maxAttempts; attempt++)
-            {
-                if (!IsGpuAwake() || !(isAcOnline ?? IsAcPowerConnected())) return 0;
-
-                try
-                {
-                    if (EnsureInitialized())
-                    {
-                        int result = SetClocksInternal(core, mem);
-                        if (result == 1)
-                        {
-                            _lastAutoAppliedProfile = profile;
-                            _lastAutoAppliedCore = core;
-                            _lastAutoAppliedMem = mem;
-                            _lastAutoApplyTick = Environment.TickCount64;
-                            LogManager.Info($"Auto-applied GPU clocks: Core={core} MHz, Memory={mem} MHz (Profile: {profile})", "NvidiaGpu");
-                            return 1;
-                        }
-                        if (result == 2)
-                        {
-                            _lastAutoAppliedProfile = profile;
-                            _lastAutoAppliedCore = core;
-                            _lastAutoAppliedMem = mem;
-                            _lastAutoApplyTick = Environment.TickCount64;
-                            LogManager.Debug($"AutoApplyClocksAsync: GPU clocks already in sync: Core={core} MHz, Memory={mem} MHz (Profile: {profile})", "NvidiaGpu");
-                            return 1;
-                        }
-                    }
-                }
-                catch (Exception ex)
-                {
-                    LogManager.Debug($"AutoApplyClocksAsync attempt {attempt} failed: {ex.Message}", "NvidiaGpu");
-                }
-
-                if (attempt < maxAttempts)
-                {
-                    ResetGpuHandle();
-                    await Task.Delay(delayMs);
-                }
-            }
-
-            return 0;
-        }
-        finally
-        {
-            Interlocked.Exchange(ref _isAutoApplyingClocks, 0);
-        }
-    }
-
-    public async Task ApplyOnBootAsync(PowerProfile currentProfile, bool? isAcOnline = null)
-    {
-        await AutoApplyClocksAsync(currentProfile, isAcOnline);
-    }
-
-    public async Task<int> ApplyPowerProfileOcAsync(PowerProfile profile, bool? isAcOnline = null)
-    {
-        bool online = isAcOnline ?? IsAcPowerConnected();
-        if (!online || !IsGpuAwake())
-        {
-            // Core Battery Invariant: discrete NVIDIA GPU must remain in D3Cold sleep on battery.
-            // Never invoke NvAPI when on DC power or when the dGPU is asleep.
-            LogManager.Debug($"ApplyPowerProfileOcAsync: dGPU is on battery or asleep; skipping OC for {profile}.", "NvidiaGpu");
-            return 0;
-        }
-
-        return await Task.Run(() =>
-        {
-            int rawCore = SettingsManager.Get($"GpuCore_{profile}", GetDefaultCore(profile));
-            int rawMem = SettingsManager.Get($"GpuMemory_{profile}", GetDefaultMemory(profile));
-            int coreOffset = ClampCoreOffset(rawCore);
-            int memoryOffset = ClampMemoryOffset(rawMem);
-
-            return SetClocksInternal(coreOffset, memoryOffset);
-        });
-    }
-
     // Helpers to track default values per profile (opt-in stock defaults)
     public int GetDefaultCore(PowerProfile profile) => 0;
 
@@ -309,6 +192,7 @@ public partial class NvidiaGpuManager
         SettingsManager.Save($"GpuCore_{profile}", GetDefaultCore(profile));
         SettingsManager.Save($"GpuMemory_{profile}", GetDefaultMemory(profile));
         _lastAutoApplyTick = 0;
-        await AutoApplyClocksAsync(profile, true);
+        _lastAutoAppliedProfile = null;
+        await ApplyProfileOcAsync(profile, true);
     }
 }

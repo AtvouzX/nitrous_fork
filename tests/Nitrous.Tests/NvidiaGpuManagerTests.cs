@@ -74,22 +74,23 @@ public class NvidiaGpuManagerTests
     }
 
     [Fact]
-    public async Task ApplyPowerProfileOcAsync_WhenOnDcPower_ReturnsZeroWithoutWakingGpu()
+    public async Task ApplyProfileOcAsync_WhenOnDcPower_ReturnsZeroWithoutWakingGpu_PowerProfileAlias()
     {
         using var manager = new NvidiaGpuManager();
-        
-        // When on DC (battery) power, OC must be completely bypassed to preserve D3Cold sleep
-        int result = await manager.ApplyPowerProfileOcAsync(Nitrous.Enums.PowerProfile.Performance, isAcOnline: false);
+
+        // When on DC (battery) power, OC must be completely bypassed to preserve D3Cold sleep.
+        // Canonical entry keeps the old ApplyPowerProfileOcAsync battery behavior.
+        int result = await manager.ApplyProfileOcAsync(Nitrous.Enums.PowerProfile.Performance, isAcOnline: false);
         Assert.Equal(0, result);
     }
 
     [Fact]
-    public async Task ApplyOnBootAsync_WhenOnDcPower_CompletesCleanlyWithoutWakingGpu()
+    public async Task ApplyProfileOcAsync_WhenOnDcPower_CompletesCleanlyWithoutWakingGpu_BootAlias()
     {
         using var manager = new NvidiaGpuManager();
 
-        // Boot OC must abort immediately when on DC power
-        var ex = await Record.ExceptionAsync(() => manager.ApplyOnBootAsync(Nitrous.Enums.PowerProfile.Performance, isAcOnline: false));
+        // Boot OC must abort immediately when on DC power. Canonical entry replaces ApplyOnBootAsync.
+        var ex = await Record.ExceptionAsync(() => manager.ApplyProfileOcAsync(Nitrous.Enums.PowerProfile.Performance, isAcOnline: false));
         Assert.Null(ex);
     }
 
@@ -115,10 +116,10 @@ public class NvidiaGpuManagerTests
     [InlineData(false, true, true, 0, false)]    // Wakes up on AC but setting disabled -> Suppressed
     [InlineData(false, false, true, 1, false)]   // Asleep -> Suppressed
     [InlineData(true, false, true, 1, false)]    // Going to sleep -> Suppressed
-    public void ShouldAutoApplyGpuClocks_EvaluatesCorrectly(bool wasGpuAwake, bool isGpuAwake, bool isAcOnline, int autoApplySetting, bool expected)
+    public void UpdateSleepState_SingleTickWakeOrSleep_MapsToExpectedAction(bool wasGpuAwake, bool isGpuAwake, bool isAcOnline, int autoApplySetting, bool expected)
     {
-        bool result = NvidiaGpuManager.ShouldAutoApplyGpuClocks(wasGpuAwake, isGpuAwake, isAcOnline, autoApplySetting);
-        Assert.Equal(expected, result);
+        var (_, _, action) = NvidiaGpuManager.UpdateSleepState(wasGpuAwake, 1, isGpuAwake, isAcOnline, autoApplySetting);
+        Assert.Equal(expected, action == NvidiaGpuManager.GpuSleepAction.AutoApply);
     }
 
     [Theory]
@@ -126,33 +127,33 @@ public class NvidiaGpuManagerTests
     [InlineData(false, false, false)]  // Was asleep, still asleep -> No reset
     [InlineData(true, true, false)]    // Was awake, still awake -> No reset
     [InlineData(false, true, false)]   // Was asleep, now awake -> No reset
-    public void ShouldResetGpuHandle_EvaluatesCorrectly(bool wasGpuAwake, bool isGpuAwake, bool expected)
+    public void UpdateSleepState_SingleTickSleep_MapsToExpectedReset(bool wasGpuAwake, bool isGpuAwake, bool expected)
     {
-        bool result = NvidiaGpuManager.ShouldResetGpuHandle(wasGpuAwake, isGpuAwake);
-        Assert.Equal(expected, result);
+        var (_, _, action) = NvidiaGpuManager.UpdateSleepState(wasGpuAwake, 1, isGpuAwake, true, 1);
+        Assert.Equal(expected, action == NvidiaGpuManager.GpuSleepAction.ResetHandle);
     }
 
     [Fact]
-    public async Task AutoApplyClocksAsync_WhenOnDcPower_ReturnsZeroWithoutWakingGpu()
+    public async Task ApplyProfileOcAsync_WhenOnDcPower_ReturnsZeroWithoutWakingGpu_RetryPath()
     {
         using var manager = new NvidiaGpuManager();
-        int result = await manager.AutoApplyClocksAsync(Nitrous.Enums.PowerProfile.Performance, isAcOnline: false);
+        int result = await manager.ApplyProfileOcAsync(Nitrous.Enums.PowerProfile.Performance, isAcOnline: false);
         Assert.Equal(0, result);
     }
 
     [Fact]
-    public async Task AutoApplyClocksAsync_WhenDisabledInSettings_ReturnsZero()
+    public async Task ApplyProfileOcAsync_WhenEnabledOnAc_PreservesD3ColdGuard()
     {
-        SettingsManager.Save("AutoApplyGpuClocks", 0);
+        // Canonical entry has no settings gate; wake gating lives at call sites. Battery guard still holds.
         try
         {
             using var manager = new NvidiaGpuManager();
-            int result = await manager.AutoApplyClocksAsync(Nitrous.Enums.PowerProfile.Performance, isAcOnline: true);
+            int result = await manager.ApplyProfileOcAsync(Nitrous.Enums.PowerProfile.Performance, isAcOnline: false);
             Assert.Equal(0, result);
         }
         finally
         {
-            SettingsManager.Save("AutoApplyGpuClocks", 1);
+            // Battery bypass holds regardless of caller context.
         }
     }
 

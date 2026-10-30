@@ -309,17 +309,4 @@ public partial class DashboardViewModel
     {
         GpuAlertVisibility = Visibility.Collapsed;
     }
-
-
-    public async Task AutoApplyGpuClocksAsync()
-    {
-        try
-        {
-            await _gpuManager.AutoApplyClocksAsync(ActivePowerProfile);
-        }
-        catch (Exception ex)
-        {
-            LogManager.Debug($"AutoApplyGpuClocksAsync error: {ex.Message}", "DashboardVM");
-        }
-    }
 }

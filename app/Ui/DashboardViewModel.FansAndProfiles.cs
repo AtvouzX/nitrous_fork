@@ -300,9 +300,10 @@ public partial class DashboardViewModel
                         _ = CpuPowerManager.ApplyProfileLimitsAsync(mode, isOnline);
                     }
 
-                    await _gpuManager.ApplyPowerProfileOcAsync(mode, isOnline);
-                    GpuCoreOffset = _gpuManager.ClampCoreOffset(SettingsManager.Get($"GpuCore_{mode}", _gpuManager.GetDefaultCore(mode)));
-                    GpuMemoryOffset = _gpuManager.ClampMemoryOffset(SettingsManager.Get($"GpuMemory_{mode}", _gpuManager.GetDefaultMemory(mode)));
+                    await _gpuManager.ApplyProfileOcAsync(mode, isOnline);
+                    var (profileCore, profileMemory) = _gpuManager.ResolveProfileOffsets(mode);
+                    GpuCoreOffset = profileCore;
+                    GpuMemoryOffset = profileMemory;
 
                     if (IsCustomFanEnabled && IsCurveModeEnabled)
                     {

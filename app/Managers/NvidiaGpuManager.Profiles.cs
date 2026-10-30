@@ -1,3 +1,5 @@
+using System;
+using System.Threading;
 using System.Threading.Tasks;
 using Nitrous.Enums;
 
@@ -13,10 +15,10 @@ public partial class NvidiaGpuManager
     }
 
     /// <summary>
-    /// Single resolver for per-profile clock offsets: reads stored values with
-    /// stock defaults, then clamps to safe operating ranges.
-    /// Consolidates the Settings.Get + GetDefault + Clamp triad previously
-    /// repeated at each call site.
+    /// Single resolver for per-profile clock offsets: reads stored values
+    /// stock defaults, then clamps safe operating ranges.
+    /// Consolidates Settings.Get + GetDefault + Clamp triad previously
+    /// repeated at call site.
     /// </summary>
     public (int Core, int Memory) ResolveProfileOffsets(PowerProfile profile)
     {
@@ -26,11 +28,11 @@ public partial class NvidiaGpuManager
     }
 
     /// <summary>
-    /// Pure sleep-state transition evaluator. On battery or when auto-apply is
-    /// disabled, collapses to asleep (resetting the handle if previously awake)
-    /// without ever auto-applying, preserving D3Cold. Otherwise delegates to
-    /// EvaluateGpuSleepHysteresis and maps its flags to a single action.
-    /// Takes the wake reading as a parameter; never queries hardware itself.
+    /// Pure sleep-state transition evaluator. On battery or auto-apply
+    /// disabled, collapses asleep (resetting handle previously awake)
+    /// without ever auto-applying, preserving D3Cold. Otherwise delegates
+    /// EvaluateGpuSleepHysteresis and maps flags single action.
+    /// Takes wake reading parameter; never queries hardware itself.
     /// </summary>
     public static (bool NewWasAwake, int NewHoldTicks, GpuSleepAction Action) UpdateSleepState(
         bool wasAwake,
@@ -55,9 +57,10 @@ public partial class NvidiaGpuManager
 
     /// <summary>
     /// Unified single-shot OC entry: resolves clamped profile offsets and
-    /// applies them. Battery/asleep guard preserves D3Cold (never touches NvAPI).
-    /// Existing ApplyOnBoot/AutoApply/ApplyPowerProfileOc/SetClocks paths are
-    /// unchanged; this is the canonical path for new callers.
+    /// applies them with interlock, per-profile cooldown, and NvAPI retry.
+    /// Battery/asleep guard preserves D3Cold (never touches NvAPI).
+    /// Explicit callers only; wake auto-apply gating (AutoApplyGpuClocks
+    /// setting) lives at call sites, not here.
     /// </summary>
     public async Task<int> ApplyProfileOcAsync(PowerProfile profile, bool? isAcOnline = null)
     {
@@ -68,10 +71,74 @@ public partial class NvidiaGpuManager
             return 0;
         }
 
-        return await Task.Run(() =>
+        if (Interlocked.CompareExchange(ref _isAutoApplyingClocks, 1, 0) != 0)
+        {
+            return 0;
+        }
+
+        try
         {
             var (core, memory) = ResolveProfileOffsets(profile);
-            return SetClocksInternal(core, memory);
-        });
+
+            long now = Environment.TickCount64;
+            if (profile == _lastAutoAppliedProfile &&
+                core == _lastAutoAppliedCore &&
+                memory == _lastAutoAppliedMem &&
+                (now - _lastAutoApplyTick) < AutoApplyCooldownMs)
+            {
+                LogManager.Debug($"ApplyProfileOcAsync: Clocks were recently applied for {profile}; cooldown active.", "NvidiaGpu");
+                return 1;
+            }
+
+            const int maxAttempts = 5;
+            const int delayMs = 1000;
+
+            for (int attempt = 1; attempt <= maxAttempts; attempt++)
+            {
+                if (!IsGpuAwake() || !(isAcOnline ?? IsAcPowerConnected())) return 0;
+
+                try
+                {
+                    if (EnsureInitialized())
+                    {
+                        int result = SetClocksInternal(core, memory);
+                        if (result == 1)
+                        {
+                            _lastAutoAppliedProfile = profile;
+                            _lastAutoAppliedCore = core;
+                            _lastAutoAppliedMem = memory;
+                            _lastAutoApplyTick = Environment.TickCount64;
+                            LogManager.Info($"Auto-applied GPU clocks: Core={core} MHz, Memory={memory} MHz (Profile: {profile})", "NvidiaGpu");
+                            return 1;
+                        }
+                        if (result == 2)
+                        {
+                            _lastAutoAppliedProfile = profile;
+                            _lastAutoAppliedCore = core;
+                            _lastAutoAppliedMem = memory;
+                            _lastAutoApplyTick = Environment.TickCount64;
+                            LogManager.Debug($"ApplyProfileOcAsync: GPU clocks already in sync: Core={core} MHz, Memory={memory} MHz (Profile: {profile})", "NvidiaGpu");
+                            return 1;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LogManager.Debug($"ApplyProfileOcAsync attempt {attempt} failed: {ex.Message}", "NvidiaGpu");
+                }
+
+                if (attempt < maxAttempts)
+                {
+                    ResetGpuHandle();
+                    await Task.Delay(delayMs);
+                }
+            }
+
+            return 0;
+        }
+        finally
+        {
+            Interlocked.Exchange(ref _isAutoApplyingClocks, 0);
+        }
     }
 }

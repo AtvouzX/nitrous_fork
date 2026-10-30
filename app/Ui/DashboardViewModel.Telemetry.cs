@@ -542,17 +542,18 @@ public partial class DashboardViewModel
                     }
 
                     // Check if discrete GPU is awake before querying NVML.
-                    // Background Tray is the sole owner of auto-apply on wake.
-                    // Debounced via EvaluateGpuSleepHysteresis to absorb transient 1-2s RTD3 drops and CM API read flickers.
+                    // Background Tray is the sole owner of auto-apply on wake; this loop never auto-applies.
+                    // Debounced via UpdateSleepState to absorb transient 1-2s RTD3 drops and CM API read flickers.
+                    // Power gating excluded here (forced AC/enabled) so the overlay tracks physical
+                    // sleep state on battery too; only ResetHandle acted upon, never AutoApply.
                     bool gpuIsAwake = NvidiaGpuManager.IsGpuAwake();
-                    var (newWasAwake, newHoldTicks, _, shouldResetHandle) =
-                        NvidiaGpuManager.EvaluateGpuSleepHysteresis(_wasGpuAwake, gpuIsAwake, _gpuSleepHoldTicks,
-                            NvidiaGpuManager.GpuSleepHysteresisCycles);
+                    var (newWasAwake, newHoldTicks, sleepAction) =
+                        NvidiaGpuManager.UpdateSleepState(_wasGpuAwake, _gpuSleepHoldTicks, gpuIsAwake, true, 1);
 
                     _wasGpuAwake = newWasAwake;
                     _gpuSleepHoldTicks = newHoldTicks;
 
-                    if (shouldResetHandle)
+                    if (sleepAction == NvidiaGpuManager.GpuSleepAction.ResetHandle)
                     {
                         _gpuManager.ResetGpuHandle();
                     }

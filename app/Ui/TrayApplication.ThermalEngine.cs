@@ -46,34 +46,25 @@ public partial class TrayApplication : ApplicationContext
 
                     // 1. Detect discrete GPU wake state transitions and auto-apply clock offsets on AC.
                     // Bypassed completely if the user disabled AutoApplyGpuClocks or is on battery (DC) power.
-                    // Debounced via EvaluateGpuSleepHysteresis to absorb transient 1-2s RTD3 drops and CM API read flickers.
+                    // Debounced via UpdateSleepState to absorb transient 1-2s RTD3 drops and CM API read flickers.
                     bool isAcOnline = NvidiaGpuManager.IsAcPowerConnected();
                     int autoApplySetting = SettingsManager.GetInt("AutoApplyGpuClocks", 1);
                     bool isAutoApplyActive = isAcOnline && autoApplySetting == 1;
 
-                    if (isAutoApplyActive)
+                    bool gpuIsAwake = NvidiaGpuManager.IsGpuAwake();
+                    var (newWasAwake, newHoldTicks, sleepAction) =
+                        NvidiaGpuManager.UpdateSleepState(_wasGpuAwake, _gpuSleepHoldTicks, gpuIsAwake, isAcOnline, autoApplySetting);
+
+                    _wasGpuAwake = newWasAwake;
+                    _gpuSleepHoldTicks = newHoldTicks;
+
+                    if (sleepAction == NvidiaGpuManager.GpuSleepAction.AutoApply)
                     {
-                        bool gpuIsAwake = NvidiaGpuManager.IsGpuAwake();
-                        var (newWasAwake, newHoldTicks, shouldAutoApply, shouldResetHandle) =
-                            NvidiaGpuManager.EvaluateGpuSleepHysteresis(_wasGpuAwake, gpuIsAwake, _gpuSleepHoldTicks, HysteresisHoldCycles);
-
-                        _wasGpuAwake = newWasAwake;
-                        _gpuSleepHoldTicks = newHoldTicks;
-
-                        if (shouldAutoApply)
-                        {
-                            var activeMode = (PowerProfile)SettingsManager.GetInt("LastPowerMode", (int)PowerProfile.Performance);
-                            _ = _gpuManager.AutoApplyClocksAsync(activeMode, isAcOnline);
-                        }
-                        else if (shouldResetHandle)
-                        {
-                            _gpuManager.ResetGpuHandle();
-                        }
+                        var activeMode = (PowerProfile)SettingsManager.GetInt("LastPowerMode", (int)PowerProfile.Performance);
+                        _ = _gpuManager.ApplyProfileOcAsync(activeMode, isAcOnline);
                     }
-                    else if (_wasGpuAwake)
+                    else if (sleepAction == NvidiaGpuManager.GpuSleepAction.ResetHandle)
                     {
-                        _wasGpuAwake = false;
-                        _gpuSleepHoldTicks = 0;
                         _gpuManager.ResetGpuHandle();
                     }
 
