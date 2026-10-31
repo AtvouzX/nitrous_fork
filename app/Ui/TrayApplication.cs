@@ -44,6 +44,8 @@ public partial class TrayApplication : ApplicationContext
     private readonly GlobalHotkeyManager _hotkeys = new();
     private readonly OsdForm _osd = new();
     private string _lastCyclePowerHotkey = string.Empty;
+    private KeyboardBacklightLevel? _lastSyncedBacklightLevel;
+    private bool? _lastSyncedBacklightTimeout;
     private string _lastDashboardHotkey = string.Empty;
 
     private const int HK_CYCLE_POWER = 1;
@@ -106,6 +108,7 @@ public partial class TrayApplication : ApplicationContext
                 {
                     LogManager.SyncSettings();
                     ReloadHotkeysIfChanged();
+                    SyncBacklightSettingsIfChanged();
                 }, null, Timeout.Infinite, false);
             }
             catch (Exception ex)
@@ -120,6 +123,8 @@ public partial class TrayApplication : ApplicationContext
 
             _hotkeys.HotkeyPressed += OnCustomHotkeyPressed;
             ReloadHotkeys();
+            _lastSyncedBacklightLevel = AcerWmiManager.GetBacklightLevel();
+            _lastSyncedBacklightTimeout = AcerWmiManager.GetBacklightTimeout();
 
             _ = Task.Run(async () =>
             {
@@ -347,6 +352,24 @@ public partial class TrayApplication : ApplicationContext
 
         ReloadHotkeys();
         return true;
+    }
+
+    internal void SyncBacklightSettingsIfChanged()
+    {
+        var level = AcerWmiManager.GetBacklightLevel() ?? KeyboardBacklightLevel.Level2;
+        bool timeout = AcerWmiManager.GetBacklightTimeout();
+
+        if (_lastSyncedBacklightLevel != level)
+        {
+            _lastSyncedBacklightLevel = level;
+            _ = AcerWmiManager.ApplyPhysicalBacklightLevelAsync(level);
+        }
+
+        if (_lastSyncedBacklightTimeout != timeout)
+        {
+            _lastSyncedBacklightTimeout = timeout;
+            _ = AcerWmiManager.SetBacklightTimeoutAsync(timeout);
+        }
     }
 
     private void RegisterSavedHotkey(string settingKey, int id)

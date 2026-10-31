@@ -1,8 +1,11 @@
 using System;
+using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Nitrous.Enums;
 using Nitrous.Helpers;
 using Nitrous.Managers;
+using Nitrous.Ui.Controls;
 using UserControl = System.Windows.Controls.UserControl;
 using KeyEventArgs = System.Windows.Input.KeyEventArgs;
 using TextBox = System.Windows.Controls.TextBox;
@@ -11,10 +14,76 @@ namespace Nitrous.Ui.Views;
 
 public partial class KeyboardPageView : UserControl
 {
+    private bool _isUpdatingUi;
+
     public KeyboardPageView()
     {
         InitializeComponent();
         RefreshHotkeys();
+        RefreshBacklightUi();
+    }
+
+    public void RefreshBacklightUi()
+    {
+        _isUpdatingUi = true;
+        try
+        {
+            var level = AcerWmiManager.GetBacklightLevel() ?? KeyboardBacklightLevel.Level2;
+            UpdateLevelButtons(level);
+
+            if (ChkBacklightTimeout != null)
+            {
+                ChkBacklightTimeout.IsChecked = AcerWmiManager.GetBacklightTimeout();
+            }
+        }
+        finally
+        {
+            _isUpdatingUi = false;
+        }
+    }
+
+    private void UpdateLevelButtons(KeyboardBacklightLevel activeLevel)
+    {
+        if (BtnBacklightOff == null || BtnBacklightL1 == null || BtnBacklightL2 == null) return;
+
+        BtnBacklightOff.Variant = activeLevel == KeyboardBacklightLevel.Off ? ChamferButtonVariant.Primary : ChamferButtonVariant.Secondary;
+        BtnBacklightL1.Variant = activeLevel == KeyboardBacklightLevel.Level1 ? ChamferButtonVariant.Primary : ChamferButtonVariant.Secondary;
+        BtnBacklightL2.Variant = activeLevel == KeyboardBacklightLevel.Level2 ? ChamferButtonVariant.Primary : ChamferButtonVariant.Secondary;
+
+        bool enabled = activeLevel != KeyboardBacklightLevel.Off;
+        if (ChkBacklightTimeout != null)
+        {
+            ChkBacklightTimeout.IsEnabled = enabled;
+            ChkBacklightTimeout.Opacity = enabled ? 1.0 : 0.4;
+        }
+        if (TxtTimeoutLabel != null)
+        {
+            TxtTimeoutLabel.Opacity = enabled ? 1.0 : 0.4;
+        }
+    }
+
+    private void BtnBacklightOff_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateLevelButtons(KeyboardBacklightLevel.Off);
+        _ = AcerWmiManager.SetBacklightLevelAsync(KeyboardBacklightLevel.Off);
+    }
+
+    private void BtnBacklightL1_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateLevelButtons(KeyboardBacklightLevel.Level1);
+        _ = AcerWmiManager.SetBacklightLevelAsync(KeyboardBacklightLevel.Level1);
+    }
+
+    private void BtnBacklightL2_Click(object sender, RoutedEventArgs e)
+    {
+        UpdateLevelButtons(KeyboardBacklightLevel.Level2);
+        _ = AcerWmiManager.SetBacklightLevelAsync(KeyboardBacklightLevel.Level2);
+    }
+
+    private void ChkBacklightTimeout_Changed(object sender, RoutedEventArgs e)
+    {
+        if (_isUpdatingUi || ChkBacklightTimeout == null) return;
+        _ = AcerWmiManager.SetBacklightTimeoutAsync(ChkBacklightTimeout.IsChecked == true);
     }
 
     public void RefreshHotkeys()

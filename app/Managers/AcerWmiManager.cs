@@ -3,6 +3,7 @@ using System.Diagnostics;
 using System.Management;
 using System.Threading.Tasks;
 using Nitrous.Enums;
+using Nitrous.Helpers;
 
 namespace Nitrous.Managers;
 
@@ -104,8 +105,31 @@ public static class AcerWmiManager
     }
 
     internal delegate bool WmiInvokeDelegate(string className, string methodName, ulong gmInput);
+    internal delegate bool WmiBufferInvokeDelegate(string className, string methodName, byte[] gmInput);
 
     private static WmiInvokeDelegate? _wmiInvokeOverride;
+    private static WmiBufferInvokeDelegate? _wmiBufferInvokeOverride;
+
+    internal static void SetWmiBufferInvokeForTesting(WmiBufferInvokeDelegate? testDelegate)
+    {
+        lock (_wmiLock)
+        {
+            _wmiBufferInvokeOverride = testDelegate;
+        }
+    }
+
+    private static KeyboardBacklightLevel? _backlightLevelForTesting;
+    private static bool? _backlightTimeoutForTesting;
+
+    internal static void SetBacklightLevelForTesting(KeyboardBacklightLevel? level)
+    {
+        _backlightLevelForTesting = level;
+    }
+
+    internal static void SetBacklightTimeoutForTesting(bool? timeout)
+    {
+        _backlightTimeoutForTesting = timeout;
+    }
 
     internal static void SetWmiInvokeForTesting(WmiInvokeDelegate? testDelegate)
     {
@@ -389,6 +413,192 @@ public static AcerCapabilities GetCapabilities()
             LogManager.Error($"Error invoking {methodName}(0x{gmInput:X}): {ex.Message}", ex, "AcerWmi");
             return false;
         }
+    }
+
+    private static int? _cachedBkHotkeyNumber;
+    private static bool? _cachedIsSingleColorKeyboard;
+
+    private static int GetBkHotkeyNumber()
+    {
+        if (_cachedBkHotkeyNumber.HasValue) return _cachedBkHotkeyNumber.Value;
+        try
+        {
+            using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\OEM\AcerAgentService");
+            if (key?.GetValue("BK_Hotkey_Number") is int val && val > 0)
+            {
+                _cachedBkHotkeyNumber = val;
+                return val;
+            }
+        }
+        catch { }
+        _cachedBkHotkeyNumber = KeyboardBacklightCodec.DefaultBkHotkeyNumber;
+        return _cachedBkHotkeyNumber.Value;
+    }
+
+    private static bool IsSingleColorKeyboard()
+    {
+        if (_cachedIsSingleColorKeyboard.HasValue) return _cachedIsSingleColorKeyboard.Value;
+        try
+        {
+            using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\OEM\AcerAgentService\LightSetting");
+            if (key?.GetValue("KeyBoardColor") is int color)
+            {
+                _cachedIsSingleColorKeyboard = color <= 1;
+                return _cachedIsSingleColorKeyboard.Value;
+            }
+        }
+        catch { }
+        _cachedIsSingleColorKeyboard = true;
+        return true;
+    }
+
+    public static async Task ApplyPhysicalBacklightLevelAsync(KeyboardBacklightLevel level)
+    {
+        await Task.Run(() =>
+        {
+            bool isSingleColor = IsSingleColorKeyboard();
+
+            // 1. For Single-Color EC keyboards, AcerLightingService (RVA 0xB200..0xB265) first enables/disables LED behavior.
+            // SetGamingLED takes a 16-byte buffer (scalar ulong throws InvalidCastException).
+            if (isSingleColor)
+            {
+                byte[] ledBuf = KeyboardBacklightCodec.EncodeSingleColorGamingLedPayload(level);
+                InvokeWmiBufferSync("AcerGamingFunction", "SetGamingLED", ledBuf);
+            }
+
+            // 2. Apply brightness payload via SetGamingKBBacklight (with brightness at payload[2] and marker 0x03/0x03)
+            byte[] payload = KeyboardBacklightCodec.EncodeBacklightPayload(level, isSingleColor: isSingleColor);
+            InvokeWmiBufferSync("AcerGamingFunction", "SetGamingKBBacklight", payload);
+
+            // 3. Synchronize APGeAction.SetFunction (used by AcerAgentService when BK_Hotkey_Number is present)
+            bool timeoutEnabled = GetBacklightTimeout();
+            int hotkeyNum = GetBkHotkeyNumber();
+            ulong apGePayload = KeyboardBacklightCodec.EncodeApGeActionSetBacklight(level, timeoutEnabled, hotkeyNum);
+            InvokeApGeActionSync("SetFunction", apGePayload);
+        }).ConfigureAwait(false);
+    }
+
+    public static async Task SetBacklightLevelAsync(KeyboardBacklightLevel level)
+    {
+        LogManager.Info($"Setting keyboard backlight level to {level}", "AcerWmi");
+        SettingsManager.Save("KeyboardBacklightLevel", (int)level);
+        await ApplyPhysicalBacklightLevelAsync(level).ConfigureAwait(false);
+    }
+
+    public static KeyboardBacklightLevel? GetBacklightLevel()
+    {
+        if (_backlightLevelForTesting.HasValue) return _backlightLevelForTesting.Value;
+
+        int saved = SettingsManager.GetInt("KeyboardBacklightLevel", (int)KeyboardBacklightLevel.Level2);
+        return Enum.IsDefined(typeof(KeyboardBacklightLevel), saved)
+            ? (KeyboardBacklightLevel)saved
+            : KeyboardBacklightLevel.Level2;
+    }
+
+    public static async Task SetBacklightTimeoutAsync(bool enabled)
+    {
+        LogManager.Info($"Setting keyboard backlight timeout: {(enabled ? "30s" : "Always On")}", "AcerWmi");
+        SettingsManager.Save("KeyboardBacklightTimeout", enabled);
+
+        await Task.Run(() =>
+        {
+            // 1. Hardware EC 30s timeout via AcerGamingFunction.SetGamingProfile (AcerAgentService RVA 0x3E1D6)
+            ulong profileScalar = KeyboardBacklightCodec.EncodeGamingProfileTimeout(enabled);
+            InvokeWmiSync("AcerGamingFunction", "SetGamingProfile", profileScalar);
+
+            // 2. Hardware APGeAction.SetFunction 30s timeout + active brightness (AcerAgentService RVA 0x3E062)
+            var currentLevel = GetBacklightLevel() ?? KeyboardBacklightLevel.Level2;
+            int hotkeyNum = GetBkHotkeyNumber();
+            ulong apGePayload = KeyboardBacklightCodec.EncodeApGeActionSetBacklight(currentLevel, enabled, hotkeyNum);
+            InvokeApGeActionSync("SetFunction", apGePayload);
+
+            // 3. Optional HID report fallback
+            byte[] report = KeyboardBacklightCodec.EncodeTimeoutReport(enabled);
+            SendKeyboardHidReport(report);
+        }).ConfigureAwait(false);
+    }
+
+    public static bool GetBacklightTimeout()
+    {
+        if (_backlightTimeoutForTesting.HasValue) return _backlightTimeoutForTesting.Value;
+        return SettingsManager.Get("KeyboardBacklightTimeout", true);
+    }
+
+    private static bool InvokeApGeActionSync(string methodName, ulong uiInput)
+    {
+        WmiInvokeDelegate? testOverride;
+        lock (_wmiLock)
+        {
+            testOverride = _wmiInvokeOverride;
+        }
+        if (testOverride != null) return testOverride("APGeAction", methodName, uiInput);
+
+        try
+        {
+            using var searcher = new ManagementObjectSearcher(@"root\wmi", "SELECT * FROM APGeAction");
+            using var collection = searcher.Get();
+            bool invoked = false;
+            foreach (ManagementObject instance in collection)
+            {
+                using (instance)
+                {
+                    using var inParams = instance.GetMethodParameters(methodName);
+                    inParams["uiInput"] = uiInput;
+                    instance.InvokeMethod(methodName, inParams, null);
+                    invoked = true;
+                }
+            }
+            return invoked;
+        }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"InvokeApGeAction {methodName}(0x{uiInput:X}) skipped: {ex.Message}", "AcerWmi");
+            return false;
+        }
+    }
+
+    private static bool InvokeWmiBufferSync(string className, string methodName, byte[] gmInput)
+    {
+        WmiBufferInvokeDelegate? testOverride;
+        lock (_wmiLock)
+        {
+            testOverride = _wmiBufferInvokeOverride;
+        }
+        if (testOverride != null) return testOverride(className, methodName, gmInput);
+
+        try
+        {
+            using var searcher = new ManagementObjectSearcher(@"root\wmi", $"SELECT * FROM {className}");
+            using var collection = searcher.Get();
+            bool invoked = false;
+            foreach (ManagementObject instance in collection)
+            {
+                using (instance)
+                {
+                    using var inParams = instance.GetMethodParameters(methodName);
+                    inParams["gmInput"] = gmInput;
+                    instance.InvokeMethod(methodName, inParams, null);
+                    invoked = true;
+                }
+            }
+            return invoked;
+        }
+        catch (Exception ex)
+        {
+            LogManager.Error($"Error invoking {methodName}(byte[{gmInput.Length}]): {ex.Message}", ex, "AcerWmi");
+            return false;
+        }
+    }
+
+    private static async Task InvokeWmiBufferAsync(string className, string methodName, byte[] gmInput)
+    {
+        await Task.Run(() => InvokeWmiBufferSync(className, methodName, gmInput)).ConfigureAwait(false);
+    }
+
+    private static void SendKeyboardHidReport(byte[] report)
+    {
+        // Safe dispatch point for optional HID report (e.g. USB keyboard)
+        LogManager.Debug($"Dispatching HID report: {BitConverter.ToString(report)}", "AcerWmi");
     }
 
     private static async Task InvokeWmiAsync(string className, string methodName, ulong gmInput)

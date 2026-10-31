@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 using Nitrous.Enums;
 using Nitrous.Helpers;
+using Nitrous.Interop;
 using Nitrous.Managers;
 
 namespace Nitrous.Ui;
@@ -18,6 +19,7 @@ public partial class TrayApplication : ApplicationContext
     private string _lastObservedFanMode = "";
     private string _lastObservedFanPreset = "";
     private bool _lastObservedCurveEnabled = false;
+    private readonly KeyboardBacklightWatchdog _backlightWatchdog = new();
     private int _cpuDownstepHoldTicks;
     private int _gpuDownstepHoldTicks;
     private int _gpuSleepHoldTicks;
@@ -77,6 +79,20 @@ public partial class TrayApplication : ApplicationContext
                     else if (sleepAction == NvidiaGpuManager.GpuSleepAction.ResetHandle)
                     {
                         _gpuManager.ResetGpuHandle();
+                    }
+
+                    // 1b. Evaluate keyboard backlight 30s timeout watchdog
+                    bool timeoutEnabled = AcerWmiManager.GetBacklightTimeout();
+                    var userLevel = AcerWmiManager.GetBacklightLevel() ?? KeyboardBacklightLevel.Level2;
+                    var idleTime = User32.GetIdleTime();
+                    var watchdogAction = _backlightWatchdog.EvaluateTick(timeoutEnabled, userLevel, idleTime);
+                    if (watchdogAction == WatchdogAction.DimToOff)
+                    {
+                        _ = AcerWmiManager.ApplyPhysicalBacklightLevelAsync(KeyboardBacklightLevel.Off);
+                    }
+                    else if (watchdogAction == WatchdogAction.RestoreLevel)
+                    {
+                        _ = AcerWmiManager.ApplyPhysicalBacklightLevelAsync(userLevel);
                     }
 
                     // 2. Check if the user wants Custom Fan Mode and if the Curve is enabled

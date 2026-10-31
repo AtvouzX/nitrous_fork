@@ -156,7 +156,8 @@ static class Program
             TrayApplication.TriggerExitFanReset();
         };
 
-        bool isRestartOrUpdate = Array.Exists(args, a =>
+        bool hasReplacedBinary = File.Exists((Environment.ProcessPath ?? Application.ExecutablePath) + ".old");
+        bool isRestartOrUpdate = hasReplacedBinary || Array.Exists(args, a =>
             string.Equals(a, "--updated", StringComparison.OrdinalIgnoreCase) ||
             string.Equals(a, "--restart", StringComparison.OrdinalIgnoreCase));
 
@@ -166,6 +167,7 @@ static class Program
             if (isRestartOrUpdate)
             {
                 LogManager.Info("Restart/Update detected; waiting for previous instance to exit...", "Program");
+                TerminatePreviousInstances();
                 try
                 {
                     bool acquired = mutex.WaitOne(TimeSpan.FromSeconds(5), false);
@@ -233,6 +235,30 @@ static class Program
         catch { }
 
         mutex = null;
+        _ = 0;
+    }
+
+    private static void TerminatePreviousInstances()
+    {
+        try
+        {
+            using var cur = Process.GetCurrentProcess();
+            var list = Process.GetProcessesByName(cur.ProcessName);
+            foreach (var p in list)
+            {
+                using (p)
+                {
+                    if (p.Id != cur.Id)
+                    {
+                        try { p.Kill(); } catch { }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"TerminatePreviousInstances failed: {ex.Message}", "Program");
+        }
     }
 
     public static void SignalExistingDashboard()
