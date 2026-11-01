@@ -29,23 +29,27 @@
 					<controls:ChamferCard ChamferSize="4" Background="{StaticResource Steel900Brush}" 
 					                      BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1" Padding="14,12">
 						<StackPanel>
-							<!-- Row 1: BRIGHTNESS LEVELS -->
-							<Grid Margin="0,0,0,12">
+							<!-- Row 1: BRIGHTNESS LEVELS - STASHED 2026-11-02: level buttons hidden, keeping only the 30s idle timeout. Code-behind and WMI logic retained; drop the Visibility below to restore. -->
+							<Grid Visibility="Collapsed" Margin="0,0,0,12">
 								<TextBlock Text="BRIGHTNESS LEVEL" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
 								<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
 									<controls:ChamferButton x:Name="BtnBacklightOff" Content="OFF" Width="55" Height="26" Margin="0,0,6,0"
 									                        Click="BtnBacklightOff_Click"
-									                        ToolTip="EC ignores WMI off on this model — press Fn+F11 to turn the light off." />
+									                        ToolTip="Arms EC off: enables 30s timeout and turns the light off after 30s idle. Light stays on until then." />
 									<controls:ChamferButton x:Name="BtnBacklightL1" Content="LVL 1" Width="55" Height="26" Margin="0,0,6,0"
 									                        Click="BtnBacklightL1_Click"
-									                        ToolTip="Dim backlight. Takes effect on next keypress." />
+									                        ToolTip="Dim backlight. Latches in EC, takes effect on next keypress." />
 									<controls:ChamferButton x:Name="BtnBacklightL2" Content="LVL 2" Width="55" Height="26"
 									                        Click="BtnBacklightL2_Click"
-									                        ToolTip="Bright backlight. Takes effect on next keypress." />
+									                        ToolTip="Bright backlight. Latches in EC, takes effect on next keypress." />
 								</StackPanel>
 							</Grid>
 
-							<Border Height="1" Background="{StaticResource Steel800Brush}" Margin="0,0,0,10" />
+							<TextBlock x:Name="TxtBacklightOffStatus" Text="OFF IN ~30S — KEEP IDLE" Visibility="Collapsed"
+							           Foreground="{StaticResource Steel300Brush}" FontFamily="{StaticResource MonoFontFamily}"
+							           FontSize="10" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,0,10" />
+
+							<!-- <Border Height="1" Background="{StaticResource Steel800Brush}" Margin="0,0,0,10" /> -->
 
 							<!-- Row 2: 30S TIMEOUT TOGGLE -->
 							<Grid x:Name="GrdTimeoutRow">

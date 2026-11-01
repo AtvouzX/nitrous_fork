@@ -35,10 +35,25 @@ public partial class KeyboardPageView : UserControl
             {
                 ChkBacklightTimeout.IsChecked = AcerWmiManager.GetBacklightTimeout();
             }
+            UpdateOffStatusText(level, AcerWmiManager.IsBacklightOffPending());
         }
         finally
         {
             _isUpdatingUi = false;
+        }
+    }
+
+    private void UpdateOffStatusText(KeyboardBacklightLevel level, bool pending)
+    {
+        if (TxtBacklightOffStatus == null) return;
+
+        if (level == KeyboardBacklightLevel.Off && pending)
+        {
+            TxtBacklightOffStatus.Visibility = Visibility.Visible;
+        }
+        else
+        {
+            TxtBacklightOffStatus.Visibility = Visibility.Collapsed;
         }
     }
 
@@ -50,40 +65,67 @@ public partial class KeyboardPageView : UserControl
         BtnBacklightL1.Variant = activeLevel == KeyboardBacklightLevel.Level1 ? ChamferButtonVariant.Primary : ChamferButtonVariant.Secondary;
         BtnBacklightL2.Variant = activeLevel == KeyboardBacklightLevel.Level2 ? ChamferButtonVariant.Primary : ChamferButtonVariant.Secondary;
 
-        bool enabled = activeLevel != KeyboardBacklightLevel.Off;
+        // Off is an armed EC state that requires the 30s timeout, so the checkbox stays
+        // enabled for every level (it only ever reflected the stored timeout setting).
         if (ChkBacklightTimeout != null)
         {
-            ChkBacklightTimeout.IsEnabled = enabled;
-            ChkBacklightTimeout.Opacity = enabled ? 1.0 : 0.4;
+            ChkBacklightTimeout.IsEnabled = true;
+            ChkBacklightTimeout.Opacity = 1.0;
         }
         if (TxtTimeoutLabel != null)
         {
-            TxtTimeoutLabel.Opacity = enabled ? 1.0 : 0.4;
+            TxtTimeoutLabel.Opacity = 1.0;
         }
+        UpdateOffStatusText(activeLevel, AcerWmiManager.IsBacklightOffPending());
     }
 
     private void BtnBacklightOff_Click(object sender, RoutedEventArgs e)
     {
         UpdateLevelButtons(KeyboardBacklightLevel.Off);
-        _ = AcerWmiManager.SetBacklightLevelAsync(KeyboardBacklightLevel.Off);
+        _ = AcerWmiManager.RequestBacklightOffAsync();
+        if (ChkBacklightTimeout != null)
+        {
+            // Reflect the armed timeout without re-firing the change handler
+            // (RequestBacklightOffAsync already enables it).
+            _isUpdatingUi = true;
+            try
+            {
+                ChkBacklightTimeout.IsChecked = true;
+            }
+            finally
+            {
+                _isUpdatingUi = false;
+            }
+        }
+        UpdateOffStatusText(KeyboardBacklightLevel.Off, pending: true);
     }
 
     private void BtnBacklightL1_Click(object sender, RoutedEventArgs e)
     {
         UpdateLevelButtons(KeyboardBacklightLevel.Level1);
+        AcerWmiManager.SetBacklightOffPending(false);
         _ = AcerWmiManager.SetBacklightLevelAsync(KeyboardBacklightLevel.Level1);
     }
 
     private void BtnBacklightL2_Click(object sender, RoutedEventArgs e)
     {
         UpdateLevelButtons(KeyboardBacklightLevel.Level2);
+        AcerWmiManager.SetBacklightOffPending(false);
         _ = AcerWmiManager.SetBacklightLevelAsync(KeyboardBacklightLevel.Level2);
     }
 
     private void ChkBacklightTimeout_Changed(object sender, RoutedEventArgs e)
     {
         if (_isUpdatingUi || ChkBacklightTimeout == null) return;
-        _ = AcerWmiManager.SetBacklightTimeoutAsync(ChkBacklightTimeout.IsChecked == true);
+        bool enabled = ChkBacklightTimeout.IsChecked == true;
+        if (!enabled && (AcerWmiManager.GetBacklightLevel() ?? KeyboardBacklightLevel.Level2) == KeyboardBacklightLevel.Off)
+        {
+            // Unchecking the timeout while Off is armed/confirmed cancels the Off
+            // and restores the pre-Off level; the tray engine also guards this.
+            _ = AcerWmiManager.CancelBacklightOffAsync();
+            return;
+        }
+        _ = AcerWmiManager.SetBacklightTimeoutAsync(enabled);
     }
 
     public void RefreshHotkeys()

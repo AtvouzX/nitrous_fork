@@ -26,6 +26,7 @@ public class KeyboardBacklightTests : IDisposable
         AcerWmiManager.SetWmiBufferInvokeForTesting(null);
         AcerWmiManager.SetBacklightLevelForTesting(null);
         AcerWmiManager.SetBacklightTimeoutForTesting(null);
+        AcerWmiManager.SetBacklightOffPendingForTesting(null);
     }
 
     [Theory]
@@ -444,11 +445,13 @@ public class KeyboardBacklightTests : IDisposable
             var btnL1 = page.FindName("BtnBacklightL1") as ChamferButton;
             var btnL2 = page.FindName("BtnBacklightL2") as ChamferButton;
             var chkTimeout = page.FindName("ChkBacklightTimeout") as System.Windows.Controls.CheckBox;
+            var offStatus = page.FindName("TxtBacklightOffStatus") as System.Windows.Controls.TextBlock;
 
             Assert.NotNull(btnOff);
             Assert.NotNull(btnL1);
             Assert.NotNull(btnL2);
             Assert.NotNull(chkTimeout);
+            Assert.NotNull(offStatus);
 
             // Initially L2 is selected and timeout is checked and enabled
             Assert.Equal(ChamferButtonVariant.Primary, btnL2.Variant);
@@ -457,12 +460,15 @@ public class KeyboardBacklightTests : IDisposable
             Assert.True(chkTimeout.IsChecked);
             Assert.True(chkTimeout.IsEnabled);
 
-            // Click Off button -> disables 30s timeout checkbox
+            // Click Off button -> arms EC off: 30s timeout checkbox stays enabled and checked,
+            // pending status shows "OFF IN ~30S"
             btnOff.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
             Assert.Equal(ChamferButtonVariant.Primary, btnOff.Variant);
             Assert.Equal(ChamferButtonVariant.Secondary, btnL1.Variant);
             Assert.Equal(ChamferButtonVariant.Secondary, btnL2.Variant);
-            Assert.False(chkTimeout.IsEnabled);
+            Assert.True(chkTimeout.IsEnabled);
+            Assert.True(chkTimeout.IsChecked);
+            Assert.Equal(Visibility.Visible, offStatus.Visibility);
 
             // Click L1 button -> re-enables 30s timeout checkbox
             btnL1.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
@@ -470,6 +476,7 @@ public class KeyboardBacklightTests : IDisposable
             Assert.Equal(ChamferButtonVariant.Secondary, btnOff.Variant);
             Assert.Equal(ChamferButtonVariant.Secondary, btnL2.Variant);
             Assert.True(chkTimeout.IsEnabled);
+            Assert.Equal(Visibility.Collapsed, offStatus.Visibility);
 
             // Click L2 button -> keeps 30s timeout checkbox enabled
             btnL2.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
@@ -482,5 +489,111 @@ public class KeyboardBacklightTests : IDisposable
             chkTimeout.IsChecked = false;
             Assert.False(chkTimeout.IsChecked);
         });
+    }
+
+    [Fact]
+    public void BacklightHotkeyWatcher_IsBacklightHotkeyEvent_FiltersOnSecondByte()
+    {
+        Assert.False(BacklightHotkeyWatcher.IsBacklightHotkeyEvent(null));
+        Assert.False(BacklightHotkeyWatcher.IsBacklightHotkeyEvent(Array.Empty<byte>()));
+        Assert.False(BacklightHotkeyWatcher.IsBacklightHotkeyEvent(new byte[] { 0x01 }));
+        // Live APGeEvent payload: [01 84 08 00 00 00 00 00]
+        Assert.True(BacklightHotkeyWatcher.IsBacklightHotkeyEvent(new byte[] { 0x01, 0x84, 0x08, 0x00 }));
+        Assert.False(BacklightHotkeyWatcher.IsBacklightHotkeyEvent(new byte[] { 0x01, 0x00, 0x08, 0x00 }));
+    }
+
+    [Theory]
+    [InlineData(KeyboardBacklightLevel.Off, KeyboardBacklightLevel.Level1)]
+    [InlineData(KeyboardBacklightLevel.Level1, KeyboardBacklightLevel.Level2)]
+    [InlineData(KeyboardBacklightLevel.Level2, KeyboardBacklightLevel.Off)]
+    public void BacklightHotkeyWatcher_AdvanceCycleLevel_FollowsEcCycle(
+        KeyboardBacklightLevel current, KeyboardBacklightLevel expected)
+    {
+        Assert.Equal(expected, BacklightHotkeyWatcher.AdvanceCycleLevel(current));
+    }
+
+    [Fact]
+    public void Watchdog_PendingOff_ConfirmsOnlyAfterThreshold()
+    {
+        var watchdog = new KeyboardBacklightWatchdog();
+
+        // Armed but idle below 30s: light is still on, stay pending (no action)
+        var pending = watchdog.EvaluateTick(true, KeyboardBacklightLevel.Off, TimeSpan.FromSeconds(25), offPending: true);
+        Assert.Equal(WatchdogAction.None, pending);
+        Assert.False(watchdog.IsDimmed);
+
+        // 30s idle: EC has taken the hardware dark, confirm
+        var confirm = watchdog.EvaluateTick(true, KeyboardBacklightLevel.Off, TimeSpan.FromSeconds(30), offPending: true);
+        Assert.Equal(WatchdogAction.DimToOff, confirm);
+        Assert.True(watchdog.IsDimmed);
+
+        // Still idle: no repetitive action
+        var steady = watchdog.EvaluateTick(true, KeyboardBacklightLevel.Off, TimeSpan.FromSeconds(60), offPending: true);
+        Assert.Equal(WatchdogAction.None, steady);
+        Assert.True(watchdog.IsDimmed);
+    }
+
+    [Fact]
+    public void Watchdog_PendingOff_WithoutTimeout_NeverConfirms()
+    {
+        var watchdog = new KeyboardBacklightWatchdog();
+
+        var action = watchdog.EvaluateTick(false, KeyboardBacklightLevel.Off, TimeSpan.FromSeconds(60), offPending: true);
+        Assert.Equal(WatchdogAction.None, action);
+        Assert.False(watchdog.IsDimmed);
+    }
+
+    [Fact]
+    public async Task RequestBacklightOffAsync_ArmsTimeoutThenWritesOff()
+    {
+        AcerWmiManager.SetBacklightLevelForTesting(KeyboardBacklightLevel.Level1);
+        AcerWmiManager.SetBacklightTimeoutForTesting(null);
+        AcerWmiManager.SetWmiInvokeForTesting((cls, method, input) =>
+        {
+            lock (_wmiScalarCalls)
+            {
+                _wmiScalarCalls.Add((cls, method, input));
+            }
+            return true;
+        });
+        AcerWmiManager.SetWmiBufferInvokeForTesting((_, _, _) => true);
+
+        await AcerWmiManager.RequestBacklightOffAsync();
+
+        // Timeout armed first, then Off written
+        Assert.True(AcerWmiManager.GetBacklightTimeout());
+        Assert.Contains(_wmiScalarCalls, c => c.Class == "AcerGamingFunction" && c.Method == "SetGamingProfile" && c.Input == 0x01000002ul);
+        Assert.Equal((int)KeyboardBacklightLevel.Off, SettingsManager.Get("KeyboardBacklightLevel", -1));
+        Assert.True(AcerWmiManager.IsBacklightOffPending());
+        Assert.Equal((int)KeyboardBacklightLevel.Level1, SettingsManager.Get(AcerWmiManager.BacklightPreviousLevelKey, -1));
+    }
+
+    [Fact]
+    public async Task CancelBacklightOffAsync_RestoresPreviousLevel()
+    {
+        SettingsManager.Save(AcerWmiManager.BacklightPreviousLevelKey, (int)KeyboardBacklightLevel.Level2);
+        AcerWmiManager.SetBacklightLevelForTesting(KeyboardBacklightLevel.Off);
+        AcerWmiManager.SetBacklightTimeoutForTesting(null);
+        AcerWmiManager.SetBacklightOffPendingForTesting(true);
+        AcerWmiManager.SetWmiInvokeForTesting((_, _, _) => true);
+        AcerWmiManager.SetWmiBufferInvokeForTesting((_, _, _) => true);
+
+        await AcerWmiManager.CancelBacklightOffAsync();
+
+        Assert.False(AcerWmiManager.IsBacklightOffPending());
+        Assert.False(AcerWmiManager.GetBacklightTimeout());
+        Assert.Equal((int)KeyboardBacklightLevel.Level2, SettingsManager.Get("KeyboardBacklightLevel", -1));
+    }
+
+    [Fact]
+    public void OnHardwareBacklightHotkey_AdvancesTrackedLevelAndClearsPending()
+    {
+        AcerWmiManager.SetBacklightLevelForTesting(KeyboardBacklightLevel.Level1);
+        AcerWmiManager.SetBacklightOffPendingForTesting(true);
+
+        AcerWmiManager.OnHardwareBacklightHotkey();
+
+        Assert.Equal((int)KeyboardBacklightLevel.Level2, SettingsManager.Get("KeyboardBacklightLevel", -1));
+        Assert.False(AcerWmiManager.IsBacklightOffPending());
     }
 }

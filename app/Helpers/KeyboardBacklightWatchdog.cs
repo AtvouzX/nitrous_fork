@@ -22,11 +22,43 @@ public class KeyboardBacklightWatchdog
         TimeSpan idleDuration,
         TimeSpan? timeoutThreshold = null)
     {
+        return EvaluateTick(timeoutEnabled, userLevel, idleDuration, offPending: false, timeoutThreshold);
+    }
+
+    /// <summary>
+    /// Pending-aware tick for the armed-Off flow: Nitrous writes the Off state while the light
+    /// is still on, and the EC only executes it after 30s of real idle. When <paramref name="offPending"/>
+    /// is true and the user level is Off, an idle threshold crossing means the EC has taken the
+    /// hardware dark (confirm with DimToOff); any earlier tick stays None so the UI keeps showing
+    /// "Off in 30s" instead of claiming Off while the light is visibly on.
+    /// </summary>
+    public WatchdogAction EvaluateTick(
+        bool timeoutEnabled,
+        KeyboardBacklightLevel userLevel,
+        TimeSpan idleDuration,
+        bool offPending,
+        TimeSpan? timeoutThreshold = null)
+    {
         var threshold = timeoutThreshold ?? DefaultTimeout;
 
-        // If user explicitly chose Off, keyboard is already off; nothing to dim or restore
         if (userLevel == KeyboardBacklightLevel.Off)
         {
+            if (!offPending || !timeoutEnabled)
+            {
+                IsDimmed = false;
+                return WatchdogAction.None;
+            }
+
+            if (idleDuration >= threshold)
+            {
+                if (!IsDimmed)
+                {
+                    IsDimmed = true;
+                    return WatchdogAction.DimToOff;
+                }
+                return WatchdogAction.None;
+            }
+
             IsDimmed = false;
             return WatchdogAction.None;
         }

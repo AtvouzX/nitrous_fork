@@ -81,18 +81,37 @@ public partial class TrayApplication : ApplicationContext
                         _gpuManager.ResetGpuHandle();
                     }
 
-                    // 1b. Evaluate keyboard backlight 30s timeout watchdog
+                    // 1b. Evaluate keyboard backlight 30s timeout watchdog.
+                    // Off is an armed EC state: Nitrous writes Off while the light is on and the EC
+                    // executes it after 30s of real idle, so a pending Off must survive sub-threshold
+                    // ticks (UI shows "Off in 30s") instead of being treated as already-off.
                     bool timeoutEnabled = AcerWmiManager.GetBacklightTimeout();
                     var userLevel = AcerWmiManager.GetBacklightLevel() ?? KeyboardBacklightLevel.Level2;
-                    var idleTime = User32.GetIdleTime();
-                    var watchdogAction = _backlightWatchdog.EvaluateTick(timeoutEnabled, userLevel, idleTime);
-                    if (watchdogAction == WatchdogAction.DimToOff)
+                    bool offPending = AcerWmiManager.IsBacklightOffPending();
+                    if (offPending && !timeoutEnabled)
                     {
-                        _ = AcerWmiManager.ApplyPhysicalBacklightLevelAsync(KeyboardBacklightLevel.Off);
+                        // Timeout unchecked while Off armed/confirmed: cancel and restore previous level.
+                        AcerWmiManager.SetBacklightOffPending(false);
+                        _ = AcerWmiManager.CancelBacklightOffAsync();
+                        _backlightWatchdog.Reset();
                     }
-                    else if (watchdogAction == WatchdogAction.RestoreLevel)
+                    else
                     {
-                        _ = AcerWmiManager.ApplyPhysicalBacklightLevelAsync(userLevel);
+                        var idleTime = User32.GetIdleTime();
+                        var watchdogAction = _backlightWatchdog.EvaluateTick(timeoutEnabled, userLevel, idleTime, offPending);
+                        if (watchdogAction == WatchdogAction.DimToOff)
+                        {
+                            if (offPending)
+                            {
+                                // EC has taken the hardware dark: confirm the armed Off.
+                                AcerWmiManager.SetBacklightOffPending(false);
+                            }
+                            _ = AcerWmiManager.ApplyPhysicalBacklightLevelAsync(KeyboardBacklightLevel.Off);
+                        }
+                        else if (watchdogAction == WatchdogAction.RestoreLevel)
+                        {
+                            _ = AcerWmiManager.ApplyPhysicalBacklightLevelAsync(userLevel);
+                        }
                     }
 
                     // 2. Check if the user wants Custom Fan Mode and if the Curve is enabled

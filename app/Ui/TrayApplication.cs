@@ -43,6 +43,7 @@ public partial class TrayApplication : ApplicationContext
 
     private readonly GlobalHotkeyManager _hotkeys = new();
     private readonly OsdForm _osd = new();
+    private BacklightHotkeyWatcher? _backlightHotkeyWatcher;
     private string _lastCyclePowerHotkey = string.Empty;
     private KeyboardBacklightLevel? _lastSyncedBacklightLevel;
     private bool? _lastSyncedBacklightTimeout;
@@ -125,6 +126,17 @@ public partial class TrayApplication : ApplicationContext
             ReloadHotkeys();
             _lastSyncedBacklightLevel = AcerWmiManager.GetBacklightLevel();
             _lastSyncedBacklightTimeout = AcerWmiManager.GetBacklightTimeout();
+
+            try
+            {
+                _backlightHotkeyWatcher = new BacklightHotkeyWatcher();
+                _backlightHotkeyWatcher.BacklightHotkeyPressed += (_, _) => OnHardwareBacklightHotkey();
+                _backlightHotkeyWatcher.Start();
+            }
+            catch (Exception ex)
+            {
+                LogManager.Debug($"Backlight hotkey watcher init failed: {ex.Message}", "Tray");
+            }
 
             _ = Task.Run(async () =>
             {
@@ -358,7 +370,6 @@ public partial class TrayApplication : ApplicationContext
     {
         var level = AcerWmiManager.GetBacklightLevel() ?? KeyboardBacklightLevel.Level2;
         bool timeout = AcerWmiManager.GetBacklightTimeout();
-
         if (_lastSyncedBacklightLevel != level)
         {
             _lastSyncedBacklightLevel = level;
@@ -369,6 +380,27 @@ public partial class TrayApplication : ApplicationContext
         {
             _lastSyncedBacklightTimeout = timeout;
             _ = AcerWmiManager.SetBacklightTimeoutAsync(timeout);
+        }
+    }
+
+    /// <summary>
+    /// A hardware Fn+F11 press was observed via APGeEvent. The EC already stepped the
+    /// hardware, so advance Nitrous' tracked level, reset the watchdog, and resync baselines
+    /// so the settings-sync path does not re-apply a stale level over the new EC state.
+    /// Runs on the WMI event thread; all callees are thread-safe.
+    /// </summary>
+    internal void OnHardwareBacklightHotkey()
+    {
+        try
+        {
+            AcerWmiManager.OnHardwareBacklightHotkey();
+            _backlightWatchdog.Reset();
+            _lastSyncedBacklightLevel = AcerWmiManager.GetBacklightLevel();
+            _lastSyncedBacklightTimeout = AcerWmiManager.GetBacklightTimeout();
+        }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"Hardware backlight hotkey handling failed: {ex.Message}", "Tray");
         }
     }
 
@@ -476,6 +508,8 @@ public partial class TrayApplication : ApplicationContext
         // 1. Cancel background loops and unhook events
         _settingsSyncReg?.Unregister(null);
         _settingsSyncEvent?.Dispose();
+        _backlightHotkeyWatcher?.Dispose();
+        _backlightHotkeyWatcher = null;
         _engineCts.Cancel();
         _nitroHook?.Dispose();
         SystemEvents.PowerModeChanged -= OnPowerStateChanged;

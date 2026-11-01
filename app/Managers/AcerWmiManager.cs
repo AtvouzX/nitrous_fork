@@ -524,6 +524,75 @@ public static AcerCapabilities GetCapabilities()
         return SettingsManager.Get("KeyboardBacklightTimeout", true);
     }
 
+    internal const string BacklightOffPendingKey = "KeyboardBacklightOffPending";
+    internal const string BacklightPreviousLevelKey = "KeyboardBacklightPreviousLevel";
+
+    public static bool IsBacklightOffPending()
+    {
+        return SettingsManager.Get(BacklightOffPendingKey, false);
+    }
+
+    internal static void SetBacklightOffPending(bool value)
+    {
+        SettingsManager.Save(BacklightOffPendingKey, value);
+    }
+
+    internal static void SetBacklightOffPendingForTesting(bool? value)
+    {
+        if (value.HasValue) SettingsManager.Save(BacklightOffPendingKey, value.Value);
+        else SettingsManager.Delete(BacklightOffPendingKey);
+    }
+
+    /// <summary>
+    /// Arms the EC-executed Off: enables the 30s timeout first, then writes the Off state.
+    /// The light stays on until the EC's own 30s idle counter expires; see
+    /// <see cref="KeyboardBacklightWatchdog"/> for the pending -&gt; confirmed transition.
+    /// Remembers the pre-Off level so unchecking the timeout can restore it.
+    /// </summary>
+    public static async Task RequestBacklightOffAsync()
+    {
+        LogManager.Info("Arming keyboard backlight Off (EC executes after 30s idle)", "AcerWmi");
+        var current = GetBacklightLevel();
+        if (current.HasValue && current.Value != KeyboardBacklightLevel.Off)
+        {
+            SettingsManager.Save(BacklightPreviousLevelKey, (int)current.Value);
+        }
+        await SetBacklightTimeoutAsync(true).ConfigureAwait(false);
+        await SetBacklightLevelAsync(KeyboardBacklightLevel.Off).ConfigureAwait(false);
+        SettingsManager.Save(BacklightOffPendingKey, true);
+    }
+
+    /// <summary>
+    /// Cancels an armed or confirmed Off: clears pending, disables the timeout,
+    /// and restores the pre-Off level (defaults to Level2).
+    /// </summary>
+    public static async Task CancelBacklightOffAsync()
+    {
+        LogManager.Info("Cancelling keyboard backlight Off, restoring previous level", "AcerWmi");
+        SetBacklightOffPending(false);
+        await SetBacklightTimeoutAsync(false).ConfigureAwait(false);
+        int previous = SettingsManager.GetInt(BacklightPreviousLevelKey, (int)KeyboardBacklightLevel.Level2);
+        var level = Enum.IsDefined(typeof(KeyboardBacklightLevel), previous)
+            ? (KeyboardBacklightLevel)previous
+            : KeyboardBacklightLevel.Level2;
+        await SetBacklightLevelAsync(level).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Handles a hardware Fn+F11 press observed via <c>APGeEvent</c>: the EC has already
+    /// stepped the hardware, so Nitrous only advances its tracked level (off -&gt; dim -&gt;
+    /// bright -&gt; off) and drops any armed-Off pending state. No WMI write here — the
+    /// EC owns the new state and a redundant latched write is unnecessary.
+    /// </summary>
+    public static void OnHardwareBacklightHotkey()
+    {
+        var current = GetBacklightLevel() ?? KeyboardBacklightLevel.Level2;
+        var next = Helpers.BacklightHotkeyWatcher.AdvanceCycleLevel(current);
+        LogManager.Info($"Hardware backlight hotkey: tracking {current} -> {next}", "AcerWmi");
+        SettingsManager.Save(BacklightOffPendingKey, false);
+        SettingsManager.Save("KeyboardBacklightLevel", (int)next);
+    }
+
     private static bool InvokeApGeActionSync(string methodName, ulong uiInput)
     {
         WmiInvokeDelegate? testOverride;
