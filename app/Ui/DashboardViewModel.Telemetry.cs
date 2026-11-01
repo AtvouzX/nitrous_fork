@@ -340,9 +340,16 @@ public partial class DashboardViewModel
             BatteryChargePercent = UnitConverter.BatteryPercentFromFraction(pStatus.BatteryLifePercent);
         }
 
-        if (!batteryState.BatteryPresent || batteryState.AcOnLine)
+        if (!batteryState.BatteryPresent)
         {
-            if (batteryState.BatteryPresent && batteryState.Charging && watts > 0.5)
+            BatteryBadgeText = "AC POWER";
+            BatteryBadgeForeground = "#8A8A96";
+            BatteryBadgeBackground = "#121215";
+            BatteryBadgeBorderBrush = "#26262B";
+        }
+        else if (batteryState.AcOnLine)
+        {
+            if (batteryState.Charging && watts > 0.5)
             {
                 BatteryBadgeText =
                     $"CHARGING • {watts.ToString("0.0", System.Globalization.CultureInfo.InvariantCulture)}W";

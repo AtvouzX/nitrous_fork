@@ -596,4 +596,32 @@ public class KeyboardBacklightTests : IDisposable
         Assert.Equal((int)KeyboardBacklightLevel.Level2, SettingsManager.Get("KeyboardBacklightLevel", -1));
         Assert.False(AcerWmiManager.IsBacklightOffPending());
     }
+
+    [Fact]
+    public void OnHardwareBacklightHotkey_IssuesZeroWmiWrites_EcOwnsHardware()
+    {
+        // Permanent guardrail (retro 2026-11-02): the EC already stepped the hardware on
+        // Fn+F11, so Nitrous must only advance its tracked level and clear pending.
+        // Any WMI write here is a redundant latched write that fights the EC.
+        AcerWmiManager.SetBacklightLevelForTesting(KeyboardBacklightLevel.Level1);
+        AcerWmiManager.SetBacklightOffPendingForTesting(true);
+        bool wmiWritten = false;
+        AcerWmiManager.SetWmiInvokeForTesting((_, _, _) => { wmiWritten = true; return true; });
+        AcerWmiManager.SetWmiBufferInvokeForTesting((_, _, _) => { wmiWritten = true; return true; });
+
+        AcerWmiManager.OnHardwareBacklightHotkey();
+
+        Assert.False(wmiWritten);
+        Assert.Equal((int)KeyboardBacklightLevel.Level2, SettingsManager.Get("KeyboardBacklightLevel", -1));
+        Assert.False(AcerWmiManager.IsBacklightOffPending());
+    }
+
+    [Fact]
+    public void BacklightHotkeyNumber_MatchesCodecDefault_NoChassisDrift()
+    {
+        // The APGeEvent filter and the APGeAction payload encoder must agree on the
+        // hotkey number (0x84 = 132 on ANV15-41; canonical live value comes from
+        // HKLM\SOFTWARE\OEM\AcerAgentService BK_Hotkey_Number at runtime).
+        Assert.Equal(KeyboardBacklightCodec.DefaultBkHotkeyNumber, BacklightHotkeyWatcher.BacklightHotkeyNumber);
+    }
 }

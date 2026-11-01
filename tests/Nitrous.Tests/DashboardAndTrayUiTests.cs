@@ -203,7 +203,8 @@ public class DashboardAndTrayUiTests
                 // Check binding exists instead of literal text because bindings are async
                 var vm = window.DataContext as DashboardViewModel;
                 Assert.NotNull(vm);
-                Assert.True(vm.BatteryBadgeText == "AC POWER" || vm.BatteryBadgeText.StartsWith("BATTERY") || vm.BatteryBadgeText.StartsWith("CHARGING"));
+                Assert.True(vm.BatteryBadgeText == "AC POWER" || vm.BatteryBadgeText == "CHARGED" ||
+                            vm.BatteryBadgeText.StartsWith("BATTERY") || vm.BatteryBadgeText.StartsWith("CHARGING"));
 
                 // Power Profile selection: exactly one button must be active
                 bool powerActive = window.BtnPowerQuiet.IsChecked == true ||
@@ -308,7 +309,7 @@ public class DashboardAndTrayUiTests
         {
             var vm = new DashboardViewModel();
 
-            // 1. AC Power (not charging or low rate)
+            // 1. AC Power, battery full / not charging
             var acState = new Powrprof.SYSTEM_BATTERY_STATE
             {
                 BatteryPresent = true,
@@ -317,8 +318,8 @@ public class DashboardAndTrayUiTests
                 Rate = 0
             };
             vm.UpdateBatteryBadge(acState);
-            Assert.Equal("AC POWER", vm.BatteryBadgeText);
-            Assert.Equal("#8A8A96", vm.BatteryBadgeForeground);
+            Assert.Equal("CHARGED", vm.BatteryBadgeText);
+            Assert.Equal("#EDEDEF", vm.BatteryBadgeForeground);
             Assert.Equal("#121215", vm.BatteryBadgeBackground);
             Assert.Equal("#26262B", vm.BatteryBadgeBorderBrush);
 
@@ -348,7 +349,7 @@ public class DashboardAndTrayUiTests
             Assert.Equal("BATTERY • 20.5W", vm.BatteryBadgeText);
             Assert.Equal("#EDEDEF", vm.BatteryBadgeForeground);
             Assert.Equal("#18181C", vm.BatteryBadgeBackground);
-            Assert.Equal("#36363E", vm.BatteryBadgeBorderBrush);
+            Assert.Equal("#26262B", vm.BatteryBadgeBorderBrush);
 
             // 4. Battery Power with 0 rate
             var batteryNoRate = new Powrprof.SYSTEM_BATTERY_STATE
@@ -360,7 +361,7 @@ public class DashboardAndTrayUiTests
             vm.UpdateBatteryBadge(batteryNoRate);
             Assert.Equal("BATTERY", vm.BatteryBadgeText);
             Assert.Equal("#18181C", vm.BatteryBadgeBackground);
-            Assert.Equal("#36363E", vm.BatteryBadgeBorderBrush);
+            Assert.Equal("#26262B", vm.BatteryBadgeBorderBrush);
 
             // 5. Desktop / No battery present
             var desktopState = new Powrprof.SYSTEM_BATTERY_STATE
@@ -370,6 +371,7 @@ public class DashboardAndTrayUiTests
             };
             vm.UpdateBatteryBadge(desktopState);
             Assert.Equal("AC POWER", vm.BatteryBadgeText);
+            Assert.Equal("#8A8A96", vm.BatteryBadgeForeground);
             Assert.Equal("#121215", vm.BatteryBadgeBackground);
             Assert.Equal("#26262B", vm.BatteryBadgeBorderBrush);
         });

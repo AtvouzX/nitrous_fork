@@ -4,6 +4,7 @@ using System.Drawing.Drawing2D;
 using System.Windows.Forms;
 using Nitrous.Enums;
 using Nitrous.Helpers;
+using Nitrous.Managers;
 
 namespace Nitrous.Ui;
 
@@ -17,7 +18,25 @@ public class OsdForm : Form
 
     // Set peak opacity to 85% for a subtle translucent effect
     private double _opacity = 0.85;
-    private readonly int _cornerRadius = 10;
+
+    // Palette mirrors DashboardStyles.xaml tokens: Steel950 fill, BorderCard border, Steel100 text.
+    private static readonly Color SurfaceColor = Color.FromArgb(8, 8, 10);
+    private static readonly Color BorderColor = Color.FromArgb(56, 56, 66);
+    private static readonly Color TextColor = Color.FromArgb(237, 237, 239);
+    private static readonly string MonoFontFamily = ResolveMonoFontFamily();
+
+    // GDI+ resources are cached: the fade timer repaints ~30 times per display, so per-paint
+    // allocation (and an undisposed StringFormat) would churn native handles every tick.
+    private readonly Font _font;
+    private readonly SolidBrush _textBrush;
+    private readonly Pen _borderPen;
+    private readonly StringFormat _textFormat;
+    private SolidBrush _accentBrush;
+    private GraphicsPath? _borderPath;
+    private Region? _region;
+
+    // Rebuilt from the monitor DPI once the handle exists (DeviceDpi reads 96 before that).
+    private OsdLayout _layout = OsdLayoutHelper.Compute(1.0);
 
     protected override bool ShowWithoutActivation => true;
 
@@ -30,18 +49,20 @@ public class OsdForm : Form
         this.DoubleBuffered = true;
 
         this.FormBorderStyle = FormBorderStyle.None;
-        this.BackColor = Color.FromArgb(24, 24, 27);
+        this.BackColor = SurfaceColor;
         this.TopMost = true;
         this.ShowInTaskbar = false;
-
-        this.Size = new Size(280, 70);
-
-        var screen = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1920, 1080);
         this.StartPosition = FormStartPosition.Manual;
-        this.Location = new Point((screen.Width - this.Width) / 2, screen.Height - 160);
 
-        // Clip the form's corners based on the specified radius
-        this.Region = new Region(GetRoundedPath(new Rectangle(0, 0, this.Width, this.Height), _cornerRadius));
+        _font = new Font(MonoFontFamily, 14, FontStyle.Bold);
+        _textBrush = new SolidBrush(TextColor);
+        _borderPen = new Pen(BorderColor, 1);
+        _textFormat = new StringFormat
+        {
+            Alignment = StringAlignment.Center,
+            LineAlignment = StringAlignment.Center
+        };
+        _accentBrush = new SolidBrush(_accentColor);
 
         _fadeTimer = new System.Windows.Forms.Timer { Interval = 30 };
         _fadeTimer.Tick += FadeTimer_Tick;
@@ -67,15 +88,25 @@ public class OsdForm : Form
             {
                 this.BeginInvoke(new Action(() => ShowProfile(profileName, color, profile)));
             }
-            catch
+            catch (Exception ex)
             {
+                if (LogManager.IsDebugEnabled)
+                {
+                    LogManager.Debug($"OSD marshal failed: {ex.Message}", "OSD");
+                }
             }
 
             return;
         }
 
         _profileText = profileName.ToUpper();
-        _accentColor = color;
+        if (_accentColor != color)
+        {
+            _accentColor = color;
+            _accentBrush.Dispose();
+            _accentBrush = new SolidBrush(color);
+        }
+
         _activeProfile = profile;
 
         // Reset to the subtle peak opacity
@@ -110,59 +141,102 @@ public class OsdForm : Form
             _fadeTimer.Stop();
             _holdTimer.Dispose();
             _fadeTimer.Dispose();
+
+            _font.Dispose();
+            _textBrush.Dispose();
+            _borderPen.Dispose();
+            _textFormat.Dispose();
+            _borderPath?.Dispose();
+            _region?.Dispose();
+            _accentBrush.Dispose();
         }
 
         base.Dispose(disposing);
     }
 
+    protected override void OnHandleCreated(EventArgs e)
+    {
+        base.OnHandleCreated(e);
+        ApplyLayout();
+    }
+
+    /// <summary>
+    /// Sizes and positions the overlay for the current monitor DPI. Runs on handle creation because
+    /// DeviceDpi reads 96 until then; the OSD is a fixed-size popup, so no live DPI re-layout.
+    /// </summary>
+    private void ApplyLayout()
+    {
+        _layout = OsdLayoutHelper.Compute(this.DeviceDpi / 96.0);
+        this.Size = _layout.FormSize;
+
+        var screen = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1920, 1080);
+        this.Location = new Point((screen.Width - this.Width) / 2, screen.Height - _layout.BottomMargin);
+
+        _borderPath?.Dispose();
+        _borderPath = CreateChamferPath(
+            new RectangleF(0.5f, 0.5f, this.Width - 1, this.Height - 1),
+            _layout.Chamfer);
+
+        // Clip the form to the chamfered silhouette (sharp top-left/bottom-right, cut top-right/bottom-left)
+        using var regionPath = CreateChamferPath(new RectangleF(0, 0, this.Width, this.Height), _layout.Chamfer);
+        var region = new Region(regionPath);
+        _region?.Dispose();
+        _region = region;
+        this.Region = region;
+    }
+
     protected override void OnPaint(PaintEventArgs e)
     {
-        e.Graphics.Clear(this.BackColor);
+        e.Graphics.Clear(SurfaceColor);
         e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
         e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
 
-        // 1. Accent bar (Form region automatically trims the top/bottom left corners)
-        using (var brush = new SolidBrush(_accentColor))
-        {
-            e.Graphics.FillRectangle(brush, 0, 0, 8, this.Height);
-        }
+        // 1. Accent bar (form region trims its bottom-left chamfer)
+        e.Graphics.FillRectangle(_accentBrush, 0, 0, _layout.AccentBarWidth, this.Height);
 
-        // 2. Draw Rounded Border perfectly tracing the form's curved edge
-        using (var path = GetRoundedPath(new Rectangle(0, 0, this.Width - 1, this.Height - 1), _cornerRadius))
-        using (var pen = new Pen(Color.FromArgb(48, 48, 54), 1))
+        // 2. Draw chamfered border tracing the form's clipped silhouette
+        if (_borderPath != null)
         {
-            e.Graphics.DrawPath(pen, path);
+            e.Graphics.DrawPath(_borderPen, _borderPath);
         }
 
         // 3. Draw Speedometer Icon
-        DrawSpeedometerIcon(e.Graphics, new Rectangle(25, 17, 36, 36), _accentColor, _activeProfile);
+        DrawSpeedometerIcon(e.Graphics, _layout.IconBounds, _accentColor, _activeProfile);
 
         // 4. Draw Text
-        using var font = new Font("Segoe UI", 16, FontStyle.Bold);
-        using var textBrush = new SolidBrush(Color.White);
-        StringFormat format = new StringFormat
-        {
-            Alignment = StringAlignment.Center,
-            LineAlignment = StringAlignment.Center
-        };
-
-        Rectangle textRect = new Rectangle(65, 0, this.Width - 65, this.Height);
-        e.Graphics.DrawString(_profileText, font, textBrush, textRect, format);
+        e.Graphics.DrawString(_profileText, _font, _textBrush, _layout.TextRect, _textFormat);
     }
 
-    // Helper method to generate standard geometric curves for rounded edges
-    private GraphicsPath GetRoundedPath(Rectangle rect, int radius)
+    // Builds the GDI+ path from the shared chamfer polygon so the region and border always agree.
+    private static GraphicsPath CreateChamferPath(RectangleF rect, float chamfer)
     {
-        GraphicsPath path = new GraphicsPath();
-        int d = radius * 2;
-
-        path.AddArc(rect.X, rect.Y, d, d, 180, 90); // Top-Left
-        path.AddArc(rect.Right - d, rect.Y, d, d, 270, 90); // Top-Right
-        path.AddArc(rect.Right - d, rect.Bottom - d, d, d, 0, 90); // Bottom-Right
-        path.AddArc(rect.X, rect.Bottom - d, d, d, 90, 90); // Bottom-Left
-        path.CloseFigure();
+        var path = new GraphicsPath();
+        var points = GdiChamferGeometryHelper.CreateChamferPoints(rect, chamfer);
+        if (points.Length > 0)
+        {
+            path.AddPolygon(points);
+        }
 
         return path;
+    }
+
+    private static string ResolveMonoFontFamily()
+    {
+        string[] candidates = { "JetBrains Mono", "Cascadia Mono", "Cascadia Code", "Consolas" };
+        var installed = FontFamily.Families;
+
+        foreach (var name in candidates)
+        {
+            foreach (var family in installed)
+            {
+                if (string.Equals(family.Name, name, StringComparison.OrdinalIgnoreCase))
+                {
+                    return name;
+                }
+            }
+        }
+
+        return FontFamily.GenericMonospace.Name;
     }
 
     private void DrawSpeedometerIcon(Graphics g, Rectangle bounds, Color color, PowerProfile profile)
@@ -176,7 +250,7 @@ public class OsdForm : Form
 
         g.DrawArc(thickPen, cx - r, cy - r, r * 2, r * 2, 135, 270);
 
-        g.FillEllipse(new SolidBrush(color), cx - 3, cy - 3, 6, 6);
+        g.FillEllipse(_accentBrush, cx - 3, cy - 3, 6, 6);
 
         var (nx, ny) = DialGeometryHelper.CalculateNeedleTip(cx, cy, r - 2, profile);
         g.DrawLine(thinPen, cx, cy, nx, ny);
