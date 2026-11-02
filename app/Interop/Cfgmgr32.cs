@@ -71,5 +71,22 @@ public static class Cfgmgr32
         ref CM_POWER_DATA propertyBuffer,
         ref uint propertyBufferSize,
         uint ulFlags);
+
+    [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    public static extern int CM_Get_Device_Interface_List_SizeW(
+        out int pulLen,
+        ref Guid pInterfaceClassGuid,
+        string? pDeviceID,
+        int ulFlags);
+
+    [DllImport("cfgmgr32.dll", CharSet = CharSet.Unicode)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    public static extern int CM_Get_Device_Interface_ListW(
+        ref Guid pInterfaceClassGuid,
+        string? pDeviceID,
+        [Out] char[] buffer,
+        int length,
+        int ulFlags);
 }
 

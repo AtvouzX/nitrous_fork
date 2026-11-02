@@ -91,4 +91,22 @@ public static partial class User32
         }
         return TimeSpan.Zero;
     }
+
+    public const uint SPI_GETSTICKYKEYS = 0x003A;
+    public const uint SPI_SETSTICKYKEYS = 0x003B;
+    public const uint SKF_STICKYKEYSON = 0x00000001;
+    public const uint SPIF_UPDATEINIFILE = 0x01;
+    public const uint SPIF_SENDCHANGE = 0x02;
+
+    [StructLayout(LayoutKind.Sequential)]
+    public struct STICKYKEYS
+    {
+        public uint cbSize;
+        public uint dwFlags;
+    }
+
+    [DllImport("user32.dll", EntryPoint = "SystemParametersInfoW", SetLastError = true)]
+    [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+    [return: MarshalAs(UnmanagedType.Bool)]
+    public static extern bool SystemParametersInfoW(uint uiAction, uint uiParam, ref STICKYKEYS pvParam, uint fWinIni);
 }

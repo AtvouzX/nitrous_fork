@@ -166,6 +166,27 @@ public class ArchitectureAndSecurityTests
     }
 
     [Fact]
+    public void Hid_HiddAttributes_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.Hid.HIDD_ATTRIBUTES>();
+        Assert.Equal(12, size);
+    }
+
+    [Fact]
+    public void Hid_HidpCaps_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.Hid.HIDP_CAPS>();
+        Assert.Equal(64, size);
+    }
+
+    [Fact]
+    public void User32_StickyKeys_StructSize_MatchesWin32Standard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Interop.User32.STICKYKEYS>();
+        Assert.Equal(8, size);
+    }
+
+    [Fact]
     public void MemoryHelper_ContainsNoDllImportDeclarations()
     {
         var methods = typeof(Nitrous.Helpers.MemoryHelper)

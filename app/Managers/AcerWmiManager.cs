@@ -7,7 +7,7 @@ using Nitrous.Helpers;
 
 namespace Nitrous.Managers;
 
-public static class AcerWmiManager
+public static partial class AcerWmiManager
 {
     // Acer EC Sensor Addresses for Hardware Telemetry
     public const uint SensorCpuTemp = 0x0101u;
@@ -16,11 +16,6 @@ public static class AcerWmiManager
     public const uint SensorGpuTempFallback1 = 0x0901u;
     public const uint SensorGpuTempFallback2 = 0x0B01u;
     public const uint SensorGpuRpm = 0x0601u;
-
-    // Acer EC Fan Behavior Registers
-    public const ulong FanBehaviorAuto = 0x41000Ful;
-    public const ulong FanBehaviorMax = 0x82000Ful;
-    public const ulong FanBehaviorCustom = 0xC3000Ful;
 
     private static ManagementObject? _cachedGamingFunction;
     private static readonly object _wmiLock = new();
@@ -62,48 +57,6 @@ public static class AcerWmiManager
         }
     }
 
-    public static bool IsHardwareSupported()
-    {
-        return GetGamingFunctionInstance() != null;
-    }
-
-    private static bool? _isTurboSupportedCached;
-
-    public static bool IsTurboModeSupported()
-    {
-        if (_isTurboSupportedCached.HasValue)
-        {
-            return _isTurboSupportedCached.Value;
-        }
-
-        try
-        {
-            ulong? rawOutput = ReadMiscSetting(0x0A);
-            if (rawOutput.HasValue)
-            {
-                // 0x0A represents the "Supported Profiles" registry
-                int supportedBitmap = (int)((rawOutput.Value >> 8) & 0xFF);
-
-                // Check if Bit 5 (Turbo Mode) is set in the bitmap
-                bool isSupported = (supportedBitmap & (1 << 5)) != 0;
-                _isTurboSupportedCached = isSupported;
-                return isSupported;
-            }
-        }
-        catch (Exception ex)
-        {
-            LogManager.Debug($"IsTurboModeSupported check failed: {ex.Message}", "AcerWmi");
-        }
-
-        _isTurboSupportedCached = false;
-        return false;
-    }
-
-    internal static void SetTurboSupportedForTesting(bool? value)
-    {
-        _isTurboSupportedCached = value;
-    }
-
     internal delegate bool WmiInvokeDelegate(string className, string methodName, ulong gmInput);
     internal delegate bool WmiBufferInvokeDelegate(string className, string methodName, byte[] gmInput);
 
@@ -116,19 +69,6 @@ public static class AcerWmiManager
         {
             _wmiBufferInvokeOverride = testDelegate;
         }
-    }
-
-    private static KeyboardBacklightLevel? _backlightLevelForTesting;
-    private static bool? _backlightTimeoutForTesting;
-
-    internal static void SetBacklightLevelForTesting(KeyboardBacklightLevel? level)
-    {
-        _backlightLevelForTesting = level;
-    }
-
-    internal static void SetBacklightTimeoutForTesting(bool? timeout)
-    {
-        _backlightTimeoutForTesting = timeout;
     }
 
     internal static void SetWmiInvokeForTesting(WmiInvokeDelegate? testDelegate)
@@ -148,169 +88,6 @@ public static class AcerWmiManager
         lock (_wmiLock)
         {
             _miscSettingReader = testReader;
-        }
-    }
-
-    public readonly record struct AcerCapabilities(bool Supported, bool TurboSupported, PowerProfile? ActiveMode);
-
-    public static ulong EncodePowerMode(PowerProfile profile) => ((ulong)profile << 8) | 0x0B;
-
-    public static PowerProfile DecodePowerMode(ulong rawOutput) => (PowerProfile)((rawOutput >> 8) & 0xFF);
-
-    private static ulong? ReadMiscSetting(uint register)
-    {
-        MiscSettingReaderDelegate? reader;
-        lock (_wmiLock)
-        {
-            reader = _miscSettingReader;
-        }
-        if (reader != null) return reader(register);
-
-        try
-        {
-            var instance = GetGamingFunctionInstance();
-            if (instance == null) return null;
-            lock (_wmiLock)
-            {
-                using var inParams = instance.GetMethodParameters("GetGamingMiscSetting");
-                inParams["gmInput"] = register;
-                using var outParams = instance.InvokeMethod("GetGamingMiscSetting", inParams, null);
-                object? rawValue = outParams?.Properties["gmOutput"]?.Value ?? outParams?.Properties["outValue"]?.Value;
-                return rawValue != null ? Convert.ToUInt64(rawValue) : null;
-            }
-        }
-        catch (Exception ex)
-        {
-            LogManager.Debug($"ReadMiscSetting 0x{register:X} failed: {ex.Message}", "AcerWmi");
-            return null;
-        }
-    }
-
-public static AcerCapabilities GetCapabilities()
-    {
-        try
-        {
-            MiscSettingReaderDelegate? reader;
-            lock (_wmiLock)
-            {
-                reader = _miscSettingReader;
-            }
-            if (reader != null) return GetCapabilitiesFromReader(reader);
-
-            ulong? supportedRaw = ReadMiscSetting(0x0A);
-            if (supportedRaw == null) return new AcerCapabilities(false, false, null);
-
-            int supportedBitmap = (int)((supportedRaw.Value >> 8) & 0xFF);
-            bool turboSupported = (supportedBitmap & (1 << 5)) != 0;
-
-            ulong? activeRaw = ReadMiscSetting(0x0B);
-            PowerProfile? activeMode = activeRaw.HasValue ? DecodePowerMode(activeRaw.Value) : null;
-
-            return new AcerCapabilities(true, turboSupported, activeMode);
-        }
-        catch (Exception ex)
-        {
-            LogManager.Debug($"GetCapabilities failed: {ex.Message}", "AcerWmi");
-        }
-
-        return new AcerCapabilities(false, false, null);
-    }
-
-    internal static AcerCapabilities GetCapabilitiesFromReader(MiscSettingReaderDelegate reader)
-    {
-        ulong? supportedRaw = reader(0x0A);
-        if (supportedRaw == null) return new AcerCapabilities(false, false, null);
-        int supportedBitmap = (int)((supportedRaw.Value >> 8) & 0xFF);
-        bool turboSupported = (supportedBitmap & (1 << 5)) != 0;
-        ulong? activeRaw = reader(0x0B);
-        PowerProfile? activeMode = activeRaw.HasValue ? DecodePowerMode(activeRaw.Value) : null;
-        return new AcerCapabilities(true, turboSupported, activeMode);
-    }
-
-    public static PowerProfile? GetActivePowerMode()
-    {
-        try
-        {
-            ulong? rawOutput = ReadMiscSetting(0x0B);
-            if (rawOutput.HasValue) return DecodePowerMode(rawOutput.Value);
-        }
-        catch (Exception ex)
-        {
-            LogManager.Warn($"Failed reading active power mode: {ex.Message}", "AcerWmi");
-        }
-
-        return null;
-    }
-
-    public static async Task SetPowerModeAsync(PowerProfile profile)
-    {
-        ulong payload = EncodePowerMode(profile);
-        LogManager.Info($"Setting power mode to {profile} (0x{payload:X})", "AcerWmi");
-        await InvokeWmiAsync("AcerGamingFunction", "SetGamingMiscSetting", payload);
-    }
-
-    public static async Task ApplyPowerProfileAsync(PowerProfile profile, int cpuFanSpeed = 0, int gpuFanSpeed = 0)
-    {
-        if (profile == PowerProfile.Turbo && !IsTurboModeSupported())
-        {
-            LogManager.Warn("Turbo profile unsupported; falling back to Performance", "AcerWmi");
-            profile = PowerProfile.Performance;
-        }
-
-        await SetPowerModeAsync(profile).ConfigureAwait(false);
-
-        if (cpuFanSpeed > 0 || gpuFanSpeed > 0)
-        {
-            int cpu = Math.Clamp(cpuFanSpeed, 0, 100);
-            int gpu = Math.Clamp(gpuFanSpeed, 0, 100);
-            await SetFansAsync(FanProfile.Medium, cpu, gpu).ConfigureAwait(false);
-            SettingsManager.Save("CustomFanSpeedCpu", cpu);
-            SettingsManager.Save("CustomFanSpeedGpu", gpu);
-        }
-
-        SettingsManager.Save("LastPowerMode", (int)profile);
-    }
-
-    public static bool ResetFansToAutoSync()
-    {
-        if (!IsHardwareSupported()) return false;
-        try
-        {
-            LogManager.Info("Resetting fan mode to Auto (synchronous failsafe)", "AcerWmi");
-            return InvokeWmiSync("AcerGamingFunction", "SetGamingFanBehavior", FanBehaviorAuto);
-        }
-        catch (Exception ex)
-        {
-            LogManager.Error($"Failed resetting fans to Auto: {ex.Message}", ex, "AcerWmi");
-            return false;
-        }
-    }
-
-    public static async Task SetFansAsync(FanProfile profile, int cpuSpeed = 0, int gpuSpeed = 0)
-    {
-        LogManager.Info($"Setting fans to {profile} (CPU={cpuSpeed}%, GPU={gpuSpeed}%)", "AcerWmi");
-        if (profile == FanProfile.Auto)
-        {
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", FanBehaviorAuto);
-        }
-        else if (profile == FanProfile.Max)
-        {
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", FanBehaviorMax);
-        }
-        else // Custom (Quiet/Medium or explicit speeds)
-        {
-            int cpu = Math.Clamp(cpuSpeed, 0, 100);
-            int gpu = Math.Clamp(gpuSpeed, 0, 100);
-            if (cpu <= 0 && gpu <= 0)
-            {
-                int unified = Math.Clamp((int)profile, 0, 100);
-                cpu = unified;
-                gpu = unified;
-            }
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanBehavior", FanBehaviorCustom);
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 1ul | ((ulong)cpu << 8));
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 2ul | ((ulong)gpu << 8));
-            await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 4ul | ((ulong)gpu << 8));
         }
     }
 
@@ -415,184 +192,6 @@ public static AcerCapabilities GetCapabilities()
         }
     }
 
-    private static int? _cachedBkHotkeyNumber;
-    private static bool? _cachedIsSingleColorKeyboard;
-
-    private static int GetBkHotkeyNumber()
-    {
-        if (_cachedBkHotkeyNumber.HasValue) return _cachedBkHotkeyNumber.Value;
-        try
-        {
-            using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\OEM\AcerAgentService");
-            if (key?.GetValue("BK_Hotkey_Number") is int val && val > 0)
-            {
-                _cachedBkHotkeyNumber = val;
-                return val;
-            }
-        }
-        catch { }
-        _cachedBkHotkeyNumber = KeyboardBacklightCodec.DefaultBkHotkeyNumber;
-        return _cachedBkHotkeyNumber.Value;
-    }
-
-    private static bool IsSingleColorKeyboard()
-    {
-        if (_cachedIsSingleColorKeyboard.HasValue) return _cachedIsSingleColorKeyboard.Value;
-        try
-        {
-            using var key = Microsoft.Win32.Registry.LocalMachine.OpenSubKey(@"SOFTWARE\OEM\AcerAgentService\LightSetting");
-            if (key?.GetValue("KeyBoardColor") is int color)
-            {
-                _cachedIsSingleColorKeyboard = color <= 1;
-                return _cachedIsSingleColorKeyboard.Value;
-            }
-        }
-        catch { }
-        _cachedIsSingleColorKeyboard = true;
-        return true;
-    }
-
-    public static async Task ApplyPhysicalBacklightLevelAsync(KeyboardBacklightLevel level)
-    {
-        await Task.Run(() =>
-        {
-            bool isSingleColor = IsSingleColorKeyboard();
-
-            // 1. For Single-Color EC keyboards, AcerLightingService (RVA 0xB200..0xB265) first enables/disables LED behavior.
-            // SetGamingLED takes a 16-byte buffer (scalar ulong throws InvalidCastException).
-            if (isSingleColor)
-            {
-                byte[] ledBuf = KeyboardBacklightCodec.EncodeSingleColorGamingLedPayload(level);
-                InvokeWmiBufferSync("AcerGamingFunction", "SetGamingLED", ledBuf);
-            }
-
-            // 2. Apply brightness payload via SetGamingKBBacklight (with brightness at payload[2] and marker 0x03/0x03)
-            byte[] payload = KeyboardBacklightCodec.EncodeBacklightPayload(level, isSingleColor: isSingleColor);
-            InvokeWmiBufferSync("AcerGamingFunction", "SetGamingKBBacklight", payload);
-
-            // 3. Synchronize APGeAction.SetFunction (used by AcerAgentService when BK_Hotkey_Number is present)
-            bool timeoutEnabled = GetBacklightTimeout();
-            int hotkeyNum = GetBkHotkeyNumber();
-            ulong apGePayload = KeyboardBacklightCodec.EncodeApGeActionSetBacklight(level, timeoutEnabled, hotkeyNum);
-            InvokeApGeActionSync("SetFunction", apGePayload);
-        }).ConfigureAwait(false);
-    }
-
-    public static async Task SetBacklightLevelAsync(KeyboardBacklightLevel level)
-    {
-        LogManager.Info($"Setting keyboard backlight level to {level}", "AcerWmi");
-        SettingsManager.Save("KeyboardBacklightLevel", (int)level);
-        await ApplyPhysicalBacklightLevelAsync(level).ConfigureAwait(false);
-    }
-
-    public static KeyboardBacklightLevel? GetBacklightLevel()
-    {
-        if (_backlightLevelForTesting.HasValue) return _backlightLevelForTesting.Value;
-
-        int saved = SettingsManager.GetInt("KeyboardBacklightLevel", (int)KeyboardBacklightLevel.Level2);
-        return Enum.IsDefined(typeof(KeyboardBacklightLevel), saved)
-            ? (KeyboardBacklightLevel)saved
-            : KeyboardBacklightLevel.Level2;
-    }
-
-    public static async Task SetBacklightTimeoutAsync(bool enabled)
-    {
-        LogManager.Info($"Setting keyboard backlight timeout: {(enabled ? "30s" : "Always On")}", "AcerWmi");
-        SettingsManager.Save("KeyboardBacklightTimeout", enabled);
-
-        await Task.Run(() =>
-        {
-            // 1. Hardware EC 30s timeout via AcerGamingFunction.SetGamingProfile (AcerAgentService RVA 0x3E1D6)
-            ulong profileScalar = KeyboardBacklightCodec.EncodeGamingProfileTimeout(enabled);
-            InvokeWmiSync("AcerGamingFunction", "SetGamingProfile", profileScalar);
-
-            // 2. Hardware APGeAction.SetFunction 30s timeout + active brightness (AcerAgentService RVA 0x3E062)
-            var currentLevel = GetBacklightLevel() ?? KeyboardBacklightLevel.Level2;
-            int hotkeyNum = GetBkHotkeyNumber();
-            ulong apGePayload = KeyboardBacklightCodec.EncodeApGeActionSetBacklight(currentLevel, enabled, hotkeyNum);
-            InvokeApGeActionSync("SetFunction", apGePayload);
-
-            // 3. Optional HID report fallback
-            byte[] report = KeyboardBacklightCodec.EncodeTimeoutReport(enabled);
-            SendKeyboardHidReport(report);
-        }).ConfigureAwait(false);
-    }
-
-    public static bool GetBacklightTimeout()
-    {
-        if (_backlightTimeoutForTesting.HasValue) return _backlightTimeoutForTesting.Value;
-        return SettingsManager.Get("KeyboardBacklightTimeout", true);
-    }
-
-    internal const string BacklightOffPendingKey = "KeyboardBacklightOffPending";
-    internal const string BacklightPreviousLevelKey = "KeyboardBacklightPreviousLevel";
-
-    public static bool IsBacklightOffPending()
-    {
-        return SettingsManager.Get(BacklightOffPendingKey, false);
-    }
-
-    internal static void SetBacklightOffPending(bool value)
-    {
-        SettingsManager.Save(BacklightOffPendingKey, value);
-    }
-
-    internal static void SetBacklightOffPendingForTesting(bool? value)
-    {
-        if (value.HasValue) SettingsManager.Save(BacklightOffPendingKey, value.Value);
-        else SettingsManager.Delete(BacklightOffPendingKey);
-    }
-
-    /// <summary>
-    /// Arms the EC-executed Off: enables the 30s timeout first, then writes the Off state.
-    /// The light stays on until the EC's own 30s idle counter expires; see
-    /// <see cref="KeyboardBacklightWatchdog"/> for the pending -&gt; confirmed transition.
-    /// Remembers the pre-Off level so unchecking the timeout can restore it.
-    /// </summary>
-    public static async Task RequestBacklightOffAsync()
-    {
-        LogManager.Info("Arming keyboard backlight Off (EC executes after 30s idle)", "AcerWmi");
-        var current = GetBacklightLevel();
-        if (current.HasValue && current.Value != KeyboardBacklightLevel.Off)
-        {
-            SettingsManager.Save(BacklightPreviousLevelKey, (int)current.Value);
-        }
-        await SetBacklightTimeoutAsync(true).ConfigureAwait(false);
-        await SetBacklightLevelAsync(KeyboardBacklightLevel.Off).ConfigureAwait(false);
-        SettingsManager.Save(BacklightOffPendingKey, true);
-    }
-
-    /// <summary>
-    /// Cancels an armed or confirmed Off: clears pending, disables the timeout,
-    /// and restores the pre-Off level (defaults to Level2).
-    /// </summary>
-    public static async Task CancelBacklightOffAsync()
-    {
-        LogManager.Info("Cancelling keyboard backlight Off, restoring previous level", "AcerWmi");
-        SetBacklightOffPending(false);
-        await SetBacklightTimeoutAsync(false).ConfigureAwait(false);
-        int previous = SettingsManager.GetInt(BacklightPreviousLevelKey, (int)KeyboardBacklightLevel.Level2);
-        var level = Enum.IsDefined(typeof(KeyboardBacklightLevel), previous)
-            ? (KeyboardBacklightLevel)previous
-            : KeyboardBacklightLevel.Level2;
-        await SetBacklightLevelAsync(level).ConfigureAwait(false);
-    }
-
-    /// <summary>
-    /// Handles a hardware Fn+F11 press observed via <c>APGeEvent</c>: the EC has already
-    /// stepped the hardware, so Nitrous only advances its tracked level (off -&gt; dim -&gt;
-    /// bright -&gt; off) and drops any armed-Off pending state. No WMI write here — the
-    /// EC owns the new state and a redundant latched write is unnecessary.
-    /// </summary>
-    public static void OnHardwareBacklightHotkey()
-    {
-        var current = GetBacklightLevel() ?? KeyboardBacklightLevel.Level2;
-        var next = Helpers.BacklightHotkeyWatcher.AdvanceCycleLevel(current);
-        LogManager.Info($"Hardware backlight hotkey: tracking {current} -> {next}", "AcerWmi");
-        SettingsManager.Save(BacklightOffPendingKey, false);
-        SettingsManager.Save("KeyboardBacklightLevel", (int)next);
-    }
-
     private static bool InvokeApGeActionSync(string methodName, ulong uiInput)
     {
         WmiInvokeDelegate? testOverride;
@@ -664,14 +263,8 @@ public static AcerCapabilities GetCapabilities()
         await Task.Run(() => InvokeWmiBufferSync(className, methodName, gmInput)).ConfigureAwait(false);
     }
 
-    private static void SendKeyboardHidReport(byte[] report)
-    {
-        // Safe dispatch point for optional HID report (e.g. USB keyboard)
-        LogManager.Debug($"Dispatching HID report: {BitConverter.ToString(report)}", "AcerWmi");
-    }
-
     private static async Task InvokeWmiAsync(string className, string methodName, ulong gmInput)
     {
-        await Task.Run(() => InvokeWmiSync(className, methodName, gmInput));
+        await Task.Run(() => InvokeWmiSync(className, methodName, gmInput)).ConfigureAwait(false);
     }
 }
