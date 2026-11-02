@@ -131,9 +131,10 @@ public class NvidiaGpuManagerTests
     [InlineData(false, true, true, 0, false)]    // Wakes up on AC but setting disabled -> Suppressed
     [InlineData(false, false, true, 1, false)]   // Asleep -> Suppressed
     [InlineData(true, false, true, 1, false)]    // Going to sleep -> Suppressed
-    public void UpdateSleepState_SingleTickWakeOrSleep_MapsToExpectedAction(bool wasGpuAwake, bool isGpuAwake, bool isAcOnline, int autoApplySetting, bool expected)
+    public void UpdateSleepState_ThresholdTickWakeOrSleep_MapsToExpectedAction(bool wasGpuAwake, bool isGpuAwake, bool isAcOnline, int autoApplySetting, bool expected)
     {
-        var (_, _, action) = NvidiaGpuManager.UpdateSleepState(wasGpuAwake, 1, isGpuAwake, isAcOnline, autoApplySetting);
+        var (_, _, action) = NvidiaGpuManager.UpdateSleepState(
+            wasGpuAwake, NvidiaGpuManager.GpuSleepHysteresisCycles - 1, isGpuAwake, isAcOnline, autoApplySetting);
         Assert.Equal(expected, action == NvidiaGpuManager.GpuSleepAction.AutoApply);
     }
 
@@ -142,9 +143,10 @@ public class NvidiaGpuManagerTests
     [InlineData(false, false, false)]  // Was asleep, still asleep -> No reset
     [InlineData(true, true, false)]    // Was awake, still awake -> No reset
     [InlineData(false, true, false)]   // Was asleep, now awake -> No reset
-    public void UpdateSleepState_SingleTickSleep_MapsToExpectedReset(bool wasGpuAwake, bool isGpuAwake, bool expected)
+    public void UpdateSleepState_ThresholdTickSleep_MapsToExpectedReset(bool wasGpuAwake, bool isGpuAwake, bool expected)
     {
-        var (_, _, action) = NvidiaGpuManager.UpdateSleepState(wasGpuAwake, 1, isGpuAwake, true, 1);
+        var (_, _, action) = NvidiaGpuManager.UpdateSleepState(
+            wasGpuAwake, NvidiaGpuManager.GpuSleepHysteresisCycles - 1, isGpuAwake, true, 1);
         Assert.Equal(expected, action == NvidiaGpuManager.GpuSleepAction.ResetHandle);
     }
 
@@ -262,8 +264,29 @@ public class NvidiaGpuManagerTests
     [Fact]
     public void HysteresisAndCooldownConstants_AreWithinExpectedRanges()
     {
-        Assert.Equal(2, NvidiaGpuManager.GpuSleepHysteresisCycles);
+        Assert.Equal(4, NvidiaGpuManager.GpuSleepHysteresisCycles);
         Assert.Equal(30000, NvidiaGpuManager.AutoApplyCooldownMs);
+    }
+
+    [Fact]
+    public void GpuTelemetry_IsDisplayable_RequiresSuccessfulLoadAndConcreteName()
+    {
+        Assert.False(new NvidiaGpuManager.GpuTelemetry().IsDisplayable);
+
+        var live = new NvidiaGpuManager.GpuTelemetry
+        {
+            HasLoadSample = true,
+            Name = "NVIDIA GeForce RTX 3050"
+        };
+        Assert.True(live.IsDisplayable);
+
+        Assert.False(new NvidiaGpuManager.GpuTelemetry { HasLoadSample = true, Name = "" }.IsDisplayable);
+        Assert.False(new NvidiaGpuManager.GpuTelemetry { HasLoadSample = true, Name = "Unknown" }.IsDisplayable);
+        Assert.False(new NvidiaGpuManager.GpuTelemetry
+        {
+            HasLoadSample = false,
+            Name = "NVIDIA GeForce RTX 3050"
+        }.IsDisplayable);
     }
 
     [Theory]
@@ -368,10 +391,10 @@ public class NvidiaGpuManagerTests
     }
 
     [Theory]
-    // Second consecutive wake tick on AC with auto-apply enabled -> confirmed awake, auto-apply
-    [InlineData(false, 1, true, true, 1, true, 0)]
-    // Second consecutive sleep tick on AC with auto-apply enabled -> confirmed asleep, reset handle
-    [InlineData(true, 1, false, true, 1, false, 0)]
+    // Final consecutive wake tick on AC with auto-apply enabled -> confirmed awake, auto-apply
+    [InlineData(false, NvidiaGpuManager.GpuSleepHysteresisCycles - 1, true, true, 1, true, 0)]
+    // Final consecutive sleep tick on AC with auto-apply enabled -> confirmed asleep, reset handle
+    [InlineData(true, NvidiaGpuManager.GpuSleepHysteresisCycles - 1, false, true, 1, false, 0)]
     public void UpdateSleepState_DelegatesToHysteresis_WhenAcEnabled(
         bool wasAwake, int holdTicks, bool isGpuAwake, bool isAcOnline, int setting,
         bool expectedNewWasAwake, int expectedNewHoldTicks)

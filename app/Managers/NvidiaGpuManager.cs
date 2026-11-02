@@ -26,7 +26,7 @@ public partial class NvidiaGpuManager : IDisposable
     private int _isAutoApplyingClocks;
     public bool IsValid => _internalGpu != null || (IsGpuAwake() && EnsureInitialized());
 
-    public const int GpuSleepHysteresisCycles = 2; // 2 cycles * 2s = 4s sustained sleep hold
+    public const int GpuSleepHysteresisCycles = 4; // 4 cycles * 1.5s dashboard / 2s tray = 6s / 8s hold
 
     public void ResetGpuHandle()
     {
@@ -315,6 +315,18 @@ public partial class NvidiaGpuManager : IDisposable
         public double MaxPowerLimitW { get; set; }
         public double EnforcedPowerLimitW { get; set; }
         public string Architecture { get; set; } = "Unknown";
+        /// <summary>
+        /// True only when the utilization query succeeded. Partial or failed NVML reads
+        /// leave this false so the UI can hold the last good sample instead of drawing 0%.
+        /// </summary>
+        public bool HasLoadSample { get; set; }
+
+        /// <summary>
+        /// True when this object carries a live sample the GPU page may render.
+        /// Failed reads and placeholder names stay hidden until a real query succeeds.
+        /// </summary>
+        public bool IsDisplayable =>
+            HasLoadSample && !string.IsNullOrEmpty(Name) && Name != "Unknown";
     }
 
     // Cached PNP instance ID for the NVIDIA dGPU, resolved once on first call.
@@ -423,7 +435,9 @@ public partial class NvidiaGpuManager : IDisposable
                procName.Contains("vstest", StringComparison.OrdinalIgnoreCase);
     }
 
-    public async Task<GpuTelemetry> GetNvmlTelemetryAsync(CancellationToken cancellationToken = default)
+    public async Task<GpuTelemetry> GetNvmlTelemetryAsync(
+        CancellationToken cancellationToken = default,
+        bool? isAwake = null)
     {
         return await Task.Run(() =>
         {
@@ -442,7 +456,8 @@ public partial class NvidiaGpuManager : IDisposable
 
             // Phase 1: Native Sleep Check wrapper
             // If the GPU is asleep, bypass NVML completely to preserve D3Cold power state.
-            if (!IsGpuAwake())
+            // Caller may pass its own sample so a second CM read cannot disagree mid-transition.
+            if (!(isAwake ?? IsGpuAwake()))
             {
                 _sleepPendingUntil = DateTime.MinValue;
                 t.PState = "Sleep";
@@ -570,7 +585,10 @@ public partial class NvidiaGpuManager : IDisposable
                 // Load
                 if (NativeNvml.DeviceGetUtilizationRates(_nvmlDeviceHandle, out NvmlUtilization util) ==
                     NvmlReturn.Success)
+                {
                     t.GpuLoad = (int)util.Gpu;
+                    t.HasLoadSample = true;
+                }
 
                 // Temp
                 if (NativeNvml.DeviceGetTemperature(_nvmlDeviceHandle, NvmlTemperatureSensors.Gpu, out uint temp) ==

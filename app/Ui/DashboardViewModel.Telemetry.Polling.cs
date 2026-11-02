@@ -47,7 +47,8 @@ public partial class DashboardViewModel
 
                     // Check if discrete GPU is awake before querying NVML.
                     // Background Tray is the sole owner of auto-apply on wake; this loop never auto-applies.
-                    // Debounced via UpdateSleepState to absorb transient 1-2s RTD3 drops and CM API read flickers.
+                    // Debounced via UpdateSleepState with the same 4-cycle hold as Tray to absorb
+                    // transient RTD3 drops and CM API read flickers.
                     // Power gating excluded here (forced AC/enabled) so the overlay tracks physical
                     // sleep state on battery too; only ResetHandle acted upon, never AutoApply.
                     bool gpuIsAwake = NvidiaGpuManager.IsGpuAwake();
@@ -68,7 +69,7 @@ public partial class DashboardViewModel
                     {
                         try
                         {
-                            smi = await _gpuManager.GetNvmlTelemetryAsync(token);
+                            smi = await _gpuManager.GetNvmlTelemetryAsync(token, gpuIsAwake);
                         }
                         catch (Exception ex)
                         {
@@ -139,8 +140,7 @@ public partial class DashboardViewModel
                         }
 
                         // 2. Update NVIDIA SMI Deep Telemetry
-                        if (smi != null && !string.IsNullOrEmpty(smi.Name) && smi.Name != "Unknown" &&
-                            smi.PState != "Sleep")
+                        if (smi is { IsDisplayable: true })
                         {
                             // Override WMI GPU temp with highly-accurate NVML temp if awake
                             if (smi.CoreTemp > 0)
@@ -191,7 +191,7 @@ public partial class DashboardViewModel
                             Timestamp = now, Temp = telemetry.CpuTemp > 0 ? telemetry.CpuTemp : 0, Usage = cpuUsage
                         });
 
-                        bool isSmiValid = smi != null && smi.PState != "Sleep";
+                        bool isSmiValid = smi?.IsDisplayable == true;
 
                         if (isSmiValid)
                         {
@@ -203,11 +203,8 @@ public partial class DashboardViewModel
                         }
                         else if (newWasAwake)
                         {
-                            // GPU is awake (or holding in hysteresis hold window) but NVML is momentarily unavailable
+                            // Holding through a transient drop: keep last good sample, draw no zero.
                             GpuGraphOpacity = 1.0;
-                            if (GpuUsageText == "SLEEP" || GpuUsageText == "Sleep") GpuUsageText = "--%";
-                            _gpuHistory.Add(new TelemetryPoint
-                                { Timestamp = now, Temp = telemetry.GpuTemp, Usage = 0 });
                         }
                         else
                         {
