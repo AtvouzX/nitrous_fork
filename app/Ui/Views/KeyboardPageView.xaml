@@ -7,13 +7,129 @@
 			<ResourceDictionary.MergedDictionaries>
 				<ResourceDictionary Source="../Styles/DashboardStyles.xaml" />
 			</ResourceDictionary.MergedDictionaries>
+
+			<!-- Zone Swatch Style (Steel token, zero radius) -->
+			<Style x:Key="ZoneSwatchStyle" TargetType="Button">
+				<Setter Property="Cursor" Value="Hand" />
+				<Setter Property="Background" Value="{StaticResource Steel850Brush}" />
+				<Setter Property="Foreground" Value="White" />
+				<Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
+				<Setter Property="FontSize" Value="10.5" />
+				<Setter Property="FontWeight" Value="Bold" />
+				<Setter Property="Template">
+					<Setter.Value>
+						<ControlTemplate TargetType="Button">
+							<Border Background="{TemplateBinding Background}" BorderBrush="{StaticResource Steel600Brush}" BorderThickness="1" CornerRadius="0">
+								<Grid>
+									<Border Background="{StaticResource Steel950Brush}" Opacity="0.35" />
+									<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+								</Grid>
+							</Border>
+						</ControlTemplate>
+					</Setter.Value>
+				</Setter>
+			</Style>
 		</ResourceDictionary>
 	</UserControl.Resources>
 
 	<ScrollViewer Margin="12,8,12,0" VerticalScrollBarVisibility="Hidden"
 	              HorizontalScrollBarVisibility="Disabled" BorderThickness="0" Padding="0,0,0,12">
 		<StackPanel>
-			<!-- KEYBOARD BACKLIGHT CARD -->
+			<!-- 1. STICKY KEYS CARD -->
+			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}" 
+			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
+			                      Margin="0,0,0,10" Padding="12,10,12,12">
+				<StackPanel>
+					<!-- Card Header with Bottom Divider -->
+					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,12">
+						<TextBlock Text="ACCESSIBILITY" Foreground="{StaticResource Steel300Brush}" 
+						           FontFamily="{StaticResource MonoFontFamily}"
+						           FontWeight="Bold" FontSize="10" VerticalAlignment="Center" />
+					</Border>
+
+					<Grid>
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*" />
+							<ColumnDefinition Width="Auto" />
+						</Grid.ColumnDefinitions>
+						<StackPanel Grid.Column="0" VerticalAlignment="Center">
+							<TextBlock Text="STICKY KEYS" Foreground="White"
+							           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="11.5" />
+							<TextBlock Text="Sequential modifier keys for shortcuts" Foreground="{StaticResource Steel400Brush}"
+							           FontFamily="{StaticResource MonoFontFamily}" FontSize="9.5" Margin="0,2,0,0" />
+						</StackPanel>
+						<CheckBox Grid.Column="1" x:Name="TogStickyKeys" Style="{StaticResource ModernToggleStyle}"
+						          HorizontalAlignment="Right" VerticalAlignment="Center"
+						          Checked="StickyKeys_Toggled" Unchecked="StickyKeys_Toggled"
+						          ToolTip="Toggle Windows Sticky Keys without holding Shift 5 times." />
+					</Grid>
+				</StackPanel>
+			</controls:ChamferCard>
+
+			<!-- 2. 4-ZONE RGB LIGHTING CARD -->
+			<controls:ChamferCard x:Name="CrdKeyboardLighting" ChamferSize="6" Background="{StaticResource Steel950Brush}" 
+			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
+			                      Margin="0,0,0,10" Padding="12,10,12,12">
+				<StackPanel>
+					<!-- Card Header with Bottom Divider -->
+					<Border BorderBrush="{StaticResource Steel700Brush}" BorderThickness="0,0,0,1" Padding="0,0,0,5" Margin="0,0,0,12">
+						<Grid>
+							<TextBlock Text="RGB LIGHTING" Foreground="{StaticResource Steel300Brush}" 
+							           FontFamily="{StaticResource MonoFontFamily}"
+							           FontWeight="Bold" FontSize="10" VerticalAlignment="Center" />
+							<TextBlock x:Name="TxtLightingStatus" Foreground="{StaticResource Steel400Brush}"
+							           FontFamily="{StaticResource MonoFontFamily}" FontSize="9.5" FontWeight="Bold"
+							           HorizontalAlignment="Right" VerticalAlignment="Center" />
+						</Grid>
+					</Border>
+
+					<!-- Zone Swatches Grid (Z1, Z2, Z3, Z4, ALL) -->
+					<Grid x:Name="GrdZoneSwatches" Margin="0,0,0,12">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*" />
+							<ColumnDefinition Width="6" />
+							<ColumnDefinition Width="*" />
+							<ColumnDefinition Width="6" />
+							<ColumnDefinition Width="*" />
+							<ColumnDefinition Width="6" />
+							<ColumnDefinition Width="*" />
+							<ColumnDefinition Width="6" />
+							<ColumnDefinition Width="*" />
+						</Grid.ColumnDefinitions>
+						<Button x:Name="Zone1Btn" Grid.Column="0" Height="36" Tag="1" Click="Zone_Click"
+						        Style="{StaticResource ZoneSwatchStyle}" Content="Z1"
+						        ToolTip="Select Zone 1 colour." />
+						<Button x:Name="Zone2Btn" Grid.Column="2" Height="36" Tag="2" Click="Zone_Click"
+						        Style="{StaticResource ZoneSwatchStyle}" Content="Z2"
+						        ToolTip="Select Zone 2 colour." />
+						<Button x:Name="Zone3Btn" Grid.Column="4" Height="36" Tag="3" Click="Zone_Click"
+						        Style="{StaticResource ZoneSwatchStyle}" Content="Z3"
+						        ToolTip="Select Zone 3 colour." />
+						<Button x:Name="Zone4Btn" Grid.Column="6" Height="36" Tag="4" Click="Zone_Click"
+						        Style="{StaticResource ZoneSwatchStyle}" Content="Z4"
+						        ToolTip="Select Zone 4 colour." />
+						<Button x:Name="ZoneAllBtn" Grid.Column="8" Height="36" Tag="0" Click="Zone_Click"
+						        Style="{StaticResource ZoneSwatchStyle}" Content="ALL"
+						        ToolTip="Set all four zones to one colour." />
+					</Grid>
+
+					<!-- Effect Row -->
+					<Grid Margin="0,0,0,4">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*" />
+							<ColumnDefinition Width="Auto" />
+						</Grid.ColumnDefinitions>
+						<TextBlock Text="LIGHTING EFFECT" Foreground="White"
+						           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="11" VerticalAlignment="Center" />
+						<ComboBox Grid.Column="1" x:Name="KeyboardEffectBox" Width="140" Height="26"
+						          Style="{StaticResource CompactComboBoxStyle}"
+						          SelectionChanged="KeyboardEffect_Changed"
+						          ToolTip="Choose static colours or an animated lighting effect." />
+					</Grid>
+				</StackPanel>
+			</controls:ChamferCard>
+
+			<!-- 3. KEYBOARD BACKLIGHT CARD -->
 			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}" 
 			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
 			                      Margin="0,0,0,10" Padding="12,10,12,12">
@@ -29,7 +145,7 @@
 					<controls:ChamferCard ChamferSize="4" Background="{StaticResource Steel900Brush}" 
 					                      BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1" Padding="14,12">
 						<StackPanel>
-							<!-- Row 1: BRIGHTNESS LEVELS - STASHED 2026-11-02: level buttons hidden, keeping only the 30s idle timeout. Code-behind and WMI logic retained; drop the Visibility below to restore. -->
+							<!-- Row 1: BRIGHTNESS LEVELS -->
 							<Grid Visibility="Collapsed" Margin="0,0,0,12">
 								<TextBlock Text="BRIGHTNESS LEVEL" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
 								<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
@@ -49,8 +165,6 @@
 							           Foreground="{StaticResource Steel300Brush}" FontFamily="{StaticResource MonoFontFamily}"
 							           FontSize="10" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,0,10" />
 
-							<!-- <Border Height="1" Background="{StaticResource Steel800Brush}" Margin="0,0,0,10" /> -->
-
 							<!-- Row 2: 30S TIMEOUT TOGGLE -->
 							<Grid x:Name="GrdTimeoutRow">
 								<TextBlock x:Name="TxtTimeoutLabel" Text="30S IDLE TIMEOUT" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
@@ -63,7 +177,7 @@
 				</StackPanel>
 			</controls:ChamferCard>
 
-			<!-- GLOBAL SHORTCUTS CARD -->
+			<!-- 4. GLOBAL SHORTCUTS CARD -->
 			<controls:ChamferCard ChamferSize="6" Background="{StaticResource Steel950Brush}" 
 			                      BorderBrush="{StaticResource BorderCardBrush}" BorderThickness="1"
 			                      Margin="0,0,0,10" Padding="12,10,12,12">
@@ -85,18 +199,18 @@
 								<TextBox x:Name="TxtHkCycle" Style="{StaticResource HotkeyTextBoxStyle}" Width="130" Height="28"
 								         VerticalContentAlignment="Center" HorizontalAlignment="Right" IsReadOnly="True" TextAlignment="Center"
 								         PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_CyclePower"
-			         ToolTip="Click, then press the key combination to bind. ESC clears." />
-				</Grid>
+								         ToolTip="Click, then press the key combination to bind. ESC clears." />
+							</Grid>
 
-				<Border Height="1" Background="{StaticResource Steel800Brush}" Margin="0,0,0,10" />
+							<Border Height="1" Background="{StaticResource Steel800Brush}" Margin="0,0,0,10" />
 
-				<!-- Shortcut Row 2: OPEN DASHBOARD -->
-				<Grid>
-					<TextBlock Text="OPEN DASHBOARD" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
-					<TextBox x:Name="TxtHkDash" Style="{StaticResource HotkeyTextBoxStyle}" Width="130" Height="28"
-					         VerticalContentAlignment="Center" HorizontalAlignment="Right" IsReadOnly="True" TextAlignment="Center"
-					         PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_Dashboard"
-					         ToolTip="Click, then press the key combination to bind. ESC clears." />
+							<!-- Shortcut Row 2: OPEN DASHBOARD -->
+							<Grid>
+								<TextBlock Text="OPEN DASHBOARD" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
+								<TextBox x:Name="TxtHkDash" Style="{StaticResource HotkeyTextBoxStyle}" Width="130" Height="28"
+								         VerticalContentAlignment="Center" HorizontalAlignment="Right" IsReadOnly="True" TextAlignment="Center"
+								         PreviewKeyDown="Hotkey_PreviewKeyDown" Tag="Hotkey_Dashboard"
+								         ToolTip="Click, then press the key combination to bind. ESC clears." />
 							</Grid>
 						</StackPanel>
 					</controls:ChamferCard>

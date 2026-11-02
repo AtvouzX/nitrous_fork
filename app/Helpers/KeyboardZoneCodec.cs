@@ -1,0 +1,60 @@
+using System;
+using Nitrous.Managers;
+
+namespace Nitrous.Helpers;
+
+public static class KeyboardZoneCodec
+{
+    public const byte ReportId = 0xA4;
+    public const byte KeyboardDevice = 0x21;
+    public const byte AllZones = 0x0F;
+    public const int PacketLength = 11;
+    public const int ZoneCount = 4;
+    public const int MinSpeed = 1;
+    public const int MaxSpeed = 9;
+
+    public static byte[] BuildZonePacket(int zoneIndex, KeyboardColor color, int brightness)
+    {
+        if (zoneIndex < 0 || zoneIndex >= ZoneCount)
+            throw new ArgumentOutOfRangeException(nameof(zoneIndex), $"Zone index must be 0..{ZoneCount - 1}, got {zoneIndex}");
+
+        byte level = (byte)Math.Clamp(brightness, 0, 100);
+        var packet = new byte[PacketLength];
+        packet[0] = ReportId;
+        packet[1] = KeyboardDevice;
+        packet[2] = (byte)KeyboardEffect.Static;
+        packet[3] = level;
+        packet[4] = 0; // speed: unused by Static
+        packet[5] = 1; // direction: right
+        packet[6] = color.R;
+        packet[7] = color.G;
+        packet[8] = color.B;
+        packet[9] = (byte)(1 << zoneIndex);
+        packet[10] = 0;
+        return packet;
+    }
+
+    public static byte[] BuildEffectPacket(
+        KeyboardEffect effect, int brightness, int speed, bool leftwards, KeyboardColor color)
+    {
+        var packet = new byte[PacketLength];
+        packet[0] = ReportId;
+        packet[1] = KeyboardDevice;
+        packet[2] = (byte)effect;
+        packet[3] = (byte)Math.Clamp(brightness, 0, 100);
+        packet[4] = (byte)Math.Clamp(speed, MinSpeed, MaxSpeed);
+        packet[5] = (byte)(leftwards ? 2 : 1);
+        packet[6] = color.R;
+        packet[7] = color.G;
+        packet[8] = color.B;
+        packet[9] = AllZones;
+        packet[10] = 0;
+        return packet;
+    }
+
+    public static uint UpdateStickyKeysFlags(uint currentFlags, bool enable)
+    {
+        const uint skfStickyKeysOn = 0x00000001u;
+        return enable ? (currentFlags | skfStickyKeysOn) : (currentFlags & ~skfStickyKeysOn);
+    }
+}
