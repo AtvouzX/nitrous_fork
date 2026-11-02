@@ -433,15 +433,34 @@
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
 
-                    <TextBlock Grid.Column="0" Text="DRAG NODES TO RESHAPE THE CURVE"
-                               Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}"
-                               FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center" TextWrapping="Wrap" Margin="0,0,12,0" />
+                    <!-- Ramp Down Rail -->
+                    <StackPanel Grid.Column="0" Orientation="Horizontal" VerticalAlignment="Center">
+                        <TextBlock Text="RAMP DOWN" Foreground="{StaticResource Steel400Brush}" FontFamily="{StaticResource MonoFontFamily}"
+                                   FontSize="9.5" FontWeight="Bold" VerticalAlignment="Center" Margin="0,0,10,0" />
+                        <controls:ChamferCard Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel600Brush}"
+                                              BorderThickness="1" ChamferSize="4" Padding="0">
+                            <StackPanel Orientation="Horizontal" Height="28">
+                                <RadioButton x:Name="RampOff" Content="OFF" Tag="Off" GroupName="FanRamp" Click="Ramp_Checked"
+                                             Style="{StaticResource CompactActionButtonStyle}" Width="50"
+                                             ToolTip="Fans decelerate immediately with no step limiting." />
+                                <RadioButton x:Name="RampGentle" Content="GENTLE" Tag="Gentle" GroupName="FanRamp" Click="Ramp_Checked"
+                                             Style="{StaticResource CompactActionButtonStyle}" Width="60"
+                                             ToolTip="Slowest fan deceleration (5%/s)." />
+                                <RadioButton x:Name="RampBalanced" Content="BALANCED" Tag="Balanced" GroupName="FanRamp" Click="Ramp_Checked"
+                                             Style="{StaticResource CompactActionButtonStyle}" Width="70"
+                                             ToolTip="Default balanced fan deceleration (10%/s)." />
+                                <RadioButton x:Name="RampFast" Content="FAST" Tag="Fast" GroupName="FanRamp" Click="Ramp_Checked"
+                                             Style="{StaticResource CompactActionButtonStyle}" Width="50"
+                                             ToolTip="Fast fan deceleration (20%/s)." />
+                            </StackPanel>
+                        </controls:ChamferCard>
+                    </StackPanel>
 
                     <StackPanel Grid.Column="1" Orientation="Horizontal" VerticalAlignment="Center">
-                        <controls:ChamferButton x:Name="ResetBtn" Variant="Secondary" Content="RESET" Width="110" Height="36"
+                        <controls:ChamferButton x:Name="ResetBtn" Variant="Secondary" Content="RESET" Width="100" Height="32"
                                                 FontSize="11" Margin="0,0,10,0" Click="ResetBtn_Click"
                                                 ToolTip="Restore the active curve to stock defaults." />
-                        <controls:ChamferButton x:Name="SaveBtn" Variant="Primary" Content="SAVE &amp; APPLY" Width="150" Height="36"
+                        <controls:ChamferButton x:Name="SaveBtn" Variant="Primary" Content="SAVE &amp; APPLY" Width="130" Height="32"
                                                 FontSize="11" Click="SaveBtn_Click" />
                     </StackPanel>
                 </Grid>

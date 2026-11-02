@@ -57,6 +57,7 @@ public partial class FanCurveWindow : Window
 
         _editingPreset = SettingsManager.Get("ActiveFanCurvePreset", "Auto");
         LoadPresets();
+        SyncRampSelection();
 
         if (_editingPreset != "Auto")
         {
@@ -120,6 +121,20 @@ public partial class FanCurveWindow : Window
         SettingsManager.Save("FanCurvePresets", string.Join(",", customOnly));
     }
 
+    private void SyncRampSelection()
+    {
+        var current = _viewModel.FanRampDown;
+        RampOff.IsChecked = current == FanRamp.Off;
+        RampGentle.IsChecked = current == FanRamp.Gentle;
+        RampBalanced.IsChecked = current == FanRamp.Balanced;
+        RampFast.IsChecked = current == FanRamp.Fast;
+    }
+
+    private void Ramp_Checked(object sender, RoutedEventArgs e)
+    {
+        if (sender is System.Windows.Controls.RadioButton { Tag: string value })
+            _viewModel.FanRampDown = value;
+    }
     private void ViewModel_PropertyChanged(object? sender, PropertyChangedEventArgs e)
     {
         // If the user clicks a power profile on the Dashboard, update the warning text

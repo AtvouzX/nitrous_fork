@@ -53,6 +53,22 @@ public partial class DashboardViewModel
         set => SetProperty(ref _activePowerProfile, value);
     }
 
+    public IReadOnlyList<string> FanRampOptions => FanRamp.Options;
+
+    private string _fanRampDown = SettingsManager.GetString("FanRampDown", FanRamp.Balanced);
+
+    public string FanRampDown
+    {
+        get => _fanRampDown;
+        set
+        {
+            if (Array.IndexOf(FanRamp.Options, value) < 0) return;
+            if (SetProperty(ref _fanRampDown, value))
+            {
+                SettingsManager.Save("FanRampDown", value);
+            }
+        }
+    }
     private bool _isCurveModeEnabled;
 
     public bool IsCurveModeEnabled

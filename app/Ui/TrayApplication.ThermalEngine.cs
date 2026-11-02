@@ -25,6 +25,8 @@ public partial class TrayApplication : ApplicationContext
     private int _gpuSleepHoldTicks;
     internal int GpuSleepHoldTicks => _gpuSleepHoldTicks;
     public const int HysteresisHoldCycles = 2; // 2 cycles * 2s = 4s delay before stepping down
+    private readonly FanRampState _cpuRamp = new();
+    private readonly FanRampState _gpuRamp = new();
 
     public static string FormatTrayTooltip(int cpuTemp, int gpuTemp, bool gpuIsAwake = true)
     {
@@ -127,6 +129,8 @@ public partial class TrayApplication : ApplicationContext
                         _lastObservedCurveEnabled = isCurveEnabled;
                         _lastAppliedCpuSpeed = -1;
                         _lastAppliedGpuSpeed = -1;
+                        _cpuRamp.Reset();
+                        _gpuRamp.Reset();
                         _cpuDownstepHoldTicks = 0;
                         _gpuDownstepHoldTicks = 0;
                     }
@@ -169,6 +173,8 @@ public partial class TrayApplication : ApplicationContext
                                 _cachedGpuCurve = FanCurveHelper.LoadCurveFromRegistry($"GpuCurve_{pName}", FanCurveHelper.GetDefaultGpuCurve(activeMode));
                                 _lastAppliedCpuSpeed = -1;
                                 _lastAppliedGpuSpeed = -1;
+                                _cpuRamp.Reset();
+                                _gpuRamp.Reset();
                             }
 
                             // 4. Interpolate raw target speeds
@@ -177,13 +183,18 @@ public partial class TrayApplication : ApplicationContext
                                 ? targetCpuSpeed
                                 : FanCurveHelper.GetClampedSpeed(_cachedGpuCurve, effectiveGpuTemp);
 
-                            // 5. Apply Hysteresis (Anti-Revving):
+                            // 5. Apply Hysteresis & Ramp-Down:
                             // Ramp-up: Immediate (protects hardware)
-                            // Ramp-down: Hold for HysteresisHoldCycles (4s) before stepping down
+                            // Ramp-down: 2-cycle hold, then rate-limited slew
+                            string rampSetting = SettingsManager.GetString("FanRampDown", FanRamp.Balanced);
+                            int rampRate = FanRamp.PerSecondFor(rampSetting);
+                            var tickSpan = TimeSpan.FromSeconds(2);
+                            var now = DateTime.UtcNow;
+
                             int appliedCpuSpeed = _lastAppliedCpuSpeed;
                             if (_lastAppliedCpuSpeed == -1 || targetCpuSpeed >= _lastAppliedCpuSpeed)
                             {
-                                appliedCpuSpeed = targetCpuSpeed;
+                                appliedCpuSpeed = _cpuRamp.Next(targetCpuSpeed, telemetry.CpuTemp, rampRate, tickSpan, TimeSpan.Zero, now);
                                 _cpuDownstepHoldTicks = 0;
                             }
                             else
@@ -191,15 +202,14 @@ public partial class TrayApplication : ApplicationContext
                                 _cpuDownstepHoldTicks++;
                                 if (_cpuDownstepHoldTicks >= HysteresisHoldCycles)
                                 {
-                                    appliedCpuSpeed = targetCpuSpeed;
-                                    _cpuDownstepHoldTicks = 0;
+                                    appliedCpuSpeed = _cpuRamp.Next(targetCpuSpeed, telemetry.CpuTemp, rampRate, tickSpan, TimeSpan.Zero, now);
                                 }
                             }
 
                             int appliedGpuSpeed = _lastAppliedGpuSpeed;
                             if (_lastAppliedGpuSpeed == -1 || targetGpuSpeed >= _lastAppliedGpuSpeed)
                             {
-                                appliedGpuSpeed = targetGpuSpeed;
+                                appliedGpuSpeed = _gpuRamp.Next(targetGpuSpeed, effectiveGpuTemp, rampRate, tickSpan, TimeSpan.Zero, now);
                                 _gpuDownstepHoldTicks = 0;
                             }
                             else
@@ -207,8 +217,7 @@ public partial class TrayApplication : ApplicationContext
                                 _gpuDownstepHoldTicks++;
                                 if (_gpuDownstepHoldTicks >= HysteresisHoldCycles)
                                 {
-                                    appliedGpuSpeed = targetGpuSpeed;
-                                    _gpuDownstepHoldTicks = 0;
+                                    appliedGpuSpeed = _gpuRamp.Next(targetGpuSpeed, effectiveGpuTemp, rampRate, tickSpan, TimeSpan.Zero, now);
                                 }
                             }
 
