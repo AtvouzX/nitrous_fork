@@ -258,6 +258,34 @@ public static class LogManager
         }
 
         sb.AppendLine();
+        sb.AppendLine("[ACER CAPABILITIES & EC HID]");
+        try
+        {
+            var caps = AcerCapabilitiesProvider.Current;
+            sb.AppendLine($"Power Channel:       {caps.PowerModeChannel}");
+            sb.AppendLine($"Can Set Power:       {caps.CanSetPowerMode}");
+            sb.AppendLine($"Supports Turbo:      {caps.SupportsTurbo}");
+            sb.AppendLine($"Model Profile:       {caps.Profile.ModelCode ?? "Generic"}");
+            sb.AppendLine($"SMBIOS Gaming:       v{caps.Smbios.GamingVersion}, Modes={caps.Smbios.OperatingModesListed}, Colors={caps.Smbios.KeyboardColor}");
+            sb.AppendLine($"Summary:             {caps.Describe()}");
+        }
+        catch (Exception ex)
+        {
+            sb.AppendLine($"Capabilities:        Error reading ({ex.Message})");
+        }
+
+        sb.AppendLine();
+        sb.AppendLine("[LATEST EC PROBE REPORT]");
+        try
+        {
+            sb.AppendLine(GetLatestEcProbeReportSummary());
+        }
+        catch (Exception ex)
+        {
+            sb.AppendLine($"EC Probe:            Error reading ({ex.Message})");
+        }
+
+        sb.AppendLine();
         sb.AppendLine("[DISCRETE GPU STATE]");
         try
         {
@@ -303,6 +331,30 @@ public static class LogManager
         return sb.ToString();
     }
 
+    public static string GetLatestEcProbeReportSummary()
+    {
+        try
+        {
+            string probeDir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Nitrous", "ec-probe");
+            if (!Directory.Exists(probeDir))
+            {
+                return "none";
+            }
+
+            var summaryFiles = Directory.GetFiles(probeDir, "ec-probe-*-summary.txt");
+            if (summaryFiles.Length == 0)
+            {
+                return "none";
+            }
+
+            var latest = summaryFiles.OrderByDescending(f => File.GetCreationTimeUtc(f)).First();
+            return File.ReadAllText(latest).TrimEnd();
+        }
+        catch (Exception ex)
+        {
+            return $"(Could not read EC probe summary: {ex.Message})";
+        }
+    }
     public static string GetRecentLogTail(int maxLines = 15)
     {
         try

@@ -79,9 +79,38 @@ public partial class DashboardViewModel
     public ICommand OpenLogsFolderCommand { get; private set; } = null!;
     public ICommand CopyDiagnosticsCommand { get; private set; } = null!;
     public ICommand ReportIssueCommand { get; private set; } = null!;
+    public ICommand RunEcProbeCommand { get; private set; } = null!;
 
     private void InitializeServices()
     {
+        RunEcProbeCommand = new RelayCommand(async _ =>
+        {
+            try
+            {
+                ShowGpuAlert(
+                    GpuAlertLevel.Info,
+                    "EC Probe Running",
+                    "Fingerprinting Acer EC registers and firmware methods. This read-only probe takes a few seconds...",
+                    "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z");
+
+                var result = await Nitrous.Diagnostics.EcProbe.RunAsync();
+
+                ShowGpuAlert(
+                    GpuAlertLevel.Info,
+                    "EC Probe Complete",
+                    $"EC probe finished with {result.ErrorCount} non-fatal error(s). Results saved to ec-probe folder.",
+                    "M12,2A10,10 0 0,0 2,12A10,10 0 0,0 12,22A10,10 0 0,0 22,12A10,10 0 0,0 12,2Z");
+            }
+            catch (Exception ex)
+            {
+                LogManager.Warn($"EC probe failed: {ex.Message}", "DashboardVM");
+                ShowGpuAlert(
+                    GpuAlertLevel.Warning,
+                    "EC Probe Error",
+                    $"Failed to complete EC probe: {ex.Message}",
+                    "M12,2L1,21H23L12,2M12,6L19.53,19H4.47L12,6M11,10V14H13V10H11M11,16V18H13V16H11Z");
+            }
+        });
         ReportIssueCommand = new RelayCommand(_ =>
         {
             try

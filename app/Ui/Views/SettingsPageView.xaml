@@ -367,13 +367,15 @@
 						          ToolTip="Log EC registers, WMI calls, and GPU transitions to the Nitrous log. Off = minimal disk writes." />
 					</Grid>
 
-					<!-- 3-Action Buttons Grid (Primary: REPORT, Secondary: COPY & LOGS) -->
+					<!-- 4-Action Buttons Grid (Primary: REPORT, Secondary: COPY, LOGS, EC PROBE) -->
 					<Grid>
 						<Grid.ColumnDefinitions>
 							<ColumnDefinition Width="*" />
-							<ColumnDefinition Width="8" />
+							<ColumnDefinition Width="6" />
 							<ColumnDefinition Width="*" />
-							<ColumnDefinition Width="8" />
+							<ColumnDefinition Width="6" />
+							<ColumnDefinition Width="*" />
+							<ColumnDefinition Width="6" />
 							<ColumnDefinition Width="*" />
 						</Grid.ColumnDefinitions>
 
@@ -400,6 +402,14 @@
 						                        Command="{Binding OpenLogsFolderCommand}"
 						                        Height="32" Padding="4,0"
 						                        ToolTip="Open the log folder in File Explorer." />
+
+						<!-- EC PROBE (Secondary High-Contrast Steel) -->
+						<controls:ChamferButton Grid.Column="6" x:Name="BtnRunEcProbe"
+						                        Variant="Secondary"
+						                        Content="EC PROBE"
+						                        Command="{Binding RunEcProbeCommand}"
+						                        Height="32" Padding="4,0"
+						                        ToolTip="Run a read-only fingerprint of Acer EC and WMI registers." />
 					</Grid>
 				</StackPanel>
 			</controls:ChamferCard>
