@@ -6,6 +6,7 @@ using Nitrous.Enums;
 using Nitrous.Interop;
 using Nitrous.Managers;
 using Nitrous.Ui;
+using Nitrous.Ui.Views;
 using Xunit;
 using Application = System.Windows.Application;
 using Button = System.Windows.Controls.Button;
@@ -581,6 +582,75 @@ public class DashboardAndTrayUiTests
             {
                 window.Close();
             }
+        });
+    }
+
+    [Fact]
+    public void FansRail_SticksToBottom_WhenLcdOverdriveRowVisible()
+    {
+        RunInSta(() =>
+        {
+            // No window needed: explicit measure/arrange lays out the page deterministically.
+            var page = new DashboardPageView();
+
+            // Simulate an LCD-overdrive-capable panel: the Refresh card grows,
+            // the Fans bottom rail must stay pinned to the Fans card bottom.
+            var lcdRow = page.FindName("LcdOverdriveRow") as FrameworkElement;
+            var rail = page.FindName("FansRail") as FrameworkElement;
+            var card = page.FindName("FansCard") as FrameworkElement;
+            Assert.NotNull(lcdRow);
+            Assert.NotNull(rail);
+            Assert.NotNull(card);
+            lcdRow.Visibility = Visibility.Visible;
+
+            page.Measure(new System.Windows.Size(375, 1000));
+            page.Arrange(new System.Windows.Rect(0, 0, 375, 1000));
+            page.UpdateLayout();
+
+            Assert.True(rail.ActualHeight > 0 && card.ActualHeight > 0);
+            var railBottom = rail.TranslatePoint(new System.Windows.Point(0, rail.ActualHeight), card);
+            double gap = card.ActualHeight - railBottom.Y;
+            // Card bottom padding (12) + content host margin (1) + tolerance.
+            Assert.True(gap <= 16, $"Fans rail floats {gap:0}px above the card bottom; it must stay pinned.");
+        });
+    }
+
+    [Fact]
+    public void PowerRail_CheckedButton_KeepsSurroundingDividers()
+    {
+        RunInSta(() =>
+        {
+            var page = new DashboardPageView();
+            page.Measure(new System.Windows.Size(375, 1000));
+            page.Arrange(new System.Windows.Rect(0, 0, 375, 1000));
+            page.UpdateLayout();
+
+            var bal = page.FindName("BtnPowerBal") as RadioButton;
+            var perf = page.FindName("BtnPowerPerf") as RadioButton;
+            Assert.NotNull(bal);
+            Assert.NotNull(perf);
+
+            bal.IsChecked = true;
+            page.UpdateLayout();
+
+            var ownDivider = FindVisualChildByName<System.Windows.Controls.Border>(bal, "LeftDivider");
+            var nextDivider = FindVisualChildByName<System.Windows.Controls.Border>(perf, "LeftDivider");
+            var mainBorder = FindVisualChildByName<System.Windows.Controls.Border>(bal, "MainBorder");
+            Assert.NotNull(ownDivider);
+            Assert.NotNull(nextDivider);
+            Assert.NotNull(mainBorder);
+
+            Assert.Equal(1.0, ownDivider.Opacity);
+            Assert.Equal(1.0, nextDivider.Opacity);
+            Assert.Equal(new Thickness(0), mainBorder.Margin);
+
+            // The divider must render above the button surface: same-cell siblings
+            // paint in child order, so a divider declared before MainBorder is
+            // covered by the active segment's opaque fill.
+            var templateRoot = VisualTreeHelper.GetParent(ownDivider) as System.Windows.Controls.Panel;
+            Assert.NotNull(templateRoot);
+            Assert.True(templateRoot.Children.IndexOf(ownDivider) > templateRoot.Children.IndexOf(mainBorder),
+                "LeftDivider must be declared after MainBorder or the active fill covers it.");
         });
     }
 

@@ -97,12 +97,6 @@
 			<Setter.Value>
 				<ControlTemplate TargetType="RadioButton">
 					<Grid Background="Transparent">
-						<Border x:Name="LeftDivider"
-						        Width="1"
-						        Height="24"
-						        Background="{StaticResource Steel700Brush}"
-						        HorizontalAlignment="Left"
-						        VerticalAlignment="Center" />
 						<!-- Main Detent Surface -->
 						<Border x:Name="MainBorder"
 						        Background="{TemplateBinding Background}"
@@ -139,6 +133,13 @@
 								        Margin="0,0,0,5" />
 							</Grid>
 						</Border>
+						<!-- Segment divider renders above the surface so the active fill never covers it -->
+						<Border x:Name="LeftDivider"
+						        Width="1"
+						        Height="24"
+						        Background="{StaticResource Steel700Brush}"
+						        HorizontalAlignment="Left"
+						        VerticalAlignment="Center" />
 					</Grid>
 					<ControlTemplate.Triggers>
 						<!-- Show icon if Tag is present -->
@@ -158,14 +159,11 @@
 							<Setter TargetName="MainBorder" Property="Margin" Value="-1,0,-1,0" />
 							<Setter Property="Panel.ZIndex" Value="1" />
 						</Trigger>
-						<!-- Checked State (Active Detent) -->
+						<!-- Checked State (Active Detent): keep neighboring dividers visible -->
 						<Trigger Property="IsChecked" Value="True">
 							<Setter TargetName="MainBorder" Property="Background" Value="{StaticResource Steel950Brush}" />
 							<Setter Property="Foreground" Value="{StaticResource Steel100Brush}" />
 							<Setter TargetName="IndicatorLine" Property="Background" Value="{StaticResource Ember500Brush}" />
-							<Setter TargetName="LeftDivider" Property="Opacity" Value="0" />
-							<Setter TargetName="MainBorder" Property="Margin" Value="-1,0,-1,0" />
-							<Setter Property="Panel.ZIndex" Value="2" />
 						</Trigger>
 						<!-- Disabled State -->
 						<Trigger Property="IsEnabled" Value="False">
@@ -193,8 +191,6 @@
 			<Setter.Value>
 				<ControlTemplate TargetType="RadioButton">
 					<Grid Background="Transparent">
-						<Border x:Name="LeftDivider" Width="1" Height="18" Background="{StaticResource Steel700Brush}"
-						        HorizontalAlignment="Left" VerticalAlignment="Center" />
 						<!-- Main Detent Surface -->
 						<Border x:Name="MainBorder" Background="{TemplateBinding Background}"
 						        BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}"
@@ -210,6 +206,9 @@
 								        HorizontalAlignment="Center" VerticalAlignment="Bottom" Margin="0,0,0,4" />
 							</Grid>
 						</Border>
+						<!-- Segment divider renders above the surface so the active fill never covers it -->
+						<Border x:Name="LeftDivider" Width="1" Height="18" Background="{StaticResource Steel700Brush}"
+						        HorizontalAlignment="Left" VerticalAlignment="Center" />
 					</Grid>
 					<ControlTemplate.Triggers>
 						<Trigger Property="TabIndex" Value="0">
@@ -227,9 +226,6 @@
 							<Setter TargetName="MainBorder" Property="Background" Value="{StaticResource Steel950Brush}" />
 							<Setter Property="Foreground" Value="{StaticResource Steel100Brush}" />
 							<Setter TargetName="IndicatorLine" Property="Background" Value="{StaticResource Ember500Brush}" />
-							<Setter TargetName="LeftDivider" Property="Opacity" Value="0" />
-							<Setter TargetName="MainBorder" Property="Margin" Value="-1,0,-1,0" />
-							<Setter Property="Panel.ZIndex" Value="2" />
 						</Trigger>
 						<Trigger Property="IsEnabled" Value="False">
 							<Setter Property="Opacity" Value="0.3" />
