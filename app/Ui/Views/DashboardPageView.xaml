@@ -229,6 +229,23 @@
 							             ToolTip="Lock the panel at its maximum refresh rate." />
 						</StackPanel>
 					</controls:ChamferCard>
+					<!-- LCD Overdrive Row (Hidden if unsupported by panel) -->
+					<Grid x:Name="LcdOverdriveRow" Margin="0,10,0,0" Visibility="Collapsed">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*" />
+							<ColumnDefinition Width="Auto" />
+						</Grid.ColumnDefinitions>
+						<StackPanel Grid.Column="0" VerticalAlignment="Center">
+							<TextBlock Text="OVERDRIVE" Foreground="{StaticResource Steel300Brush}"
+							           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="10" />
+							<TextBlock Text="LCD response" Foreground="{StaticResource Steel500Brush}"
+							           FontFamily="{StaticResource MonoFontFamily}" FontSize="8.5" Margin="0,1,0,0" />
+						</StackPanel>
+						<CheckBox Grid.Column="1" x:Name="TogLcdOverdrive" Style="{StaticResource ChamferMiniToggleStyle}"
+						          HorizontalAlignment="Right" VerticalAlignment="Center"
+						          Checked="LcdOverdrive_Toggled" Unchecked="LcdOverdrive_Toggled"
+						          ToolTip="Boost panel pixel response times to reduce ghosting." />
+					</Grid>
 				</StackPanel>
 			</controls:ChamferCard>
 

@@ -137,6 +137,33 @@
 						          IsChecked="{Binding ChargeLimit, UpdateSourceTrigger=PropertyChanged}"
 						          ToolTip="Cap charging at 80% to extend battery lifespan." />
 					</Grid>
+					<!-- Divider -->
+					<Border Height="1" Background="{StaticResource Steel800Brush}" Margin="0,10,0,10" />
+
+					<!-- USB Power-Off Charging Row -->
+					<Grid Margin="0,2,0,0">
+						<Grid.ColumnDefinitions>
+							<ColumnDefinition Width="*" />
+							<ColumnDefinition Width="Auto" />
+							<ColumnDefinition Width="10" />
+							<ColumnDefinition Width="Auto" />
+						</Grid.ColumnDefinitions>
+						<StackPanel Grid.Column="0" VerticalAlignment="Center">
+							<TextBlock Text="USB POWER-OFF CHARGING" Foreground="White"
+							           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="11.5" />
+							<TextBlock Text="Charge devices while off (stops at battery floor)" Foreground="{StaticResource Steel400Brush}"
+							           FontFamily="{StaticResource MonoFontFamily}" FontSize="9.5" Margin="0,2,0,0" />
+						</StackPanel>
+						<ComboBox Grid.Column="1" x:Name="UsbChargingFloorBox" Width="68" Height="26"
+						          Style="{StaticResource CompactComboBoxStyle}"
+						          VerticalAlignment="Center"
+						          SelectionChanged="UsbChargingFloor_Changed"
+						          ToolTip="Minimum battery level required to keep powering USB ports while off." />
+						<CheckBox Grid.Column="3" x:Name="TogUsbCharging" Style="{StaticResource ModernToggleStyle}"
+						          HorizontalAlignment="Right" VerticalAlignment="Center"
+						          Checked="UsbCharging_Toggled" Unchecked="UsbCharging_Toggled"
+						          ToolTip="Power USB ports when shut down until battery drops to the selected limit." />
+					</Grid>
 				</StackPanel>
 			</controls:ChamferCard>
 

@@ -1,6 +1,9 @@
+using System;
+using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
+using Nitrous.Managers;
 using UserControl = System.Windows.Controls.UserControl;
 using MouseEventArgs = System.Windows.Input.MouseEventArgs;
 
@@ -8,9 +11,82 @@ namespace Nitrous.Ui.Views;
 
 public partial class DashboardPageView : UserControl
 {
+    private bool _lcdOverdriveLoading = true;
+    private bool _lcdOverdriveBusy;
+    private bool _lcdOverdriveAvailable;
+
     public DashboardPageView()
     {
         InitializeComponent();
+        InitializeLcdOverdrive();
+    }
+
+    public void InitializeLcdOverdrive()
+    {
+        var state = AcerWmiManager.GetLcdOverdrive();
+        if (state is { Supported: true })
+            SettingsManager.Save("LcdOverdriveRefused", 0);
+
+        var refused = SettingsManager.Get("LcdOverdriveRefused", 0) == 1;
+        _lcdOverdriveAvailable = state is { Supported: true } && !refused;
+
+        if (_lcdOverdriveAvailable && state is { On: var on })
+            TogLcdOverdrive.IsChecked = on;
+
+        SetLcdOverdriveVisible(_lcdOverdriveAvailable);
+        _lcdOverdriveLoading = false;
+    }
+
+    private void SetLcdOverdriveVisible(bool visible)
+    {
+        LcdOverdriveRow.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+    }
+
+    private void SetLcdOverdriveToggle(bool on)
+    {
+        _lcdOverdriveLoading = true;
+        TogLcdOverdrive.IsChecked = on;
+        _lcdOverdriveLoading = false;
+    }
+
+    private async void LcdOverdrive_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_lcdOverdriveLoading || _lcdOverdriveBusy || !_lcdOverdriveAvailable) return;
+
+        var wanted = TogLcdOverdrive.IsChecked == true;
+        _lcdOverdriveBusy = true;
+
+        try
+        {
+            if (!AcerWmiManager.SetLcdOverdrive(wanted))
+            {
+                SetLcdOverdriveToggle(!wanted);
+                return;
+            }
+
+            var applied = await ReadLcdOverdriveAfterWriteAsync(wanted);
+            if (applied is { On: var on } && on == wanted) return;
+
+            SettingsManager.Save("LcdOverdriveRefused", 1);
+            _lcdOverdriveAvailable = false;
+            SetLcdOverdriveToggle(false);
+            SetLcdOverdriveVisible(false);
+        }
+        finally
+        {
+            _lcdOverdriveBusy = false;
+        }
+    }
+
+    private static async Task<(bool Supported, bool On)?> ReadLcdOverdriveAfterWriteAsync(bool wanted)
+    {
+        for (var i = 0; i < 5; i++)
+        {
+            await Task.Delay(200);
+            var state = AcerWmiManager.GetLcdOverdrive();
+            if (state is { On: var on } && on == wanted) return state;
+        }
+        return AcerWmiManager.GetLcdOverdrive();
     }
 
     private void CurveToggle_Click(object sender, RoutedEventArgs e)

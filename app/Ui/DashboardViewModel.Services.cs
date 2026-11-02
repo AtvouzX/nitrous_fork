@@ -116,7 +116,7 @@ public partial class DashboardViewModel
             try
             {
                 string dump = LogManager.ExportSystemDiagnostics();
-                Clipboard.SetText(dump);
+                SafeSetClipboardText(dump);
 
                 string repoUrl = "https://github.com/AtvouzX/nitrous_fork/issues/new";
                 string version = $"v{UpdateManager.CurrentVersion}";
@@ -193,7 +193,7 @@ public partial class DashboardViewModel
             try
             {
                 string dump = LogManager.ExportSystemDiagnostics();
-                Clipboard.SetText(dump);
+                SafeSetClipboardText(dump);
                 ShowGpuAlert(
                     GpuAlertLevel.Info,
                     "Diagnostics Copied",
@@ -210,6 +210,25 @@ public partial class DashboardViewModel
         _ = RefreshAcerServicesAsync();
     }
 
+    private static void SafeSetClipboardText(string text)
+    {
+        for (int i = 0; i < 5; i++)
+        {
+            try
+            {
+                Clipboard.SetText(text);
+                return;
+            }
+            catch (System.Runtime.InteropServices.COMException)
+            {
+                System.Threading.Thread.Sleep(50);
+            }
+            catch
+            {
+                break;
+            }
+        }
+    }
     public async Task RefreshAcerServicesAsync()
     {
         var summary = await Task.Run(() => AcerServiceManager.GetServiceSummary());

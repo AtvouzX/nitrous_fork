@@ -1,3 +1,4 @@
+using System.Management;
 using System;
 using System.Threading.Tasks;
 using Nitrous.Enums;
@@ -7,6 +8,29 @@ namespace Nitrous.Managers;
 public static partial class AcerWmiManager
 {
     public readonly record struct AcerCapabilities(bool Supported, bool TurboSupported, PowerProfile? ActiveMode);
+    public readonly record struct UsbChargingState(bool On, int? Floor);
+    internal delegate ulong? GamingProfileReaderDelegate();
+    internal delegate ulong? UsbChargingReaderDelegate();
+
+    private static GamingProfileReaderDelegate? _gamingProfileReader;
+    private static UsbChargingReaderDelegate? _usbChargingReader;
+
+    internal static void SetGamingProfileReaderForTesting(GamingProfileReaderDelegate? testReader)
+    {
+        lock (_wmiLock)
+        {
+            _gamingProfileReader = testReader;
+        }
+    }
+
+    internal static void SetUsbChargingReaderForTesting(UsbChargingReaderDelegate? testReader)
+    {
+        lock (_wmiLock)
+        {
+            _usbChargingReader = testReader;
+        }
+    }
+
 
     public static bool IsHardwareSupported()
     {
@@ -266,5 +290,142 @@ public static partial class AcerWmiManager
         }
 
         SettingsManager.Save("LastPowerMode", (int)profile);
+    }
+
+    private static ulong? ReadGamingProfile()
+    {
+        try
+        {
+            var instance = GetGamingFunctionInstance();
+            if (instance == null) return null;
+
+            lock (_wmiLock)
+            {
+                using var inParams = instance.GetMethodParameters(AcerWmiProtocol.GetGamingProfile);
+                inParams["gmInput"] = AcerWmiProtocol.ProfileQuery;
+                using var outParams = instance.InvokeMethod(AcerWmiProtocol.GetGamingProfile, inParams, null);
+
+                var raw = outParams?.Properties["gmOutput"]?.Value ?? outParams?.Properties["outValue"]?.Value;
+                return raw != null ? Convert.ToUInt64(raw) : null;
+            }
+        }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"ReadGamingProfile failed: {ex.Message}", "AcerWmi");
+            return null;
+        }
+    }
+
+    public static (bool Supported, bool On)? GetLcdOverdrive()
+    {
+        GamingProfileReaderDelegate? reader;
+        lock (_wmiLock)
+        {
+            reader = _gamingProfileReader;
+        }
+        ulong? raw = reader != null ? reader() : ReadGamingProfile();
+        if (!raw.HasValue) return null;
+
+        var supported = AcerWmiProtocol.LcdOverdriveSupported(raw.Value);
+        return (supported, supported && AcerWmiProtocol.LcdOverdriveOn(raw.Value));
+    }
+
+    public static bool SetLcdOverdrive(bool on)
+    {
+        try
+        {
+            ulong payload = AcerWmiProtocol.LcdOverdrivePayload(on);
+            bool success = InvokeWmiSync(
+                AcerWmiProtocol.GamingClass,
+                AcerWmiProtocol.SetGamingProfile,
+                payload);
+            if (success)
+            {
+                LogManager.Info($"LCD overdrive set to {(on ? "ON" : "OFF")}", "AcerWmi");
+            }
+            return success;
+        }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"SetLcdOverdrive failed: {ex.Message}", "AcerWmi");
+            return false;
+        }
+    }
+
+    private static ulong? ReadUsbChargingRaw()
+    {
+        try
+        {
+            using var searcher = new ManagementObjectSearcher(
+                AcerWmiProtocol.WmiNamespace, $"SELECT * FROM {AcerWmiProtocol.ActionClass}");
+
+            foreach (ManagementObject instance in searcher.Get())
+            {
+                using (instance)
+                {
+                    using var inParams = instance.GetMethodParameters("GetFunction");
+                    inParams["uiInput"] = (ulong)AcerWmiProtocol.UsbChargingQuery;
+                    using var outParams = instance.InvokeMethod("GetFunction", inParams, null);
+
+                    var raw = outParams?.Properties["uiOutput"]?.Value;
+                    return raw != null ? Convert.ToUInt64(raw) : null;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"ReadUsbChargingRaw failed: {ex.Message}", "AcerWmi");
+        }
+
+        return null;
+    }
+
+    public static UsbChargingState? GetUsbCharging()
+    {
+        UsbChargingReaderDelegate? reader;
+        lock (_wmiLock)
+        {
+            reader = _usbChargingReader;
+        }
+        ulong? raw = reader != null ? reader() : ReadUsbChargingRaw();
+        if (!raw.HasValue) return null;
+
+        ulong value = raw.Value;
+        var state = (int)((value >> 8) & 0xFF);
+        var floor = (int)((value >> 16) & 0xFF);
+
+        if (state != AcerWmiProtocol.UsbChargingOn &&
+            state != AcerWmiProtocol.UsbChargingOff)
+        {
+            LogManager.Info(
+                $"WMI: USB charging answered 0x{value:X} (state 0x{state:X2}); treating as unsupported",
+                "AcerWmi");
+            return null;
+        }
+
+        return new UsbChargingState(
+            state == AcerWmiProtocol.UsbChargingOn,
+            Array.IndexOf(AcerWmiProtocol.UsbChargingFloors, floor) >= 0 ? floor : null);
+    }
+
+    public static bool SetUsbCharging(bool on, int floor)
+    {
+        if (Array.IndexOf(AcerWmiProtocol.UsbChargingFloors, floor) < 0) return false;
+
+        try
+        {
+            ulong payload = AcerWmiProtocol.UsbChargingPayload(on, floor);
+            bool success = InvokeApGeActionSync("SetFunction", payload);
+            if (success)
+            {
+                LogManager.Info($"USB charging set to {(on ? "ON" : "OFF")} (stop at {floor}%)", "AcerWmi");
+            }
+            return success;
+        }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"SetUsbCharging failed: {ex.Message}", "AcerWmi");
+            return false;
+        }
     }
 }
