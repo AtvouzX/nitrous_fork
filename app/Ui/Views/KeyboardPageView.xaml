@@ -98,19 +98,19 @@
 						</Grid.ColumnDefinitions>
 						<Button x:Name="Zone1Btn" Grid.Column="0" Height="36" Tag="1" Click="Zone_Click"
 						        Style="{StaticResource ZoneSwatchStyle}" Content="Z1"
-						        ToolTip="Select Zone 1 colour." />
+						        ToolTip="Select Zone 1 color." />
 						<Button x:Name="Zone2Btn" Grid.Column="2" Height="36" Tag="2" Click="Zone_Click"
 						        Style="{StaticResource ZoneSwatchStyle}" Content="Z2"
-						        ToolTip="Select Zone 2 colour." />
+						        ToolTip="Select Zone 2 color." />
 						<Button x:Name="Zone3Btn" Grid.Column="4" Height="36" Tag="3" Click="Zone_Click"
 						        Style="{StaticResource ZoneSwatchStyle}" Content="Z3"
-						        ToolTip="Select Zone 3 colour." />
+						        ToolTip="Select Zone 3 color." />
 						<Button x:Name="Zone4Btn" Grid.Column="6" Height="36" Tag="4" Click="Zone_Click"
 						        Style="{StaticResource ZoneSwatchStyle}" Content="Z4"
-						        ToolTip="Select Zone 4 colour." />
+						        ToolTip="Select Zone 4 color." />
 						<Button x:Name="ZoneAllBtn" Grid.Column="8" Height="36" Tag="0" Click="Zone_Click"
 						        Style="{StaticResource ZoneSwatchStyle}" Content="ALL"
-						        ToolTip="Set all four zones to one colour." />
+						        ToolTip="Set all four zones to one color." />
 					</Grid>
 
 					<!-- Effect Row -->
@@ -123,8 +123,9 @@
 						           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="11" VerticalAlignment="Center" />
 						<ComboBox Grid.Column="1" x:Name="KeyboardEffectBox" Width="140" Height="26"
 						          Style="{StaticResource CompactComboBoxStyle}"
+						          VerticalContentAlignment="Center"
 						          SelectionChanged="KeyboardEffect_Changed"
-						          ToolTip="Choose static colours or an animated lighting effect." />
+						          ToolTip="Choose static colors or an animated lighting effect." />
 					</Grid>
 				</StackPanel>
 			</controls:ChamferCard>

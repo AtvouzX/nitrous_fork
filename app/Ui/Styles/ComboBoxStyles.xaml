@@ -29,9 +29,11 @@
 		<Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
 		<Setter Property="FontSize" Value="11" />
 		<Setter Property="FontWeight" Value="Bold" />
+		<Setter Property="VerticalContentAlignment" Value="Center" />
+		<Setter Property="HorizontalContentAlignment" Value="Left" />
 		<Setter Property="ScrollViewer.HorizontalScrollBarVisibility" Value="Auto" />
 		<Setter Property="ScrollViewer.VerticalScrollBarVisibility" Value="Auto" />
-		<Setter Property="Padding" Value="8,3,20,3" />
+		<Setter Property="Padding" Value="8,0,20,0" />
 		<Setter Property="Template">
 			<Setter.Value>
 				<ControlTemplate TargetType="ComboBox">
@@ -57,8 +59,38 @@
 	</Style>
 
 	<Style x:Key="CompactComboBoxStyle" BasedOn="{StaticResource DarkComboBoxStyle}" TargetType="ComboBox">
-		<Setter Property="Padding" Value="6,2,16,2" />
+		<Setter Property="Padding" Value="6,0,16,0" />
+		<Setter Property="VerticalContentAlignment" Value="Center" />
 		<Setter Property="FontSize" Value="10" />
+	</Style>
+
+	<Style TargetType="ComboBoxItem">
+		<Setter Property="Foreground" Value="{StaticResource Steel400Brush}" />
+		<Setter Property="Background" Value="Transparent" />
+		<Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
+		<Setter Property="FontSize" Value="10.5" />
+		<Setter Property="FontWeight" Value="Bold" />
+		<Setter Property="Padding" Value="8,5" />
+		<Setter Property="Cursor" Value="Hand" />
+		<Setter Property="Template">
+			<Setter.Value>
+				<ControlTemplate TargetType="ComboBoxItem">
+					<Border x:Name="Bd" Background="{TemplateBinding Background}" Padding="{TemplateBinding Padding}">
+						<ContentPresenter HorizontalAlignment="Left" VerticalAlignment="Center" />
+					</Border>
+					<ControlTemplate.Triggers>
+						<Trigger Property="IsMouseOver" Value="True">
+							<Setter TargetName="Bd" Property="Background" Value="{StaticResource Steel800Brush}" />
+							<Setter Property="Foreground" Value="{StaticResource Steel100Brush}" />
+						</Trigger>
+						<Trigger Property="IsSelected" Value="True">
+							<Setter TargetName="Bd" Property="Background" Value="{StaticResource Steel800Brush}" />
+							<Setter Property="Foreground" Value="{StaticResource Ember400Brush}" />
+						</Trigger>
+					</ControlTemplate.Triggers>
+				</ControlTemplate>
+			</Setter.Value>
+		</Setter>
 	</Style>
 
 </ResourceDictionary>

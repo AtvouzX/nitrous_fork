@@ -166,7 +166,7 @@ public static partial class EcProbe
         try
         {
             var capabilities = AcerCapabilitiesProvider.Current;
-            result["smbiosKeyboardColour"] = capabilities.Smbios.KeyboardColor;
+            result["smbiosKeyboardColor"] = capabilities.Smbios.KeyboardColor;
             result["ecHidPresent"] = capabilities.EcHid != null;
         }
         catch (Exception ex)

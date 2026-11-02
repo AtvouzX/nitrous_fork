@@ -68,7 +68,7 @@ public sealed record AcerSmbios(
         var version = GamingVersion is { } v ? v.ToString("0.00") : "unknown";
         return $"gaming interface {version}; " +
                $"operating modes {(OperatingModesListed ? "listed" : "not listed")}; " +
-               $"keyboard colour {KeyboardColor?.ToString() ?? "unknown"}; " +
+               $"keyboard color {KeyboardColor?.ToString() ?? "unknown"}; " +
                $"ec light bars {(HasEcLightBars ? "yes" : "no")}; " +
                $"hotkey functions {HotkeyFunctions.Count}";
     }

@@ -24,7 +24,7 @@ public enum KeyboardEffect : byte
 }
 
 /// <summary>
-/// RGB colour as accepted by the keyboard lighting controller.
+/// RGB Color as accepted by the keyboard lighting controller.
 /// </summary>
 public readonly record struct KeyboardColor(byte R, byte G, byte B)
 {

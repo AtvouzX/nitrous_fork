@@ -134,9 +134,9 @@ public partial class KeyboardPageView : UserControl
 
         GrdZoneSwatches.Visibility = _keyboardZoned ? Visibility.Visible : Visibility.Collapsed;
         TxtLightingStatus.Text = !_keyboardAvailable
-            ? "Colours not reachable"
+            ? "Colors not reachable"
             : !_keyboardZoned
-                ? "Single-colour keyboard"
+                ? "Single-color keyboard"
                 : string.Empty;
 
         KeyboardEffectBox.IsEnabled = _keyboardAvailable;

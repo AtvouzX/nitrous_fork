@@ -151,12 +151,13 @@
 						<StackPanel Grid.Column="0" VerticalAlignment="Center">
 							<TextBlock Text="USB POWER-OFF CHARGING" Foreground="White"
 							           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="11.5" />
-							<TextBlock Text="Charge devices while off (stops at battery floor)" Foreground="{StaticResource Steel400Brush}"
+							<TextBlock Text="Stops when battery reaches:" Foreground="{StaticResource Steel400Brush}"
 							           FontFamily="{StaticResource MonoFontFamily}" FontSize="9.5" Margin="0,2,0,0" />
 						</StackPanel>
 						<ComboBox Grid.Column="1" x:Name="UsbChargingFloorBox" Width="68" Height="26"
 						          Style="{StaticResource CompactComboBoxStyle}"
 						          VerticalAlignment="Center"
+						          VerticalContentAlignment="Center"
 						          SelectionChanged="UsbChargingFloor_Changed"
 						          ToolTip="Minimum battery level required to keep powering USB ports while off." />
 						<CheckBox Grid.Column="3" x:Name="TogUsbCharging" Style="{StaticResource ModernToggleStyle}"
