@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using Nitrous.Enums;
 using Nitrous.Managers;
 using Xunit;
@@ -19,6 +20,33 @@ public class DisplayManagerTests
     {
         bool supported = DisplayManager.IsRefreshSupported(-1, -1, 9999);
         Assert.False(supported);
+    }
+
+    [Fact]
+    public void TryFindMode_InvalidDimensions_ReturnsFalse()
+    {
+        bool found = DisplayManager.TryFindMode(-1, -1, 9999, out _);
+        Assert.False(found);
+    }
+
+    [Theory]
+    [InlineData(RefreshProfile.Auto, true, 144, 144)]
+    [InlineData(RefreshProfile.Auto, false, 144, 60)]
+    [InlineData(RefreshProfile.Hz60, true, 144, 60)]
+    [InlineData(RefreshProfile.Hz60, false, 144, 60)]
+    [InlineData(RefreshProfile.MaxHz, true, 144, 144)]
+    [InlineData(RefreshProfile.MaxHz, false, 144, 144)]
+    public void ResolveTargetRefreshRate_ComputesExpectedFrequency(RefreshProfile profile, bool isAcPower, int maxHz, int expectedHz)
+    {
+        int targetHz = DisplayManager.ResolveTargetRefreshRate(profile, isAcPower, maxHz);
+        Assert.Equal(expectedHz, targetHz);
+    }
+
+    [Fact]
+    public void GetSupportedRefreshRates_ReturnsNonNullList()
+    {
+        var rates = DisplayManager.GetSupportedRefreshRates();
+        Assert.NotNull(rates);
     }
 
     [Fact]
@@ -46,4 +74,3 @@ public class DisplayManagerTests
         Assert.Equal(1, SettingsManager.Get("GpuOffsetsMigratedToStock_v1", 0));
     }
 }
-

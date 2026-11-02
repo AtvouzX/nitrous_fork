@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Nitrous.Enums;
 using Nitrous.Interop;
@@ -43,41 +45,86 @@ public static class DisplayManager
         return maxHz;
     }
 
-    public static bool IsRefreshSupported(int width, int height, int targetHz)
+    public static int GetCurrentRefreshRate()
     {
         try
         {
             var mode = new User32.DEVMODEW { dmSize = (short)Marshal.SizeOf<User32.DEVMODEW>() };
+            return User32.EnumDisplaySettingsW(null, User32.ENUM_CURRENT_SETTINGS, ref mode)
+                ? mode.dmDisplayFrequency
+                : 0;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    public static IReadOnlyList<int> GetSupportedRefreshRates()
+    {
+        var rates = new SortedSet<int>();
+        try
+        {
+            var current = new User32.DEVMODEW { dmSize = (short)Marshal.SizeOf<User32.DEVMODEW>() };
+            if (!User32.EnumDisplaySettingsW(null, User32.ENUM_CURRENT_SETTINGS, ref current))
+                return Array.Empty<int>();
+
+            var mode = new User32.DEVMODEW { dmSize = (short)Marshal.SizeOf<User32.DEVMODEW>() };
             for (int i = 0; User32.EnumDisplaySettingsW(null, i, ref mode); i++)
             {
-                if (mode.dmPelsWidth == width &&
-                    mode.dmPelsHeight == height &&
-                    mode.dmDisplayFrequency == targetHz)
+                if (mode.dmPelsWidth == current.dmPelsWidth &&
+                    mode.dmPelsHeight == current.dmPelsHeight &&
+                    mode.dmDisplayFrequency > 0)
                 {
-                    return true;
+                    rates.Add(mode.dmDisplayFrequency);
                 }
             }
         }
         catch (Exception ex)
         {
-            LogManager.Warn($"IsRefreshSupported check failed: {ex.Message}", "Display");
+            LogManager.Warn($"Failed to enumerate supported refresh rates: {ex.Message}", "Display");
+        }
+
+        return rates.ToArray();
+    }
+
+    public static bool TryFindMode(int width, int height, int targetHz, out User32.DEVMODEW mode)
+    {
+        mode = new User32.DEVMODEW { dmSize = (short)Marshal.SizeOf<User32.DEVMODEW>() };
+        var candidate = new User32.DEVMODEW { dmSize = (short)Marshal.SizeOf<User32.DEVMODEW>() };
+
+        for (int i = 0; User32.EnumDisplaySettingsW(null, i, ref candidate); i++)
+        {
+            if (candidate.dmPelsWidth == width &&
+                candidate.dmPelsHeight == height &&
+                candidate.dmDisplayFrequency == targetHz)
+            {
+                mode = candidate;
+                return true;
+            }
         }
 
         return false;
     }
+
+    public static bool IsRefreshSupported(int width, int height, int targetHz) =>
+        TryFindMode(width, height, targetHz, out _);
+
+    public static int ResolveTargetRefreshRate(RefreshProfile profile, bool isAcPower, int maxHz) =>
+        profile switch
+        {
+            RefreshProfile.Hz60 => 60,
+            RefreshProfile.MaxHz => maxHz,
+            RefreshProfile.Auto => isAcPower ? maxHz : 60,
+            _ => 60
+        };
 
     public static void ApplyRefreshProfile(RefreshProfile profile, bool isAcPower)
     {
         try
         {
             int maxHz = GetPrimaryMaxRefreshRate();
-            int targetHz = profile switch
-            {
-                RefreshProfile.Hz60 => 60,
-                RefreshProfile.MaxHz => maxHz,
-                RefreshProfile.Auto => isAcPower ? maxHz : 60,
-                _ => 60
-            };
+            int targetHz = ResolveTargetRefreshRate(profile, isAcPower, maxHz);
 
             var mode = new User32.DEVMODEW { dmSize = (short)Marshal.SizeOf<User32.DEVMODEW>() };
             if (!User32.EnumDisplaySettingsW(null, User32.ENUM_CURRENT_SETTINGS, ref mode))
@@ -88,8 +135,7 @@ public static class DisplayManager
 
             if (mode.dmDisplayFrequency == targetHz) return;
 
-            // Do not ask the driver for a mode it did not advertise.
-            if (!IsRefreshSupported(mode.dmPelsWidth, mode.dmPelsHeight, targetHz))
+            if (!TryFindMode(mode.dmPelsWidth, mode.dmPelsHeight, targetHz, out var driverMode))
             {
                 LogManager.Warn(
                     $"Display: {targetHz}Hz is not supported at {mode.dmPelsWidth}x{mode.dmPelsHeight}; leaving current mode unchanged.",
@@ -101,9 +147,7 @@ public static class DisplayManager
                 $"Switching display refresh rate from {mode.dmDisplayFrequency}Hz to {targetHz}Hz (Profile: {profile}, AC: {isAcPower})",
                 "Display");
 
-            // 1. Primary method (fast/seamless): ChangeDisplaySettingsExW with DM_DISPLAYFREQUENCY.
-            // When only DM_DISPLAYFREQUENCY is specified, Windows and the graphics driver perform
-            // a dynamic in-place frequency switch without blanking or turning off the screen (matching v0.9.30).
+            // 1. Primary method (fast/seamless): ChangeDisplaySettingsExW with DM_DISPLAYFREQUENCY only.
             mode.dmFields = User32.DM_DISPLAYFREQUENCY;
             mode.dmDisplayFrequency = targetHz;
 
@@ -111,7 +155,6 @@ public static class DisplayManager
                 IntPtr.Zero);
             if (ret != User32.DISP_CHANGE_SUCCESSFUL && !string.IsNullOrEmpty(mode.dmDeviceName))
             {
-                // Retry with explicit device name if null returned an error
                 ret = User32.ChangeDisplaySettingsExW(mode.dmDeviceName, ref mode, IntPtr.Zero,
                     User32.CDS_UPDATEREGISTRY, IntPtr.Zero);
             }
@@ -121,9 +164,18 @@ public static class DisplayManager
                 return;
             }
 
-            LogManager.Warn($"ChangeDisplaySettingsExW returned error code {ret}; attempting CCD fallback", "Display");
+            LogManager.Warn($"ChangeDisplaySettingsExW in-place returned {ret}; trying driver mode entry", "Display");
 
-            // 2. Fallback method: Windows CCD API (Connecting and Configuring Displays)
+            // 2. Secondary fallback: Apply driver mode entry whole
+            int driverModeRet = User32.ChangeDisplaySettingsExW(null, ref driverMode, IntPtr.Zero, User32.CDS_UPDATEREGISTRY, IntPtr.Zero);
+            if (driverModeRet == User32.DISP_CHANGE_SUCCESSFUL)
+            {
+                return;
+            }
+
+            LogManager.Warn($"ChangeDisplaySettingsExW driver mode returned {driverModeRet}; attempting CCD fallback", "Display");
+
+            // 3. Tertiary fallback: Windows CCD API
             if (TryApplyRefreshViaCcd(targetHz))
             {
                 return;
