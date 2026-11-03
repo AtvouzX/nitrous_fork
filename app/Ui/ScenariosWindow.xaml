@@ -12,6 +12,28 @@
 			<ResourceDictionary.MergedDictionaries>
 				<ResourceDictionary Source="pack://application:,,,/Nitrous;component/Ui/Styles/DashboardStyles.xaml" />
 			</ResourceDictionary.MergedDictionaries>
+
+			<!-- Zone Swatch Style (same as Keyboard page: Steel token, zero radius) -->
+			<Style x:Key="ScenarioZoneSwatchStyle" TargetType="Button">
+				<Setter Property="Cursor" Value="Hand" />
+				<Setter Property="Background" Value="{StaticResource Steel850Brush}" />
+				<Setter Property="Foreground" Value="White" />
+				<Setter Property="FontFamily" Value="{StaticResource MonoFontFamily}" />
+				<Setter Property="FontSize" Value="10.5" />
+				<Setter Property="FontWeight" Value="Bold" />
+				<Setter Property="Template">
+					<Setter.Value>
+						<ControlTemplate TargetType="Button">
+							<Border Background="{TemplateBinding Background}" BorderBrush="{StaticResource Steel600Brush}" BorderThickness="1" CornerRadius="0">
+								<Grid>
+									<Border Background="{StaticResource Steel950Brush}" Opacity="0.35" />
+									<ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
+								</Grid>
+							</Border>
+						</ControlTemplate>
+					</Setter.Value>
+				</Setter>
+			</Style>
 		</ResourceDictionary>
 	</Window.Resources>
 
@@ -211,20 +233,34 @@
 									          ItemsSource="{Binding ScenarioEffects}" SelectedItem="{Binding ScenarioLightingEffect, Mode=TwoWay}" />
 								</StackPanel>
 								<StackPanel x:Name="ZoneColorsPanel">
-									<TextBlock Text="ZONE COLORS (HEX)" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" Margin="0,0,0,4" />
+									<TextBlock Text="ZONE COLORS" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" Margin="0,0,0,4" />
 									<Grid>
 										<Grid.ColumnDefinitions>
 											<ColumnDefinition Width="*" />
+											<ColumnDefinition Width="6" />
+											<ColumnDefinition Width="*" />
+											<ColumnDefinition Width="6" />
+											<ColumnDefinition Width="*" />
+											<ColumnDefinition Width="6" />
+											<ColumnDefinition Width="*" />
+											<ColumnDefinition Width="6" />
 											<ColumnDefinition Width="*" />
 										</Grid.ColumnDefinitions>
-										<Grid.RowDefinitions>
-											<RowDefinition Height="Auto" />
-											<RowDefinition Height="Auto" />
-										</Grid.RowDefinitions>
-										<TextBox Grid.Row="0" Grid.Column="0" Style="{StaticResource HotkeyTextBoxStyle}" Height="26" Margin="0,0,4,4" Text="{Binding ScenarioZoneColor1, Mode=TwoWay}" ToolTip="Zone 1 color, hex like #FF0000." />
-										<TextBox Grid.Row="0" Grid.Column="1" Style="{StaticResource HotkeyTextBoxStyle}" Height="26" Margin="4,0,0,4" Text="{Binding ScenarioZoneColor2, Mode=TwoWay}" ToolTip="Zone 2 color, hex like #FF0000." />
-										<TextBox Grid.Row="1" Grid.Column="0" Style="{StaticResource HotkeyTextBoxStyle}" Height="26" Margin="0,0,4,0" Text="{Binding ScenarioZoneColor3, Mode=TwoWay}" ToolTip="Zone 3 color, hex like #FF0000." />
-										<TextBox Grid.Row="1" Grid.Column="1" Style="{StaticResource HotkeyTextBoxStyle}" Height="26" Margin="4,0,0,0" Text="{Binding ScenarioZoneColor4, Mode=TwoWay}" ToolTip="Zone 4 color, hex like #FF0000." />
+										<Button x:Name="ScenarioZone1Btn" Grid.Column="0" Height="36" Tag="1" Click="Zone_Click"
+										        Style="{StaticResource ScenarioZoneSwatchStyle}" Content="Z1"
+										        ToolTip="Select Zone 1 color." />
+										<Button x:Name="ScenarioZone2Btn" Grid.Column="2" Height="36" Tag="2" Click="Zone_Click"
+										        Style="{StaticResource ScenarioZoneSwatchStyle}" Content="Z2"
+										        ToolTip="Select Zone 2 color." />
+										<Button x:Name="ScenarioZone3Btn" Grid.Column="4" Height="36" Tag="3" Click="Zone_Click"
+										        Style="{StaticResource ScenarioZoneSwatchStyle}" Content="Z3"
+										        ToolTip="Select Zone 3 color." />
+										<Button x:Name="ScenarioZone4Btn" Grid.Column="6" Height="36" Tag="4" Click="Zone_Click"
+										        Style="{StaticResource ScenarioZoneSwatchStyle}" Content="Z4"
+										        ToolTip="Select Zone 4 color." />
+										<Button x:Name="ScenarioZoneAllBtn" Grid.Column="8" Height="36" Tag="0" Click="Zone_Click"
+										        Style="{StaticResource ScenarioZoneSwatchStyle}" Content="ALL"
+										        ToolTip="Set all four zones to one color." />
 									</Grid>
 								</StackPanel>
 							</StackPanel>

@@ -187,6 +187,11 @@ public class ScenarioDashboardTests : IDisposable
                 var window = new Nitrous.Ui.ScenariosWindow(vm);
                 Assert.NotNull(window.FindName("ScenarioList"));
                 Assert.NotNull(window.FindName("ScenarioAppList"));
+                Assert.NotNull(window.FindName("ScenarioZone1Btn"));
+                Assert.NotNull(window.FindName("ScenarioZone2Btn"));
+                Assert.NotNull(window.FindName("ScenarioZone3Btn"));
+                Assert.NotNull(window.FindName("ScenarioZone4Btn"));
+                Assert.NotNull(window.FindName("ScenarioZoneAllBtn"));
                 window.Close();
             }
             catch (Exception ex) { error = ex; }
