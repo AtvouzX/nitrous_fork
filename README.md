@@ -4,7 +4,7 @@
 
 # Nitrous
 
-**Lightweight, zero-bloat hardware control utility for Acer Nitro and Predator laptops.**
+**Lightweight hardware control for Acer Nitro and Predator laptops. No bloat, no heavy background services.**
 
 [![Latest Release](https://img.shields.io/github/v/release/AtvouzX/nitrous_fork?style=flat-square&color=crimson)](https://github.com/AtvouzX/nitrous_fork/releases)
 [![Platform](https://img.shields.io/badge/Platform-Windows%2010%20%7C%2011%20(64--bit)-0078D6?style=flat-square)](https://github.com/AtvouzX/nitrous_fork)
@@ -12,59 +12,56 @@
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
 <p align="center">
-  <img src="assets/dashboard-v0.9.png" alt="Main Dashboard" width="30%" />
-  <img src="assets/gpu-v0.9.png" alt="GPU" width="30%" />
-  <img src="assets/settings-v0.9.png" alt="App Settings" width="30%" />
+  <img src="assets/dashboard-v1.0.png" alt="Main Dashboard" width="32%" />
+  <img src="assets/gpu-v1.0.png" alt="GPU Tuning" width="32%" />
+  <img src="assets/keyboard-v1.0.png" alt="Keyboard Lighting" width="32%" />
 </p>
 
 ---
 
 </div>
 
-Nitrous interacts directly with your laptop's Embedded Controller (EC) via Windows Management Instrumentation (`root\WMI` -> `AcerGamingFunction`), replacing heavy OEM background services with a fast dashboard and an ~8–15 MB idle footprint.
+Nitrous talks directly to your laptop's hardware and replaces the heavy OEM apps. It idles at about 5–15 MB of RAM and stays out of the way in the tray.
 
 ### Features
 
-- **Custom Fan Curves**: Waypoint editor per power profile.
-- **Power Modes & Boost Control**: Fast EC switching (Quiet, Balanced, Performance, Turbo) with automatic CPU power limit mitigation.
-- **GPU Tuning & Sleep Preservation**: Core and memory clock offsets with auto-apply on wake while keeping discrete graphics asleep on battery.
-- **Acer Service Debloater**: One-click disable and restore for background OEM services.
-- **Hardware Key Support**: Redirects NitroSense and PredatorSense keys directly to Nitrous.
-- **Battery & Display Automation**: Hardware 80% charge limit and automatic 60Hz/max refresh rate switching.
-- **On-Screen Display (OSD)**: Visual HUD notifications when switching profiles.
+- **Scenario Manager**: Save setups (power mode, fans, keyboard lighting) as named scenarios and switch with one click.
 
-### Prerequisites
+<p align="center">
+  <img src="assets/scenarioManager-v1.0.png" alt="Scenario Manager"/>
+</p>
 
-- **Operating System**: Windows 10 or Windows 11 (64-bit).
-- **Runtime**: [.NET 10.0 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0) (x64).
-- **Permissions**: Administrator privileges.
-- **Hardware**: Acer Nitro or Predator laptop with `AcerGamingFunction` WMI support.
+- **App Sync**: Link an app to a scenario. Nitrous switches when the app opens and switches back when it closes.
+- **Power Modes**: Quiet, Balanced, Performance, and Turbo with automatic CPU power limits.
+- **Custom Fans**: Per-mode fan curves, fixed speeds, and gentle ramp-down to avoid fan revving.
+- **GPU Tuning**: Core and memory clock offsets that respect GPU sleep on battery, so battery life stays intact.
+- **Keyboard Lighting**: A color per keyboard zone, lighting effects, and a backlight that turns off after 30 seconds idle.
+- **Battery & Display**: 80% charge limit, automatic refresh rate switching, and LCD overdrive on supported models.
+- **Acer Service Debloater**: Turn off OEM background services you do not need, and restore them anytime.
+- **Hardware Keys**: The Nitro/Predator key opens Nitrous directly.
 
 ### Quick Start
 
-Nitrous is portable and requires no installation.
+Nitrous is portable. No installation needed.
 
 1. Download `Nitrous.exe` from [Releases](https://github.com/AtvouzX/nitrous_fork/releases).
-2. Place the executable in any folder (e.g., `C:\Tools\Nitrous`).
-3. Run `Nitrous.exe` as Administrator.
-4. *(Optional)* Enable **Start with Windows** in Settings for silent, UAC-free startup.
+2. Put it in any folder.
+3. Run it as Administrator.
+4. Optional: turn on **Start with Windows** in Settings.
+
+You need Windows 10 or 11 (64-bit), the [.NET 10 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/10.0), and an Acer Nitro or Predator laptop from 2021 or newer.
 
 ### Compatibility
 
-Designed for modern Acer Nitro and Predator laptops (2021+) supporting the `AcerGamingFunction` WMI interface.
+**Confirmed models:** Acer Nitro 16S `AN16S-61`, Acer Nitro V 15 `ANV15-41`, `ANV15-51`. Predator models should work but are not tested yet.
 
-*Note: Predator models are not yet tested. While the underlying WMI calls, service management, and launcher hooks are designed to support both Nitro and Predator architectures, verified testing on Predator hardware is still needed.*
+Check your laptop in PowerShell (as Administrator):
 
-**Confirmed Models:**
-- **Acer Nitro 16S**: `AN16S-61`
-- **Acer Nitro V 15**: `ANV15-41`, `ANV15-51`
-
-**Check Compatibility:** Run this command in PowerShell as Administrator to verify support:
 ```powershell
 Get-CimInstance -Namespace root\WMI -ClassName AcerGamingFunction
 ```
 
-Tested on a different model? Please [open an issue](https://github.com/AtvouzX/nitrous_fork/issues) to report your results and help expand the confirmed list.
+Tested on a different model? Please [open an issue](https://github.com/AtvouzX/nitrous_fork/issues) and help grow this list.
 
 ---
 
