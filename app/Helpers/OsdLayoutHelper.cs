@@ -76,6 +76,23 @@ public static class OsdLayoutHelper
             contentGap);
     }
 
+    /// <summary>
+    /// Centers the overlay horizontally over the working area and places its top edge
+    /// <paramref name="bottomMargin"/> above the area bottom (matching the tray formula),
+    /// clamped so the overlay never starts outside the area on small or offset screens.
+    /// </summary>
+    public static Point ComputePosition(Size formSize, Rectangle workingArea, int bottomMargin)
+    {
+        int x = workingArea.Left + (workingArea.Width - formSize.Width) / 2;
+        int y = workingArea.Top + workingArea.Height - bottomMargin;
+        return new Point(
+            ClampInside(x, workingArea.Left, workingArea.Right, formSize.Width),
+            ClampInside(y, workingArea.Top, workingArea.Bottom, formSize.Height));
+    }
+
+    private static int ClampInside(int value, int start, int end, int size) =>
+        Math.Clamp(value, start, Math.Max(start, end - size));
+
     private static int Scale(int value, double scale) =>
         (int)Math.Round(value * scale, MidpointRounding.AwayFromZero);
 }

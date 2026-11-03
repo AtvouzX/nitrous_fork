@@ -218,7 +218,7 @@ public class OsdForm : Form
         this.Size = _layout.FormSize;
 
         var screen = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1920, 1080);
-        this.Location = new Point((screen.Width - this.Width) / 2, screen.Height - _layout.BottomMargin);
+        this.Location = OsdLayoutHelper.ComputePosition(_layout.FormSize, screen, _layout.BottomMargin);
 
         _borderPath?.Dispose();
         _borderPath = CreateForgedPath(
@@ -232,6 +232,56 @@ public class OsdForm : Form
 
         _layerBitmap?.Dispose();
         _layerBitmap = null;
+    }
+
+    /// <summary>
+    /// Renders one OSD frame off-screen at the given DPI scale for rendering tests.
+    /// Never shows the form, starts timers, or touches the layered window.
+    /// Caller owns the returned bitmap.
+    /// </summary>
+    internal Bitmap RenderFrameForTesting(double scale, PowerProfile profile)
+    {
+        Color accent = OsdThemeHelper.GetAccent(profile);
+        if (_accentColor != accent)
+        {
+            _accentColor = accent;
+            _accentBrush.Dispose();
+            _accentBrush = new SolidBrush(accent);
+        }
+
+        _activeProfile = profile;
+        _profileText = profile.ToString().ToUpperInvariant();
+
+        float dpi = (float)(96.0 * Math.Clamp(scale, OsdLayoutHelper.MinScale, OsdLayoutHelper.MaxScale));
+        int contentWidth;
+        using (var measureBitmap = new Bitmap(1, 1, PixelFormat.Format32bppPArgb))
+        {
+            measureBitmap.SetResolution(dpi, dpi);
+            using var measureGraphics = Graphics.FromImage(measureBitmap);
+            contentWidth = MeasureContentWidth(measureGraphics);
+        }
+
+        _layout = OsdLayoutHelper.Compute(scale, contentWidth);
+        this.Size = _layout.FormSize;
+
+        _borderPath?.Dispose();
+        _borderPath = CreateForgedPath(
+            new RectangleF(0.5f, 0.5f, this.Width - 1, this.Height - 1),
+            _layout.Chamfer);
+
+        _innerBorderPath?.Dispose();
+        _innerBorderPath = CreateForgedPath(
+            new RectangleF(2.5f, 2.5f, this.Width - 5, this.Height - 5),
+            Math.Max(0, _layout.Chamfer - 2));
+
+        var bitmap = new Bitmap(this.Width, this.Height, PixelFormat.Format32bppPArgb);
+        bitmap.SetResolution(dpi, dpi);
+        using (var g = Graphics.FromImage(bitmap))
+        {
+            DrawScene(g, bitmap.Width, bitmap.Height);
+        }
+
+        return bitmap;
     }
 
     private int MeasureContentWidth(Graphics g)
@@ -325,19 +375,24 @@ public class OsdForm : Form
     private void RenderScene()
     {
         using var g = Graphics.FromImage(_layerBitmap!);
+        DrawScene(g, this.Width, this.Height);
+    }
+
+    private void DrawScene(Graphics g, int width, int height)
+    {
         g.Clear(Color.Transparent);
         g.SmoothingMode = SmoothingMode.AntiAlias;
         // ClearType needs an opaque backdrop; anti-aliasing blends correctly over alpha.
         g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
 
-        var client = new RectangleF(0, 0, this.Width, this.Height);
+        var client = new RectangleF(0, 0, width, height);
         using var bodyPath = CreateForgedPath(client, _layout.Chamfer);
 
         // 1. Forged-metal base: dark fill densest on the left, falling off to the
         // right. All lightness (sheen, glow) sits on the right so the left keeps
         // its density and the icon side never looks washed out.
         using (var backdrop = new LinearGradientBrush(
-            new PointF(0, 0), new PointF(this.Width, 0),
+            new PointF(0, 0), new PointF(width, 0),
             Color.FromArgb(235, 20, 20, 22),
             Color.FromArgb(30, 20, 20, 22)))
         {
@@ -345,7 +400,7 @@ public class OsdForm : Form
         }
 
         using (var sheen = new LinearGradientBrush(
-            new PointF(0, 0), new PointF(this.Width, 0),
+            new PointF(0, 0), new PointF(width, 0),
             Color.FromArgb(0, 180, 180, 190),
             Color.FromArgb(24, 180, 180, 190)))
         {
@@ -355,7 +410,7 @@ public class OsdForm : Form
         using (var glowPath = CreateForgedPath(client, _layout.Chamfer))
         using (var glow = new PathGradientBrush(glowPath))
         {
-            glow.CenterPoint = new PointF(this.Width * 0.8f, this.Height * 0.85f);
+            glow.CenterPoint = new PointF(width * 0.8f, height * 0.85f);
             glow.CenterColor = Color.FromArgb(18, 150, 150, 160);
             glow.SurroundColors = [Color.FromArgb(0, 150, 150, 160)];
             g.FillPath(glow, bodyPath);
@@ -373,7 +428,7 @@ public class OsdForm : Form
         }
 
         // 3. Corner accents fading in toward the top-right and bottom-left cuts
-        DrawCornerAccents(g);
+        DrawCornerAccents(g, width, height);
 
         // 4. Divider, per-profile icon, two-line text (all fully opaque)
         DrawDivider(g);
@@ -381,7 +436,7 @@ public class OsdForm : Form
         DrawText(g);
     }
 
-    private void DrawCornerAccents(Graphics g)
+    private void DrawCornerAccents(Graphics g, int width, int height)
     {
         float c = _layout.Chamfer;
         float run = _layout.CornerAccentRun;
@@ -391,7 +446,7 @@ public class OsdForm : Form
 
         // Top-right: top edge into the slant into the right edge
         using (var trBrush = new LinearGradientBrush(
-            new PointF(this.Width - c - run, 0), new PointF(this.Width, 0),
+            new PointF(width - c - run, 0), new PointF(width, 0),
             Color.FromArgb(51, _accentColor), _accentColor))
         using (var trPen = new Pen(trBrush, w)
         {
@@ -402,16 +457,16 @@ public class OsdForm : Form
         {
             g.DrawLines(trPen,
             [
-                new PointF(this.Width - c - run, inset),
-                new PointF(this.Width - c, inset),
-                new PointF(this.Width - inset, c),
-                new PointF(this.Width - inset, c + drop)
+                new PointF(width - c - run, inset),
+                new PointF(width - c, inset),
+                new PointF(width - inset, c),
+                new PointF(width - inset, c + drop)
             ]);
         }
 
         // Bottom-left: mirror of the above
         using (var blBrush = new LinearGradientBrush(
-            new PointF(0, this.Height), new PointF(c + run, this.Height),
+            new PointF(0, height), new PointF(c + run, height),
             Color.FromArgb(51, _accentColor), _accentColor))
         using (var blPen = new Pen(blBrush, w)
         {
@@ -422,10 +477,10 @@ public class OsdForm : Form
         {
             g.DrawLines(blPen,
             [
-                new PointF(inset, this.Height - c - drop),
-                new PointF(inset, this.Height - c),
-                new PointF(c, this.Height - inset),
-                new PointF(c + run, this.Height - inset)
+                new PointF(inset, height - c - drop),
+                new PointF(inset, height - c),
+                new PointF(c, height - inset),
+                new PointF(c + run, height - inset)
             ]);
         }
     }
