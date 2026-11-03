@@ -50,6 +50,17 @@ public class ScenarioDashboardTests : IDisposable
     }
 
     [Fact]
+    public void ReloadScenarios_UnchangedPayload_KeepsLoadedObjects()
+    {
+        using var vm = new DashboardViewModel();
+        var selectedBefore = vm.SelectedScenario;
+
+        vm.ReloadScenarios();
+
+        Assert.Same(selectedBefore, vm.SelectedScenario);
+    }
+
+    [Fact]
     public void Create_AddsPersistedProfile_AndSelectsIt()
     {
         using var vm = new DashboardViewModel();

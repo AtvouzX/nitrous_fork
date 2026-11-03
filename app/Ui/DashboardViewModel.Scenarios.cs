@@ -27,6 +27,7 @@ public partial class DashboardViewModel
     private ScenarioProfile? _selectedScenario;
     private bool _scenarioEnabled;
     private string _activeScenarioId = string.Empty;
+    private string? _lastScenarioPayload;
 
     public ObservableCollection<ScenarioProfile> ScenarioProfiles => _scenarioProfiles;
 
@@ -292,6 +293,13 @@ public partial class DashboardViewModel
 
     public void ReloadScenarios()
     {
+        // Cheap no-change skip: SyncSettings fires on every settings save in the
+        // UI process; rebuilding would re-extract app icons and replace the
+        // profile object currently being edited.
+        string payload = CurrentScenarioPayload();
+        if (payload == _lastScenarioPayload && _scenarioProfiles.Count > 0) return;
+        _lastScenarioPayload = payload;
+
         string? keepId = _selectedScenario?.Id;
         var profiles = ScenarioStore.SeedIfAbsent();
 
@@ -307,12 +315,20 @@ public partial class DashboardViewModel
                            ?? ScenarioResolver.FindProfile(_scenarioProfiles, _activeScenarioId)
                            ?? (_scenarioProfiles.Count > 0 ? _scenarioProfiles[0] : null);
         OnPropertyChanged(nameof(IsScenarioLimitReached));
+        _lastScenarioPayload = CurrentScenarioPayload(); // seeding may have written keys
     }
+
+    private static string CurrentScenarioPayload() =>
+        SettingsManager.GetString(ScenarioStore.ProfilesKey, string.Empty)
+        + "|" + ScenarioStore.GetActiveId()
+        + "|" + ScenarioStore.GetSelectedId()
+        + "|" + ScenarioStore.IsEnabled;
 
     public void SaveScenarios()
     {
         string? keepId = _selectedScenario?.Id;
         var saved = ScenarioStore.SaveProfiles(_scenarioProfiles);
+        _lastScenarioPayload = CurrentScenarioPayload();
 
         _scenarioProfiles.Clear();
         foreach (var p in saved) _scenarioProfiles.Add(p);

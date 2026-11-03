@@ -46,6 +46,7 @@ public partial class TrayApplication : ApplicationContext
 
     private string? _appSyncActiveId;
     private readonly List<(string Exe, string ProfileId)> _syncContributors = [];
+    private readonly object _syncStateLock = new(); // hook, debounce/exit timers, settings-sync threads
     private readonly List<Process> _watchedAppProcesses = [];
     private System.Threading.Timer? _appExitTimer;
 
@@ -186,9 +187,15 @@ public partial class TrayApplication : ApplicationContext
 
             AddSyncContributor(exe, matchedProfile.Id);
 
+            bool onlyMatchedContributor;
+            lock (_syncStateLock)
+            {
+                onlyMatchedContributor = _syncContributors.All(c => c.ProfileId == matchedProfile.Id);
+            }
+
             bool alreadyApplied = matchedProfile.Id == ScenarioStore.GetActiveId()
                                   && _appSyncActiveId == matchedProfile.Id
-                                  && _syncContributors.All(c => c.ProfileId == matchedProfile.Id);
+                                  && onlyMatchedContributor;
             if (alreadyApplied)
             {
                 WatchContributors();
@@ -205,8 +212,11 @@ public partial class TrayApplication : ApplicationContext
 
     private void AddSyncContributor(string exeFileName, string profileId)
     {
-        _syncContributors.RemoveAll(c => string.Equals(c.Exe, exeFileName, StringComparison.OrdinalIgnoreCase));
-        _syncContributors.Add((exeFileName, profileId));
+        lock (_syncStateLock)
+        {
+            _syncContributors.RemoveAll(c => string.Equals(c.Exe, exeFileName, StringComparison.OrdinalIgnoreCase));
+            _syncContributors.Add((exeFileName, profileId));
+        }
     }
 
     /// <summary>
@@ -217,20 +227,33 @@ public partial class TrayApplication : ApplicationContext
     /// </summary>
     private async Task RecomputeSyncContributorsAsync()
     {
-        _syncContributors.RemoveAll(c => !IsExeRunning(c.Exe));
         var profiles = ScenarioStore.LoadProfiles();
 
-        if (_syncContributors.Count == 0)
+        List<(string Exe, string ProfileId)> contributors;
+        string? syncActiveId;
+        lock (_syncStateLock)
         {
-            // Discover a linked app that runs but never took focus.
-            var discovered = ScenarioResolver.FindRunningLinkedProfile(profiles, _appSyncActiveId, IsExeRunning);
-            if (discovered != null) AddSyncContributor(discovered.Value.ExeFileName, discovered.Value.Profile.Id);
+            // Rare event path (match/exit only): process checks under the gate are fine.
+            _syncContributors.RemoveAll(c => !IsExeRunning(c.Exe));
+            contributors = [.. _syncContributors];
+            syncActiveId = _appSyncActiveId;
         }
 
-        if (_syncContributors.Count == 0)
+        if (contributors.Count == 0)
+        {
+            // Discover a linked app that runs but never took focus.
+            var discovered = ScenarioResolver.FindRunningLinkedProfile(profiles, syncActiveId, IsExeRunning);
+            if (discovered != null)
+            {
+                AddSyncContributor(discovered.Value.ExeFileName, discovered.Value.Profile.Id);
+                lock (_syncStateLock) { contributors = [.. _syncContributors]; }
+            }
+        }
+
+        if (contributors.Count == 0)
         {
             var exitResolution = ScenarioResolver.ResolveAppExit(
-                profiles, ScenarioStore.GetActiveId(), ScenarioStore.GetSelectedId(), _appSyncActiveId);
+                profiles, ScenarioStore.GetActiveId(), ScenarioStore.GetSelectedId(), syncActiveId);
             ClearSyncState();
             if (exitResolution.Reason == ScenarioSwitchReason.Revert)
             {
@@ -240,7 +263,7 @@ public partial class TrayApplication : ApplicationContext
         }
 
         var contributorProfiles = new List<ScenarioProfile>();
-        foreach (var contributor in _syncContributors)
+        foreach (var contributor in contributors)
         {
             var profile = ScenarioResolver.FindProfile(profiles, contributor.ProfileId);
             if (profile != null && contributorProfiles.All(p => p.Id != profile.Id))
@@ -258,7 +281,7 @@ public partial class TrayApplication : ApplicationContext
         var effective = contributorProfiles.Count == 1
             ? contributorProfiles[0]
             : ScenarioCombiner.Combine(contributorProfiles);
-        _appSyncActiveId = effective.Id;
+        lock (_syncStateLock) { _appSyncActiveId = effective.Id; }
 
         await ApplyScenarioProfileAsync(effective, contributorProfiles.Count == 1 ? "AppSync:Match" : "AppSync:Combine");
         WatchContributors();
@@ -269,7 +292,13 @@ public partial class TrayApplication : ApplicationContext
         ClearProcessWatches();
         _appExitTimer ??= new System.Threading.Timer(OnAppExitCheck, null, Timeout.Infinite, Timeout.Infinite);
 
-        foreach (string exe in _syncContributors.Select(c => c.Exe).Distinct(StringComparer.OrdinalIgnoreCase))
+        List<string> contributorExes;
+        lock (_syncStateLock)
+        {
+            contributorExes = _syncContributors.Select(c => c.Exe).Distinct(StringComparer.OrdinalIgnoreCase).ToList();
+        }
+
+        foreach (string exe in contributorExes)
         {
             string processName = Path.GetFileNameWithoutExtension(exe);
             try
@@ -322,7 +351,9 @@ public partial class TrayApplication : ApplicationContext
     {
         try
         {
-            if (_syncContributors.Count == 0 || !ScenarioStore.IsEnabled) return;
+            bool hasContributors;
+            lock (_syncStateLock) { hasContributors = _syncContributors.Count > 0; }
+            if (!hasContributors || !ScenarioStore.IsEnabled) return;
             await RecomputeSyncContributorsAsync();
         }
         catch (Exception ex)
@@ -351,8 +382,11 @@ public partial class TrayApplication : ApplicationContext
     internal void ClearSyncState()
     {
         ClearProcessWatches();
-        _syncContributors.Clear();
-        _appSyncActiveId = null;
+        lock (_syncStateLock)
+        {
+            _syncContributors.Clear();
+            _appSyncActiveId = null;
+        }
     }
 
     /// <summary>Settings-sync entry: applies only when active profile or apply nonce changed.</summary>
@@ -446,7 +480,7 @@ public partial class TrayApplication : ApplicationContext
             bool isAc = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
             var plan = BuildScenarioApplyPlan(profile, isAc, AcerWmiManager.IsTurboModeSupported());
 
-            string signature = $"{profile.Id}|{plan.EffectiveMode}|{plan.FanAction}|{plan.FanMode}|{plan.CustomFanSpeedCpu}|{plan.CustomFanSpeedGpu}|{plan.FanCurvePreset}|{isAc}";
+            string signature = $"{profile.Id}|{plan.EffectiveMode}|{plan.FanAction}|{plan.FanMode}|{plan.CustomFanSpeedCpu}|{plan.CustomFanSpeedGpu}|{plan.FanCurvePreset}|{isAc}|{profile.BacklightTimeout}|{profile.LightingEffect}|{string.Join(",", profile.ZoneColors)}";
             bool changed = signature != _lastAppliedScenarioSignature;
             _lastAppliedScenarioSignature = signature;
 
