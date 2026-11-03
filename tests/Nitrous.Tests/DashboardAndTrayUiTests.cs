@@ -1121,20 +1121,23 @@ public class DashboardAndTrayUiTests
             Assert.Equal(Visibility.Visible, vm.GpuAlertVisibility);
             Assert.Equal("Battery Notice", vm.GpuAlertTitle);
             Assert.Equal("Tuning deferred on battery.", vm.GpuAlertMessage);
-            Assert.Equal("#FF9F0A", vm.GpuAlertForeground);
-            Assert.Equal("#1C1610", vm.GpuAlertBackground);
+            Assert.Equal("#E85D2A", vm.GpuAlertForeground);
+            Assert.Equal("#08080A", vm.GpuAlertBackground);
+            Assert.Equal("#E85D2A", vm.GpuAlertBorder);
 
             // Success alert
             vm.ShowGpuAlert(DashboardViewModel.GpuAlertLevel.Success, "Applied", "Clocks committed.");
             Assert.Equal(Visibility.Visible, vm.GpuAlertVisibility);
-            Assert.Equal("#34C759", vm.GpuAlertForeground);
-            Assert.Equal("#101C14", vm.GpuAlertBackground);
+            Assert.Equal("#4CAF7D", vm.GpuAlertForeground);
+            Assert.Equal("#08080A", vm.GpuAlertBackground);
+            Assert.Equal("#4CAF7D", vm.GpuAlertBorder);
 
             // Error alert
             vm.ShowGpuAlert(DashboardViewModel.GpuAlertLevel.Error, "Rejected", "Driver rejected offsets.");
             Assert.Equal(Visibility.Visible, vm.GpuAlertVisibility);
-            Assert.Equal("#FF453A", vm.GpuAlertForeground);
-            Assert.Equal("#201214", vm.GpuAlertBackground);
+            Assert.Equal("#E5484D", vm.GpuAlertForeground);
+            Assert.Equal("#08080A", vm.GpuAlertBackground);
+            Assert.Equal("#E5484D", vm.GpuAlertBorder);
 
             // Dismiss via method
             vm.DismissGpuAlert();

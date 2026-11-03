@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Input;
@@ -26,7 +26,7 @@ public partial class DashboardViewModel
         set => SetProperty(ref _applyBtnText, value);
     }
 
-    private string _applyBtnColor = "#FF4500";
+    private string _applyBtnColor = "#D94E1F";
 
     public string ApplyBtnColor
     {
@@ -58,7 +58,7 @@ public partial class DashboardViewModel
         set => SetProperty(ref _gpuAlertMessage, value);
     }
 
-    private string _gpuAlertBackground = "#1C1610";
+    private string _gpuAlertBackground = "#08080A";
 
     public string GpuAlertBackground
     {
@@ -66,7 +66,7 @@ public partial class DashboardViewModel
         set => SetProperty(ref _gpuAlertBackground, value);
     }
 
-    private string _gpuAlertBorder = "#7A4D12";
+    private string _gpuAlertBorder = "#E85D2A";
 
     public string GpuAlertBorder
     {
@@ -74,7 +74,7 @@ public partial class DashboardViewModel
         set => SetProperty(ref _gpuAlertBorder, value);
     }
 
-    private string _gpuAlertForeground = "#FF9F0A";
+    private string _gpuAlertForeground = "#E85D2A";
 
     public string GpuAlertForeground
     {
@@ -134,10 +134,10 @@ public partial class DashboardViewModel
                         "M16.67,4H15V2H9V4H7.33A1.33,1.33 0 0,0 6,5.33V20.67C6,21.4 6.6,22 7.33,22H16.67A1.33,1.33 0 0,0 18,20.67V5.33C18,4.6 17.4,4 16.67,4Z");
 
                     ApplyBtnText = "SAVED";
-                    ApplyBtnColor = "#FF9F0A";
+                    ApplyBtnColor = "#E85D2A";
                     await Task.Delay(2000);
                     ApplyBtnText = "APPLY";
-                    ApplyBtnColor = "#FF4500";
+                    ApplyBtnColor = "#D94E1F";
                     return;
                 }
 
@@ -151,10 +151,10 @@ public partial class DashboardViewModel
                         "M12.3,2A10,10 0 0,0 1.9,14.42C3.12,17.7 6.3,20 10,20A10,10 0 0,0 20,10C20,6.3 17.7,3.12 14.42,1.9C13.72,1.75 13,1.67 12.3,2Z");
 
                     ApplyBtnText = "SAVED";
-                    ApplyBtnColor = "#FF9F0A";
+                    ApplyBtnColor = "#E85D2A";
                     await Task.Delay(2000);
                     ApplyBtnText = "APPLY";
-                    ApplyBtnColor = "#FF4500";
+                    ApplyBtnColor = "#D94E1F";
                     return;
                 }
 
@@ -167,10 +167,10 @@ public partial class DashboardViewModel
                         "Could not establish communication with the discrete GPU via NvAPI. Ensure official NVIDIA graphics drivers are running.");
 
                     ApplyBtnText = "UNAVAILABLE";
-                    ApplyBtnColor = "#FF453A";
+                    ApplyBtnColor = "#E5484D";
                     await Task.Delay(2000);
                     ApplyBtnText = "APPLY";
-                    ApplyBtnColor = "#FF4500";
+                    ApplyBtnColor = "#D94E1F";
                     return;
                 }
 
@@ -185,10 +185,10 @@ public partial class DashboardViewModel
                         $"Clock offsets exceed supported hardware limits (Core: {NvidiaGpuManager.MinCoreOffset} to +{NvidiaGpuManager.MaxCoreOffset} MHz, Memory: {NvidiaGpuManager.MinMemoryOffset} to +{NvidiaGpuManager.MaxMemoryOffset} MHz).");
 
                     ApplyBtnText = "INVALID";
-                    ApplyBtnColor = "#FF453A";
+                    ApplyBtnColor = "#E5484D";
                     await Task.Delay(2000);
                     ApplyBtnText = "APPLY";
-                    ApplyBtnColor = "#FF4500";
+                    ApplyBtnColor = "#D94E1F";
                     return;
                 }
 
@@ -203,7 +203,7 @@ public partial class DashboardViewModel
                         $"Core offset: {(GpuCoreOffset >= 0 ? "+" : "")}{GpuCoreOffset} MHz | Memory offset: {(GpuMemoryOffset >= 0 ? "+" : "")}{GpuMemoryOffset} MHz committed to discrete GPU.");
 
                     ApplyBtnText = "APPLIED!";
-                    ApplyBtnColor = "#34C759";
+                    ApplyBtnColor = "#4CAF7D";
                 }
                 else
                 {
@@ -213,12 +213,12 @@ public partial class DashboardViewModel
                         "The NVIDIA driver rejected the requested clock frequencies. The hardware or driver limits were exceeded. Try lower offset values.");
 
                     ApplyBtnText = "REJECTED";
-                    ApplyBtnColor = "#FF453A";
+                    ApplyBtnColor = "#E5484D";
                 }
 
                 await Task.Delay(2000);
                 ApplyBtnText = "APPLY";
-                ApplyBtnColor = "#FF4500";
+                ApplyBtnColor = "#D94E1F";
             }
             catch (Exception ex)
             {
@@ -229,10 +229,10 @@ public partial class DashboardViewModel
                     $"An unexpected error occurred while applying clock offsets: {ex.Message}");
 
                 ApplyBtnText = "ERROR";
-                ApplyBtnColor = "#FF453A";
+                ApplyBtnColor = "#E5484D";
                 await Task.Delay(2000);
                 ApplyBtnText = "APPLY";
-                ApplyBtnColor = "#FF4500";
+                ApplyBtnColor = "#D94E1F";
             }
         });
 
@@ -272,31 +272,31 @@ public partial class DashboardViewModel
         switch (level)
         {
             case GpuAlertLevel.Success:
-                GpuAlertBackground = "#101C14";
-                GpuAlertBorder = "#2A7A3B";
-                GpuAlertForeground = "#34C759";
+                GpuAlertBackground = "#08080A";
+                GpuAlertBorder = "#4CAF7D";
+                GpuAlertForeground = "#4CAF7D";
                 GpuAlertIcon = customIcon ??
                                "M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M10,17L5,12L6.41,10.59L10,14.17L17.59,6.58L19,8L10,17Z";
                 break;
             case GpuAlertLevel.Warning:
-                GpuAlertBackground = "#1C1610";
-                GpuAlertBorder = "#7A4D12";
-                GpuAlertForeground = "#FF9F0A";
+                GpuAlertBackground = "#08080A";
+                GpuAlertBorder = "#E85D2A";
+                GpuAlertForeground = "#E85D2A";
                 GpuAlertIcon = customIcon ??
                                "M12,2L1,21H23L12,2M12,6L19.53,19H4.47L12,6M11,10V14H13V10H11M11,16V18H13V16H11Z";
                 break;
             case GpuAlertLevel.Error:
-                GpuAlertBackground = "#201214";
-                GpuAlertBorder = "#7A2024";
-                GpuAlertForeground = "#FF453A";
+                GpuAlertBackground = "#08080A";
+                GpuAlertBorder = "#E5484D";
+                GpuAlertForeground = "#E5484D";
                 GpuAlertIcon = customIcon ??
                                "M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M13,17H11V15H13V17M13,13H11V7H13V13Z";
                 break;
             case GpuAlertLevel.Info:
             default:
-                GpuAlertBackground = "#101620";
-                GpuAlertBorder = "#1D4273";
-                GpuAlertForeground = "#0A84FF";
+                GpuAlertBackground = "#08080A";
+                GpuAlertBorder = "#B8B8C2";
+                GpuAlertForeground = "#B8B8C2";
                 GpuAlertIcon = customIcon ??
                                "M12,2A10,10 0 1,0 22,12A10,10 0 0,0 12,2M13,17H11V11H13V17M13,9H11V7H13V9Z";
                 break;
@@ -310,3 +310,4 @@ public partial class DashboardViewModel
         GpuAlertVisibility = Visibility.Collapsed;
     }
 }
+

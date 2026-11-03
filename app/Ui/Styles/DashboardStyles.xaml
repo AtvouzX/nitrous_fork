@@ -57,6 +57,13 @@
 	<Color x:Key="Ember400Color">#E85D2A</Color>
 	<SolidColorBrush x:Key="Ember400Brush" Color="{StaticResource Ember400Color}" />
 
+	<!-- Alert Severity (muted forge tones on steel; no neon OS palette) -->
+	<Color x:Key="AlertSuccessColor">#4CAF7D</Color>
+	<SolidColorBrush x:Key="AlertSuccessBrush" Color="{StaticResource AlertSuccessColor}" />
+
+	<Color x:Key="AlertDangerColor">#E5484D</Color>
+	<SolidColorBrush x:Key="AlertDangerBrush" Color="{StaticResource AlertDangerColor}" />
+
 	<!-- Functional Aliases -->
 	<SolidColorBrush x:Key="BrandAccentBrush" Color="{StaticResource Ember500Color}" />
 	<SolidColorBrush x:Key="BrandAccentGlowBrush" Color="{StaticResource Ember400Color}" />
