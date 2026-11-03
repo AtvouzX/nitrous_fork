@@ -11,7 +11,7 @@
 	</UserControl.Resources>
 	<StackPanel Margin="12,8,12,0">
 		<!-- DASHBOARD GRAPH & TELEMETRY -->
-		<Grid Margin="0,0,0,10" Height="172">
+		<Grid x:Name="TelemetryGrid" Margin="0,0,0,10" Height="172">
 			<Grid.ColumnDefinitions>
 				<ColumnDefinition Width="*" />
 				<ColumnDefinition Width="8" />

@@ -37,9 +37,19 @@ public partial class DashboardPageView : UserControl
         _lcdOverdriveLoading = false;
     }
 
+    private const double TelemetryHeightNormal = 172;
+    private const double TelemetryHeightCompact = 136; // frees the overdrive row height (~36px)
+
     private void SetLcdOverdriveVisible(bool visible)
     {
         LcdOverdriveRow.Visibility = visible ? Visibility.Visible : Visibility.Collapsed;
+
+        // The page has no scroll region and only ~9px spare at window height;
+        // the overdrive row would push Refresh/Fans past the bottom edge.
+        if (TelemetryGrid != null)
+        {
+            TelemetryGrid.Height = visible ? TelemetryHeightCompact : TelemetryHeightNormal;
+        }
     }
 
     private void SetLcdOverdriveToggle(bool on)

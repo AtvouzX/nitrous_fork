@@ -113,6 +113,21 @@ public class UsbChargingAndOverdriveTests : IDisposable
     }
 
     [Fact]
+    public void DashboardPageView_WhenOverdriveSupported_ShrinksTelemetryToFitPage()
+    {
+        RunInSta(() =>
+        {
+            AcerWmiManager.SetGamingProfileReaderForTesting(() => 0x10UL | (0x01UL << 48));
+
+            var page = new DashboardPageView();
+            var telemetry = (FrameworkElement)page.FindName("TelemetryGrid");
+
+            Assert.NotNull(telemetry);
+            Assert.Equal(136.0, telemetry.Height);
+        });
+    }
+
+    [Fact]
     public void DashboardPageView_WhenOverdriveSupportedAndOn_ShowsRowAndChecksToggle()
     {
         RunInSta(() =>

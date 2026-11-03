@@ -611,6 +611,29 @@ public class DashboardAndTrayUiTests
     }
 
     [Fact]
+    public void DashboardPage_WhenLcdOverdriveVisible_FansRailStaysInsideViewport()
+    {
+        RunInSta(() =>
+        {
+            var page = new DashboardPageView();
+            var lcdRow = page.FindName("LcdOverdriveRow") as FrameworkElement;
+            var rail = page.FindName("FansRail") as FrameworkElement;
+            Assert.NotNull(lcdRow);
+            Assert.NotNull(rail);
+            lcdRow.Visibility = Visibility.Visible;
+
+            // Dashboard window is 580 high: 40 title + 46 nav leaves 494 for the page.
+            page.Measure(new System.Windows.Size(375, 494));
+            page.Arrange(new System.Windows.Rect(0, 0, 375, 494));
+            page.UpdateLayout();
+
+            var railBottom = rail.TranslatePoint(new System.Windows.Point(0, rail.ActualHeight), page);
+            Assert.True(railBottom.Y <= 495,
+                $"Fans rail bottom at {railBottom.Y:0}px exceeds the 494px page viewport (clipped).");
+        });
+    }
+
+    [Fact]
     public void PowerRail_CheckedButton_KeepsSurroundingDividers()
     {
         RunInSta(() =>
