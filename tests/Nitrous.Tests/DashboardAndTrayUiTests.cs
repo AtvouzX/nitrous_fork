@@ -551,17 +551,22 @@ public class DashboardAndTrayUiTests
                     $"Found {violations.Count} tooltip policy violations:\n" + string.Join("\n", violations));
 
                 // Non-obvious interaction points that must retain descriptive tooltips.
+                Assert.NotNull(window.GpuPage);
+                Assert.NotNull(window.DashPage);
+                var gpuPage = window.GpuPage;
+                var dashPage = window.DashPage;
+
                 var mandatory = new (string Label, object? Tooltip)[]
                 {
-                    ("GPU core slider (clamped range)", window.GpuPage.GpuCoreSlider.ToolTip),
-                    ("GPU memory slider (clamped range)", window.GpuPage.GpuMemorySlider.ToolTip),
-                    ("Power QUIET (AC/DC caps)", window.DashPage.BtnPowerQuiet.ToolTip),
-                    ("Power BALANCED (AC/DC caps)", window.DashPage.BtnPowerBal.ToolTip),
-                    ("Power PERFORMANCE (AC/DC boost difference)", window.DashPage.BtnPowerPerf.ToolTip),
-                    ("Power TURBO (AC-only full boost)", window.DashPage.BtnPowerTurbo.ToolTip),
-                    ("Refresh AUTO (AC/DC rates)", window.DashPage.BtnRefreshAuto.ToolTip),
-                    ("Fan MANUAL (curve behavior)", window.DashPage.BtnFanCustom.ToolTip),
-                    ("Fan CURVE toggle", window.DashPage.BtnCurveToggle.ToolTip),
+                    ("GPU core slider (clamped range)", gpuPage.GpuCoreSlider.ToolTip),
+                    ("GPU memory slider (clamped range)", gpuPage.GpuMemorySlider.ToolTip),
+                    ("Power QUIET (AC/DC caps)", dashPage.BtnPowerQuiet.ToolTip),
+                    ("Power BALANCED (AC/DC caps)", dashPage.BtnPowerBal.ToolTip),
+                    ("Power PERFORMANCE (AC/DC boost difference)", dashPage.BtnPowerPerf.ToolTip),
+                    ("Power TURBO (AC-only full boost)", dashPage.BtnPowerTurbo.ToolTip),
+                    ("Refresh AUTO (AC/DC rates)", dashPage.BtnRefreshAuto.ToolTip),
+                    ("Fan MANUAL (curve behavior)", dashPage.BtnFanCustom.ToolTip),
+                    ("Fan CURVE toggle", dashPage.BtnCurveToggle.ToolTip),
                 };
 
                 foreach (var (label, tooltip) in mandatory)

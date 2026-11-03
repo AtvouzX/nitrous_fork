@@ -38,7 +38,7 @@ public class ChamferGeometryConverterTests
     {
         var converter = new ChamferGeometryConverter();
         Assert.Equal(Geometry.Empty, converter.Convert(null, typeof(object), null, CultureInfo.InvariantCulture));
-        Assert.Equal(Geometry.Empty, converter.Convert(new object?[] { "not-a-double", 100.0 }, typeof(object), null, CultureInfo.InvariantCulture));
+        Assert.Equal(Geometry.Empty, converter.Convert(new object[] { "not-a-double", 100.0 }, typeof(object), null, CultureInfo.InvariantCulture));
         Assert.Equal(Geometry.Empty, converter.Convert(new object[] { 0.0, 0.0 }, typeof(object), null, CultureInfo.InvariantCulture));
     }
 
