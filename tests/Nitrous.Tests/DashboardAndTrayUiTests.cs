@@ -469,24 +469,12 @@ public class DashboardAndTrayUiTests
                 var vm = (DashboardViewModel)window.DataContext;
                 Assert.True(vm.IsPollingActive, "Polling should initially be active.");
 
-                // Show window so HWND is created and OnStateChanged fires on minimization
-                window.Show();
-                System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
-                window.WindowState = WindowState.Minimized;
-                for (int i = 0; i < 200 && vm.IsPollingActive; i++)
-                {
-                    System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
-                    System.Threading.Thread.Sleep(10);
-                }
+                // Drive the state handler directly: real WindowState changes need a
+                // shown HWND, which is environment-fragile in the test host.
+                window.HandleWindowStateChanged(WindowState.Minimized);
                 Assert.False(vm.IsPollingActive, "Polling should be paused on minimization.");
 
-                // Restoring to Normal should resume polling
-                window.WindowState = WindowState.Normal;
-                for (int i = 0; i < 200 && !vm.IsPollingActive; i++)
-                {
-                    System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
-                    System.Threading.Thread.Sleep(10);
-                }
+                window.HandleWindowStateChanged(WindowState.Normal);
                 Assert.True(vm.IsPollingActive, "Polling should resume on restoration.");
             }
             finally
@@ -504,17 +492,21 @@ public class DashboardAndTrayUiTests
             var window = new NitrousDashboard();
             try
             {
-                window.Show();
+                // Materialize templates without showing the window: measure/arrange
+                // the content root directly. Shown HWNDs are environment-fragile in
+                // the test host and previously left the tree unmaterialized.
                 window.ApplyTemplate();
+                var root = window.WindowRoot;
+                root.Measure(new System.Windows.Size(375, 580));
+                root.Arrange(new System.Windows.Rect(0, 0, 375, 580));
+                root.UpdateLayout();
 
-                // Let child templates materialize before walking the tree.
-                // Under parallel load the visual tree may lag Show() by a few frames.
-                for (int i = 0; i < 200; i++)
+                for (int i = 0; i < 50; i++)
                 {
                     System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                     System.Threading.Thread.Sleep(10);
                     if (window.GpuPage?.GpuCoreSlider != null && window.DashPage?.BtnPowerQuiet != null
-                        && FindCloseButtonByTooltip(window) != null)
+                        && FindCloseButtonByTooltip(root) != null)
                         break;
                 }
 
@@ -552,7 +544,7 @@ public class DashboardAndTrayUiTests
                     }
                 }
 
-                CheckElement(window);
+                CheckElement(root);
 
                 Assert.True(
                     violations.Count == 0,
@@ -577,7 +569,7 @@ public class DashboardAndTrayUiTests
                     Assert.False(string.IsNullOrWhiteSpace(tooltip?.ToString()), $"Missing mandatory tooltip: {label}");
                 }
 
-                var closeButton = FindVisualChildByName<Button>(window, "CloseWindowButton") ?? FindCloseButtonByTooltip(window);
+                var closeButton = FindVisualChildByName<Button>(root, "CloseWindowButton") ?? FindCloseButtonByTooltip(root);
                 Assert.True(closeButton != null && !string.IsNullOrWhiteSpace(ToolTipService.GetToolTip(closeButton)?.ToString()),
                     "Close button must explain the tray side effect.");
             }

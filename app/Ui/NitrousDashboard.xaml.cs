@@ -356,12 +356,18 @@ public partial class NitrousDashboard : Window
     protected override void OnStateChanged(EventArgs e)
     {
         base.OnStateChanged(e);
-        if (this.WindowState == WindowState.Minimized)
+        HandleWindowStateChanged(this.WindowState);
+    }
+
+    /// <summary>Test seam: state reaction without needing a shown HWND.</summary>
+    internal void HandleWindowStateChanged(WindowState state)
+    {
+        if (state == WindowState.Minimized)
         {
             (DataContext as DashboardViewModel)?.PausePolling();
             Nitrous.Helpers.MemoryHelper.TrimWorkingSet();
         }
-        else if (this.WindowState == WindowState.Normal)
+        else if (state == WindowState.Normal)
         {
             (DataContext as DashboardViewModel)?.ResumePolling();
         }
