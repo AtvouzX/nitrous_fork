@@ -477,14 +477,7 @@ public partial class TrayApplication : ApplicationContext
     public void TriggerProfileOsd(PowerProfile profile)
     {
         LastOsdProfile = profile;
-        Color osdColor = profile switch
-        {
-            PowerProfile.Quiet => Color.FromArgb(52, 199, 89), // Green
-            PowerProfile.Balanced => Color.FromArgb(10, 132, 255), // Blue
-            PowerProfile.Performance => Color.FromArgb(255, 159, 10), // Orange
-            PowerProfile.Turbo => Color.FromArgb(255, 69, 58), // Red
-            _ => Color.White
-        };
+        Color osdColor = OsdThemeHelper.GetAccent(profile);
 
         _osd.ShowProfile($"{profile} MODE", osdColor, profile);
     }

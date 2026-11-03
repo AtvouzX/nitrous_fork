@@ -1,39 +1,44 @@
 using System;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.Drawing.Imaging;
+using System.IO;
 using System.Windows.Forms;
 using Nitrous.Enums;
 using Nitrous.Helpers;
+using Nitrous.Interop;
 using Nitrous.Managers;
 
 namespace Nitrous.Ui;
 
+/// <summary>
+/// Forged-metal OSD rendered through a layered window (<c>UpdateLayeredWindow</c>) so the
+/// background can stay translucent (denser on the left, fading out to the right) while the
+/// icon, divider, borders and text are always fully opaque. Runs its own UI-thread timers.
+/// </summary>
 public class OsdForm : Form
 {
     private readonly System.Windows.Forms.Timer _fadeTimer;
     private readonly System.Windows.Forms.Timer _holdTimer;
-    private string _profileText = "PROFILE";
-    private Color _accentColor = Color.White;
+    private string _profileText = "BALANCED";
+    private Color _accentColor = OsdThemeHelper.GetAccent(PowerProfile.Balanced);
     private PowerProfile _activeProfile = PowerProfile.Balanced;
 
-    // Set peak opacity to 85% for a subtle translucent effect
-    private double _opacity = 0.85;
+    // Steady-state layer alpha; only the fade-out animation lowers it.
+    private byte _fadeAlpha = 255;
 
-    // Palette mirrors DashboardStyles.xaml tokens: Steel950 fill, BorderCard border, Steel100 text.
-    private static readonly Color SurfaceColor = Color.FromArgb(8, 8, 10);
-    private static readonly Color BorderColor = Color.FromArgb(56, 56, 66);
-    private static readonly Color TextColor = Color.FromArgb(237, 237, 239);
-    private static readonly string MonoFontFamily = ResolveMonoFontFamily();
-
-    // GDI+ resources are cached: the fade timer repaints ~30 times per display, so per-paint
-    // allocation (and an undisposed StringFormat) would churn native handles every tick.
-    private readonly Font _font;
-    private readonly SolidBrush _textBrush;
-    private readonly Pen _borderPen;
+    private readonly Font _titleFont;
+    private readonly Font _subtitleFont;
+    private readonly SolidBrush _titleBrush;
+    private readonly SolidBrush _subtitleBrush;
+    private readonly SolidBrush _shadowBrush;
+    private readonly Pen _outerBorderPen;
+    private readonly Pen _innerBorderPen;
     private readonly StringFormat _textFormat;
     private SolidBrush _accentBrush;
     private GraphicsPath? _borderPath;
-    private Region? _region;
+    private GraphicsPath? _innerBorderPath;
+    private Bitmap? _layerBitmap;
 
     // Rebuilt from the monitor DPI once the handle exists (DeviceDpi reads 96 before that).
     private OsdLayout _layout = OsdLayoutHelper.Compute(1.0);
@@ -49,18 +54,25 @@ public class OsdForm : Form
         this.DoubleBuffered = true;
 
         this.FormBorderStyle = FormBorderStyle.None;
-        this.BackColor = SurfaceColor;
+        this.BackColor = OsdThemeHelper.Surface;
         this.TopMost = true;
         this.ShowInTaskbar = false;
         this.StartPosition = FormStartPosition.Manual;
 
-        _font = new Font(MonoFontFamily, 14, FontStyle.Bold);
-        _textBrush = new SolidBrush(TextColor);
-        _borderPen = new Pen(BorderColor, 1);
-        _textFormat = new StringFormat
+        // Nitrous type: JetBrains Mono stack for the profile name, Inter stack for the eyebrow.
+        _titleFont = new Font(ResolveFontFamily(["JetBrains Mono", "Cascadia Mono", "Cascadia Code", "Consolas"], FontFamily.GenericMonospace.Name), 20, FontStyle.Bold);
+        _subtitleFont = new Font(ResolveFontFamily(["Inter", "Segoe UI Variable Text", "Segoe UI"], FontFamily.GenericSansSerif.Name), 9, FontStyle.Bold);
+        _titleBrush = new SolidBrush(OsdThemeHelper.TitleText);
+        _subtitleBrush = new SolidBrush(OsdThemeHelper.SubtitleText);
+        _shadowBrush = new SolidBrush(Color.Black);
+        _outerBorderPen = new Pen(OsdThemeHelper.OuterBorder, 1);
+        _innerBorderPen = new Pen(OsdThemeHelper.InnerBorder, 1);
+        _textFormat = new StringFormat(StringFormat.GenericTypographic)
         {
-            Alignment = StringAlignment.Center,
-            LineAlignment = StringAlignment.Center
+            Alignment = StringAlignment.Near,
+            LineAlignment = StringAlignment.Near,
+            Trimming = StringTrimming.EllipsisCharacter,
+            FormatFlags = StringFormatFlags.NoWrap
         };
         _accentBrush = new SolidBrush(_accentColor);
 
@@ -99,38 +111,60 @@ public class OsdForm : Form
             return;
         }
 
-        _profileText = profileName.ToUpper();
-        if (_accentColor != color)
+        // Accent always comes from the theme so tray and OSD agree; the color
+        // parameter stays for call-site compatibility.
+        _profileText = StripModeSuffix(profileName).ToUpperInvariant();
+        if (string.IsNullOrWhiteSpace(_profileText))
         {
-            _accentColor = color;
+            _profileText = profile.ToString().ToUpperInvariant();
+        }
+
+        Color accent = OsdThemeHelper.GetAccent(profile);
+        if (_accentColor != accent)
+        {
+            _accentColor = accent;
             _accentBrush.Dispose();
-            _accentBrush = new SolidBrush(color);
+            _accentBrush = new SolidBrush(accent);
         }
 
         _activeProfile = profile;
+        _fadeAlpha = 255;
 
-        // Reset to the subtle peak opacity
-        _opacity = 0.85;
-        this.Opacity = _opacity;
+        if (this.IsHandleCreated)
+        {
+            ApplyLayout();
+        }
 
         this.Show();
-        this.Refresh();
+        PushLayered();
 
         _fadeTimer.Stop();
         _holdTimer.Stop();
         _holdTimer.Start();
     }
 
+    private static string StripModeSuffix(string name)
+    {
+        const string suffix = " MODE";
+        if (name.EndsWith(suffix, StringComparison.OrdinalIgnoreCase))
+        {
+            return name[..^suffix.Length];
+        }
+
+        return name;
+    }
 
     private void FadeTimer_Tick(object? sender, EventArgs e)
     {
-        _opacity -= 0.05;
-        this.Opacity = _opacity;
-        if (_opacity <= 0)
+        _fadeAlpha = (byte)Math.Max(0, _fadeAlpha - 17);
+        if (_fadeAlpha == 0)
         {
             _fadeTimer.Stop();
             this.Hide();
+            return;
         }
+
+        PushLayered();
     }
 
     protected override void Dispose(bool disposing)
@@ -142,12 +176,17 @@ public class OsdForm : Form
             _holdTimer.Dispose();
             _fadeTimer.Dispose();
 
-            _font.Dispose();
-            _textBrush.Dispose();
-            _borderPen.Dispose();
+            _titleFont.Dispose();
+            _subtitleFont.Dispose();
+            _titleBrush.Dispose();
+            _subtitleBrush.Dispose();
+            _shadowBrush.Dispose();
+            _outerBorderPen.Dispose();
+            _innerBorderPen.Dispose();
             _textFormat.Dispose();
             _borderPath?.Dispose();
-            _region?.Dispose();
+            _innerBorderPath?.Dispose();
+            _layerBitmap?.Dispose();
             _accentBrush.Dispose();
         }
 
@@ -163,66 +202,306 @@ public class OsdForm : Form
     /// <summary>
     /// Sizes and positions the overlay for the current monitor DPI. Runs on handle creation because
     /// DeviceDpi reads 96 until then; the OSD is a fixed-size popup, so no live DPI re-layout.
+    /// Width follows the measured two-line text, clamped to the 250-600px range.
     /// </summary>
     private void ApplyLayout()
     {
-        _layout = OsdLayoutHelper.Compute(this.DeviceDpi / 96.0);
+        double scale = this.DeviceDpi / 96.0;
+
+        int contentWidth = 0;
+        using (var g = this.CreateGraphics())
+        {
+            contentWidth = MeasureContentWidth(g);
+        }
+
+        _layout = OsdLayoutHelper.Compute(scale, contentWidth);
         this.Size = _layout.FormSize;
 
         var screen = Screen.PrimaryScreen?.WorkingArea ?? new Rectangle(0, 0, 1920, 1080);
         this.Location = new Point((screen.Width - this.Width) / 2, screen.Height - _layout.BottomMargin);
 
         _borderPath?.Dispose();
-        _borderPath = CreateChamferPath(
+        _borderPath = CreateForgedPath(
             new RectangleF(0.5f, 0.5f, this.Width - 1, this.Height - 1),
             _layout.Chamfer);
 
-        // Clip the form to the chamfered silhouette (sharp top-left/bottom-right, cut top-right/bottom-left)
-        using var regionPath = CreateChamferPath(new RectangleF(0, 0, this.Width, this.Height), _layout.Chamfer);
-        var region = new Region(regionPath);
-        _region?.Dispose();
-        _region = region;
-        this.Region = region;
+        _innerBorderPath?.Dispose();
+        _innerBorderPath = CreateForgedPath(
+            new RectangleF(2.5f, 2.5f, this.Width - 5, this.Height - 5),
+            Math.Max(0, _layout.Chamfer - 2));
+
+        _layerBitmap?.Dispose();
+        _layerBitmap = null;
+    }
+
+    private int MeasureContentWidth(Graphics g)
+    {
+        float subtitle = g.MeasureString("NITROUS", _subtitleFont, PointF.Empty, _textFormat).Width;
+        float title = g.MeasureString(_profileText, _titleFont, PointF.Empty, _textFormat).Width;
+        return (int)Math.Ceiling(Math.Max(subtitle, title));
     }
 
     protected override void OnPaint(PaintEventArgs e)
     {
-        e.Graphics.Clear(SurfaceColor);
-        e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-        e.Graphics.TextRenderingHint = System.Drawing.Text.TextRenderingHint.ClearTypeGridFit;
-
-        // 1. Accent bar (form region trims its bottom-left chamfer)
-        e.Graphics.FillRectangle(_accentBrush, 0, 0, _layout.AccentBarWidth, this.Height);
-
-        // 2. Draw chamfered border tracing the form's clipped silhouette
-        if (_borderPath != null)
-        {
-            e.Graphics.DrawPath(_borderPen, _borderPath);
-        }
-
-        // 3. Draw Speedometer Icon
-        DrawSpeedometerIcon(e.Graphics, _layout.IconBounds, _accentColor, _activeProfile);
-
-        // 4. Draw Text
-        e.Graphics.DrawString(_profileText, _font, _textBrush, _layout.TextRect, _textFormat);
+        // Layered windows ignore screen-DC painting; push the pre-rendered bitmap instead.
+        PushLayered();
     }
 
-    // Builds the GDI+ path from the shared chamfer polygon so the region and border always agree.
-    private static GraphicsPath CreateChamferPath(RectangleF rect, float chamfer)
+    private void EnsureLayerBitmap()
+    {
+        if (_layerBitmap == null || _layerBitmap.Width != this.Width || _layerBitmap.Height != this.Height)
+        {
+            _layerBitmap?.Dispose();
+            // PArgb: UpdateLayeredWindow expects premultiplied alpha; plain Argb lets
+            // dark RGB leak through low-alpha pixels and the faded side looks dark.
+            _layerBitmap = new Bitmap(this.Width, this.Height, PixelFormat.Format32bppPArgb);
+        }
+    }
+
+    private void PushLayered()
+    {
+        if (this.IsDisposed || !this.IsHandleCreated) return;
+        if (this.Width <= 0 || this.Height <= 0) return;
+
+        EnsureLayerBitmap();
+        RenderScene();
+
+        var topLeft = new User32.POINT { X = this.Left, Y = this.Top };
+        var size = new User32.SIZE { cx = this.Width, cy = this.Height };
+        var src = new User32.POINT { X = 0, Y = 0 };
+        var blend = new User32.BLENDFUNCTION
+        {
+            BlendOp = User32.AC_SRC_OVER,
+            BlendFlags = 0,
+            SourceConstantAlpha = _fadeAlpha,
+            AlphaFormat = User32.AC_SRC_ALPHA
+        };
+
+        IntPtr screenDc = User32.GetDC(IntPtr.Zero);
+        if (screenDc == IntPtr.Zero) return;
+
+        try
+        {
+            IntPtr memDc = User32.CreateCompatibleDC(screenDc);
+            if (memDc == IntPtr.Zero) return;
+
+            try
+            {
+                IntPtr hBitmap = _layerBitmap!.GetHbitmap(Color.FromArgb(0));
+                try
+                {
+                    IntPtr oldBitmap = User32.SelectObject(memDc, hBitmap);
+                    try
+                    {
+                        if (!User32.UpdateLayeredWindow(this.Handle, screenDc, ref topLeft, ref size, memDc, ref src, 0, ref blend, User32.ULW_ALPHA))
+                        {
+                            if (LogManager.IsDebugEnabled)
+                            {
+                                LogManager.Debug($"OSD layer push failed: {System.Runtime.InteropServices.Marshal.GetLastWin32Error()}", "OSD");
+                            }
+                        }
+                    }
+                    finally
+                    {
+                        User32.SelectObject(memDc, oldBitmap);
+                    }
+                }
+                finally
+                {
+                    User32.DeleteObject(hBitmap);
+                }
+            }
+            finally
+            {
+                User32.DeleteDC(memDc);
+            }
+        }
+        finally
+        {
+            User32.ReleaseDC(IntPtr.Zero, screenDc);
+        }
+    }
+
+    private void RenderScene()
+    {
+        using var g = Graphics.FromImage(_layerBitmap!);
+        g.Clear(Color.Transparent);
+        g.SmoothingMode = SmoothingMode.AntiAlias;
+        // ClearType needs an opaque backdrop; anti-aliasing blends correctly over alpha.
+        g.TextRenderingHint = System.Drawing.Text.TextRenderingHint.AntiAlias;
+
+        var client = new RectangleF(0, 0, this.Width, this.Height);
+        using var bodyPath = CreateForgedPath(client, _layout.Chamfer);
+
+        // 1. Forged-metal base: dark fill densest on the left, falling off to the
+        // right. All lightness (sheen, glow) sits on the right so the left keeps
+        // its density and the icon side never looks washed out.
+        using (var backdrop = new LinearGradientBrush(
+            new PointF(0, 0), new PointF(this.Width, 0),
+            Color.FromArgb(235, 20, 20, 22),
+            Color.FromArgb(30, 20, 20, 22)))
+        {
+            g.FillPath(backdrop, bodyPath);
+        }
+
+        using (var sheen = new LinearGradientBrush(
+            new PointF(0, 0), new PointF(this.Width, 0),
+            Color.FromArgb(0, 180, 180, 190),
+            Color.FromArgb(24, 180, 180, 190)))
+        {
+            g.FillPath(sheen, bodyPath);
+        }
+
+        using (var glowPath = CreateForgedPath(client, _layout.Chamfer))
+        using (var glow = new PathGradientBrush(glowPath))
+        {
+            glow.CenterPoint = new PointF(this.Width * 0.8f, this.Height * 0.85f);
+            glow.CenterColor = Color.FromArgb(18, 150, 150, 160);
+            glow.SurroundColors = [Color.FromArgb(0, 150, 150, 160)];
+            g.FillPath(glow, bodyPath);
+        }
+
+        // 2. Double border tracing the clipped silhouette (fully opaque)
+        if (_borderPath != null)
+        {
+            g.DrawPath(_outerBorderPen, _borderPath);
+        }
+
+        if (_innerBorderPath != null)
+        {
+            g.DrawPath(_innerBorderPen, _innerBorderPath);
+        }
+
+        // 3. Corner accents fading in toward the top-right and bottom-left cuts
+        DrawCornerAccents(g);
+
+        // 4. Divider, per-profile icon, two-line text (all fully opaque)
+        DrawDivider(g);
+        DrawProfileIcon(g, _layout.IconBounds, _accentColor, _activeProfile);
+        DrawText(g);
+    }
+
+    private void DrawCornerAccents(Graphics g)
+    {
+        float c = _layout.Chamfer;
+        float run = _layout.CornerAccentRun;
+        float drop = _layout.CornerAccentDrop;
+        float inset = 2.5f;
+        float w = 4f;
+
+        // Top-right: top edge into the slant into the right edge
+        using (var trBrush = new LinearGradientBrush(
+            new PointF(this.Width - c - run, 0), new PointF(this.Width, 0),
+            Color.FromArgb(51, _accentColor), _accentColor))
+        using (var trPen = new Pen(trBrush, w)
+        {
+            LineJoin = LineJoin.Round,
+            StartCap = LineCap.Round,
+            EndCap = LineCap.Round
+        })
+        {
+            g.DrawLines(trPen,
+            [
+                new PointF(this.Width - c - run, inset),
+                new PointF(this.Width - c, inset),
+                new PointF(this.Width - inset, c),
+                new PointF(this.Width - inset, c + drop)
+            ]);
+        }
+
+        // Bottom-left: mirror of the above
+        using (var blBrush = new LinearGradientBrush(
+            new PointF(0, this.Height), new PointF(c + run, this.Height),
+            Color.FromArgb(51, _accentColor), _accentColor))
+        using (var blPen = new Pen(blBrush, w)
+        {
+            LineJoin = LineJoin.Round,
+            StartCap = LineCap.Round,
+            EndCap = LineCap.Round
+        })
+        {
+            g.DrawLines(blPen,
+            [
+                new PointF(inset, this.Height - c - drop),
+                new PointF(inset, this.Height - c),
+                new PointF(c, this.Height - inset),
+                new PointF(c + run, this.Height - inset)
+            ]);
+        }
+    }
+
+    private void DrawDivider(Graphics g)
+    {
+        var r = _layout.DividerRect;
+        if (r.Width <= 0 || r.Height <= 0) return;
+
+        using var brush = new LinearGradientBrush(
+            new PointF(0, r.Top), new PointF(0, r.Bottom),
+            Color.FromArgb(0, 255, 255, 255),
+            Color.FromArgb(0, 255, 255, 255));
+        var blend = new ColorBlend
+        {
+            Positions = [0f, 0.2f, 0.8f, 1f],
+            Colors =
+            [
+                Color.FromArgb(0, 255, 255, 255),
+                Color.FromArgb(230, 255, 255, 255),
+                Color.FromArgb(230, 255, 255, 255),
+                Color.FromArgb(0, 255, 255, 255)
+            ]
+        };
+        brush.InterpolationColors = blend;
+        g.FillRectangle(brush, r);
+    }
+
+    private void DrawText(Graphics g)
+    {
+        var r = _layout.TextRect;
+        if (r.Width <= 0) return;
+
+        float subHeight = _subtitleFont.GetHeight(g);
+        float titleHeight = _titleFont.GetHeight(g);
+        float total = subHeight + _layout.ContentGap + titleHeight;
+        float y = (this.Height - total) / 2f;
+
+        var subRect = new RectangleF(r.X, y, r.Width, subHeight);
+        var titleRect = new RectangleF(r.X, y + subHeight + _layout.ContentGap, r.Width, titleHeight);
+        var subShadow = subRect; subShadow.Offset(1, 1);
+        var titleShadow = titleRect; titleShadow.Offset(1, 1);
+
+        g.DrawString("NITROUS", _subtitleFont, _shadowBrush, subShadow, _textFormat);
+        g.DrawString("NITROUS", _subtitleFont, _subtitleBrush, subRect, _textFormat);
+        g.DrawString(_profileText, _titleFont, _shadowBrush, titleShadow, _textFormat);
+        g.DrawString(_profileText, _titleFont, _titleBrush, titleRect, _textFormat);
+    }
+
+    // Builds the 8-point forged path (all four corners cut) from the reference clip-path.
+    private static GraphicsPath CreateForgedPath(RectangleF rect, float chamfer)
     {
         var path = new GraphicsPath();
-        var points = GdiChamferGeometryHelper.CreateChamferPoints(rect, chamfer);
-        if (points.Length > 0)
+        if (rect.Width <= 0 || rect.Height <= 0)
         {
-            path.AddPolygon(points);
+            return path;
         }
+
+        float c = Math.Clamp(chamfer, 0f, Math.Min(rect.Width, rect.Height) / 2f);
+        path.AddPolygon(
+        [
+            new PointF(rect.Left + c, rect.Top),
+            new PointF(rect.Right - c, rect.Top),
+            new PointF(rect.Right, rect.Top + c),
+            new PointF(rect.Right, rect.Bottom - c),
+            new PointF(rect.Right - c, rect.Bottom),
+            new PointF(rect.Left + c, rect.Bottom),
+            new PointF(rect.Left, rect.Bottom - c),
+            new PointF(rect.Left, rect.Top + c)
+        ]);
 
         return path;
     }
 
-    private static string ResolveMonoFontFamily()
+    private static string ResolveFontFamily(string[] candidates, string fallback)
     {
-        string[] candidates = { "JetBrains Mono", "Cascadia Mono", "Cascadia Code", "Consolas" };
         var installed = FontFamily.Families;
 
         foreach (var name in candidates)
@@ -236,24 +515,118 @@ public class OsdForm : Form
             }
         }
 
-        return FontFamily.GenericMonospace.Name;
+        return fallback;
     }
 
-    private void DrawSpeedometerIcon(Graphics g, Rectangle bounds, Color color, PowerProfile profile)
+    private static void DrawProfileIcon(Graphics g, Rectangle bounds, Color color, PowerProfile profile)
     {
-        using var thickPen = new Pen(color, 2.5f) { StartCap = LineCap.Round, EndCap = LineCap.Round };
-        using var thinPen = new Pen(color, 2f) { StartCap = LineCap.Round, EndCap = LineCap.Round };
+        switch (profile)
+        {
+            case PowerProfile.Quiet:
+                DrawMoonIcon(g, bounds, color);
+                break;
+            case PowerProfile.Balanced:
+                DrawBalancedIcon(g, bounds, color);
+                break;
+            case PowerProfile.Performance:
+                DrawBoltIcon(g, bounds, color);
+                break;
+            case PowerProfile.Turbo:
+                DrawFlameIcon(g, bounds, color);
+                break;
+            default:
+                DrawBalancedIcon(g, bounds, color);
+                break;
+        }
+    }
 
-        int cx = bounds.X + bounds.Width / 2;
-        int cy = bounds.Y + bounds.Height / 2;
-        int r = bounds.Width / 2;
+    private static void DrawMoonIcon(Graphics g, Rectangle bounds, Color color)
+    {
+        float s = Math.Min(bounds.Width, bounds.Height);
+        float x = bounds.X + (bounds.Width - s) / 2f;
+        float y = bounds.Y + (bounds.Height - s) / 2f;
 
-        g.DrawArc(thickPen, cx - r, cy - r, r * 2, r * 2, 135, 270);
+        using var outer = new GraphicsPath();
+        outer.AddEllipse(x, y, s, s);
+        using var region = new Region(outer);
+        using var inner = new GraphicsPath();
+        inner.AddEllipse(x + s * 0.30f, y - s * 0.10f, s * 0.78f, s * 0.78f);
+        region.Exclude(inner);
 
-        g.FillEllipse(_accentBrush, cx - 3, cy - 3, 6, 6);
+        using var brush = new SolidBrush(color);
+        g.FillRegion(brush, region);
+    }
 
-        var (nx, ny) = DialGeometryHelper.CalculateNeedleTip(cx, cy, r - 2, profile);
-        g.DrawLine(thinPen, cx, cy, nx, ny);
+    private static void DrawBalancedIcon(Graphics g, Rectangle bounds, Color color)
+    {
+        float cx = bounds.X + bounds.Width / 2f;
+        float cy = bounds.Y + bounds.Height / 2f;
+        float half = Math.Min(bounds.Width, bounds.Height) / 2f - 3f;
+
+        using var pen = new Pen(color, 3f) { StartCap = LineCap.Round, EndCap = LineCap.Round, LineJoin = LineJoin.Round };
+        g.DrawPolygon(pen,
+        [
+            new PointF(cx, cy - half),
+            new PointF(cx + half, cy),
+            new PointF(cx, cy + half),
+            new PointF(cx - half, cy)
+        ]);
+        g.DrawLine(pen, cx, cy - half, cx, cy + half);
+        g.DrawLine(pen, cx - half, cy, cx + half, cy);
+
+        using var brush = new SolidBrush(color);
+        float d = Math.Max(5f, half * 0.45f);
+        g.FillEllipse(brush, cx - d / 2f, cy - d / 2f, d, d);
+    }
+
+    private static void DrawBoltIcon(Graphics g, Rectangle bounds, Color color)
+    {
+        // Unit coords mirror the reference bolt (24x24 viewBox)
+        ReadOnlySpan<(float U, float V)> units = [(13, 2), (3, 14), (12, 14), (11, 22), (21, 10), (12, 10)];
+        var pts = new PointF[units.Length];
+        for (int i = 0; i < units.Length; i++)
+        {
+            pts[i] = new PointF(
+                bounds.X + (units[i].U / 24f) * bounds.Width,
+                bounds.Y + (units[i].V / 24f) * bounds.Height);
+        }
+
+        using var brush = new SolidBrush(color);
+        g.FillPolygon(brush, pts);
+    }
+
+    private static void DrawFlameIcon(Graphics g, Rectangle bounds, Color color)
+    {
+        float x = bounds.X;
+        float y = bounds.Y;
+        float w = bounds.Width;
+        float h = bounds.Height;
+
+        var basePoint = new PointF(x + 0.50f * w, y + 0.94f * h);
+        var tip = new PointF(x + 0.60f * w, y + 0.04f * h);
+
+        using var path = new GraphicsPath();
+        path.StartFigure();
+        path.AddBezier(basePoint,
+            new PointF(x + 0.10f * w, y + 0.70f * h),
+            new PointF(x + 0.25f * w, y + 0.55f * h),
+            new PointF(x + 0.34f * w, y + 0.38f));
+        path.AddBezier(path.GetLastPoint(),
+            new PointF(x + 0.40f * w, y + 0.25f * h),
+            new PointF(x + 0.52f * w, y + 0.16f * h),
+            tip);
+        path.AddBezier(path.GetLastPoint(),
+            new PointF(x + 0.72f * w, y + 0.30f * h),
+            new PointF(x + 0.86f * w, y + 0.52f * h),
+            new PointF(x + 0.80f * w, y + 0.74f * h));
+        path.AddBezier(path.GetLastPoint(),
+            new PointF(x + 0.76f * w, y + 0.88f * h),
+            new PointF(x + 0.64f * w, y + 0.94f * h),
+            basePoint);
+        path.CloseFigure();
+
+        using var brush = new SolidBrush(color);
+        g.FillPath(brush, path);
     }
 
     protected override CreateParams CreateParams
@@ -261,7 +634,7 @@ public class OsdForm : Form
         get
         {
             CreateParams cp = base.CreateParams;
-            cp.ExStyle |= 0x08000000; // WS_EX_NOACTIVATE
+            cp.ExStyle |= 0x08000000 | User32.WS_EX_LAYERED; // WS_EX_NOACTIVATE | WS_EX_LAYERED
             return cp;
         }
     }

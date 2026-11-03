@@ -7,28 +7,30 @@ namespace Nitrous.Tests;
 public class OsdLayoutHelperTests
 {
     [Fact]
-    public void Compute_At96Dpi_ReturnsDesignBaseline()
+    public void Compute_At96Dpi_ReturnsReferenceBaseline()
     {
         var layout = OsdLayoutHelper.Compute(1.0);
 
-        Assert.Equal(new Size(280, 70), layout.FormSize);
-        Assert.Equal(10, layout.Chamfer);
-        Assert.Equal(8, layout.AccentBarWidth);
-        Assert.Equal(new Rectangle(25, 17, 36, 36), layout.IconBounds);
-        Assert.Equal(new Rectangle(65, 0, 215, 70), layout.TextRect);
+        Assert.Equal(new Size(250, 85), layout.FormSize);
+        Assert.Equal(19, layout.Chamfer);
+        Assert.Equal(new Rectangle(24, 26, 32, 32), layout.IconBounds);
+        Assert.Equal(new Rectangle(72, 22, 2, 40), layout.DividerRect);
+        Assert.Equal(new Rectangle(90, 0, 132, 85), layout.TextRect);
         Assert.Equal(160, layout.BottomMargin);
+        Assert.Equal(70, layout.CornerAccentRun);
+        Assert.Equal(35, layout.CornerAccentDrop);
     }
 
     [Fact]
-    public void Compute_At144Dpi_ScalesEveryPixelMetric()
+    public void Compute_NarrowContent_ClampsToMinWidth()
     {
-        var layout = OsdLayoutHelper.Compute(1.5);
+        var layout = OsdLayoutHelper.Compute(1.5, 150);
 
-        Assert.Equal(new Size(420, 105), layout.FormSize);
-        Assert.Equal(15, layout.Chamfer);
-        Assert.Equal(12, layout.AccentBarWidth);
-        Assert.Equal(new Rectangle(38, 26, 54, 54), layout.IconBounds);
-        Assert.Equal(new Rectangle(98, 0, 322, 105), layout.TextRect);
+        Assert.Equal(new Size(375, 128), layout.FormSize);
+        Assert.Equal(29, layout.Chamfer);
+        Assert.Equal(new Rectangle(36, 40, 48, 48), layout.IconBounds);
+        Assert.Equal(new Rectangle(108, 34, 3, 60), layout.DividerRect);
+        Assert.Equal(new Rectangle(135, 0, 198, 128), layout.TextRect);
         Assert.Equal(240, layout.BottomMargin);
     }
 
@@ -37,32 +39,51 @@ public class OsdLayoutHelperTests
     {
         var layout = OsdLayoutHelper.Compute(2.0);
 
-        Assert.Equal(new Size(560, 140), layout.FormSize);
-        Assert.Equal(20, layout.Chamfer);
-        Assert.Equal(16, layout.AccentBarWidth);
-        Assert.Equal(new Rectangle(50, 34, 72, 72), layout.IconBounds);
-        Assert.Equal(new Rectangle(130, 0, 430, 140), layout.TextRect);
+        Assert.Equal(new Size(500, 170), layout.FormSize);
+        Assert.Equal(38, layout.Chamfer);
+        Assert.Equal(new Rectangle(48, 53, 64, 64), layout.IconBounds);
+        Assert.Equal(new Rectangle(144, 45, 4, 80), layout.DividerRect);
+        Assert.Equal(new Rectangle(180, 0, 264, 170), layout.TextRect);
         Assert.Equal(320, layout.BottomMargin);
+    }
+
+    [Fact]
+    public void Compute_WideContent_GrowsBetweenMinAndMaxWidth()
+    {
+        var layout = OsdLayoutHelper.Compute(1.0, 350);
+
+        Assert.Equal(new Size(468, 85), layout.FormSize);
+        Assert.Equal(new Rectangle(90, 0, 350, 85), layout.TextRect);
+    }
+
+    [Fact]
+    public void Compute_OversizeContent_ClampsToMaxWidth()
+    {
+        var layout = OsdLayoutHelper.Compute(1.0, 1000);
+
+        Assert.Equal(new Size(600, 85), layout.FormSize);
+        Assert.Equal(new Rectangle(90, 0, 482, 85), layout.TextRect);
     }
 
     [Fact]
     public void Compute_ClampsScaleToSafeRange()
     {
         var shrunk = OsdLayoutHelper.Compute(0.5);
-        Assert.Equal(new Size(280, 70), shrunk.FormSize);
+        Assert.Equal(new Size(250, 85), shrunk.FormSize);
 
         var oversized = OsdLayoutHelper.Compute(8.0);
-        Assert.Equal(new Size(1120, 280), oversized.FormSize);
+        Assert.Equal(new Size(1000, 340), oversized.FormSize);
     }
 
     [Fact]
     public void Compute_RoundsHalfPixelsAwayFromZero()
     {
-        // 1.25 scale: 36 * 1.25 = 45 exact, 17 * 1.25 = 21.25 -> 21, 25 * 1.25 = 31.25 -> 31
+        // 1.25 scale: 2 * 1.25 = 2.5 -> 3, 85 * 1.25 = 106.25 -> 106, 70 * 1.25 = 87.5 -> 88
         var layout = OsdLayoutHelper.Compute(1.25);
 
-        Assert.Equal(new Size(350, 88), layout.FormSize);
-        Assert.Equal(new Rectangle(31, 21, 45, 45), layout.IconBounds);
-        Assert.Equal(new Rectangle(81, 0, 269, 88), layout.TextRect);
+        Assert.Equal(new Size(313, 106), layout.FormSize);
+        Assert.Equal(new Rectangle(30, 33, 40, 40), layout.IconBounds);
+        Assert.Equal(new Rectangle(90, 28, 3, 50), layout.DividerRect);
+        Assert.Equal(new Rectangle(113, 0, 165, 106), layout.TextRect);
     }
 }
