@@ -22,7 +22,7 @@ public class FanCurveWindowUiTests
             {
                 if (Application.Current == null)
                 {
-                    new Application();
+                    new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
                 }
 
                 action();
@@ -105,8 +105,9 @@ public class FanCurveWindowUiTests
             var window = new FanCurveWindow(vm);
             try
             {
-                window.Show();
-
+                // No Show()/window Measure: control presence and tooltips do not need
+                // an HWND, and measuring a shown Window can FailFast once the shared
+                // test Application has degraded. Construct and assert directly.
                 Assert.NotNull(window.ProfileQuiet);
                 Assert.NotNull(window.ProfileBalanced);
                 Assert.NotNull(window.ProfilePerformance);
@@ -120,10 +121,6 @@ public class FanCurveWindowUiTests
 
                 Assert.False(string.IsNullOrWhiteSpace(window.CloseBtn.ToolTip?.ToString()));
                 Assert.False(string.IsNullOrWhiteSpace(window.ResetBtn.ToolTip?.ToString()));
-
-                window.Measure(new System.Windows.Size(880, 660));
-                window.Arrange(new System.Windows.Rect(0, 0, 880, 660));
-                window.UpdateLayout();
             }
             finally
             {

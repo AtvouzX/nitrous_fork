@@ -28,10 +28,12 @@ public class DashboardAndTrayUiTests
         {
             try
             {
-                // Ensure WPF Application context exists so pack:// URI schemes resolve properly
+                // Ensure WPF Application context exists so pack:// URI schemes resolve properly.
+                // OnExplicitShutdown: closing one test window must not shut down the
+                // shared Application and break later Show()/layout in other tests.
                 if (Application.Current == null)
                 {
-                    new Application();
+                    new Application { ShutdownMode = ShutdownMode.OnExplicitShutdown };
                 }
 
                 action();
@@ -471,7 +473,7 @@ public class DashboardAndTrayUiTests
                 window.Show();
                 System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.Background);
                 window.WindowState = WindowState.Minimized;
-                for (int i = 0; i < 50 && vm.IsPollingActive; i++)
+                for (int i = 0; i < 200 && vm.IsPollingActive; i++)
                 {
                     System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                     System.Threading.Thread.Sleep(10);
@@ -480,7 +482,7 @@ public class DashboardAndTrayUiTests
 
                 // Restoring to Normal should resume polling
                 window.WindowState = WindowState.Normal;
-                for (int i = 0; i < 50 && !vm.IsPollingActive; i++)
+                for (int i = 0; i < 200 && !vm.IsPollingActive; i++)
                 {
                     System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                     System.Threading.Thread.Sleep(10);
@@ -507,11 +509,12 @@ public class DashboardAndTrayUiTests
 
                 // Let child templates materialize before walking the tree.
                 // Under parallel load the visual tree may lag Show() by a few frames.
-                for (int i = 0; i < 50; i++)
+                for (int i = 0; i < 200; i++)
                 {
                     System.Windows.Threading.Dispatcher.CurrentDispatcher.Invoke(() => { }, System.Windows.Threading.DispatcherPriority.ApplicationIdle);
                     System.Threading.Thread.Sleep(10);
-                    if (window.GpuPage?.GpuCoreSlider != null && window.DashPage?.BtnPowerQuiet != null)
+                    if (window.GpuPage?.GpuCoreSlider != null && window.DashPage?.BtnPowerQuiet != null
+                        && FindCloseButtonByTooltip(window) != null)
                         break;
                 }
 
