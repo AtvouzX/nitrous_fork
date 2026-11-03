@@ -146,27 +146,7 @@
 					<controls:ChamferCard ChamferSize="4" Background="{StaticResource Steel900Brush}" 
 					                      BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1" Padding="14,12">
 						<StackPanel>
-							<!-- Row 1: BRIGHTNESS LEVELS -->
-							<Grid Visibility="Collapsed" Margin="0,0,0,12">
-								<TextBlock Text="BRIGHTNESS LEVEL" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
-								<StackPanel Orientation="Horizontal" HorizontalAlignment="Right">
-									<controls:ChamferButton x:Name="BtnBacklightOff" Content="OFF" Width="55" Height="26" Margin="0,0,6,0"
-									                        Click="BtnBacklightOff_Click"
-									                        ToolTip="Arms EC off: enables 30s timeout and turns the light off after 30s idle. Light stays on until then." />
-									<controls:ChamferButton x:Name="BtnBacklightL1" Content="LVL 1" Width="55" Height="26" Margin="0,0,6,0"
-									                        Click="BtnBacklightL1_Click"
-									                        ToolTip="Dim backlight. Latches in EC, takes effect on next keypress." />
-									<controls:ChamferButton x:Name="BtnBacklightL2" Content="LVL 2" Width="55" Height="26"
-									                        Click="BtnBacklightL2_Click"
-									                        ToolTip="Bright backlight. Latches in EC, takes effect on next keypress." />
-								</StackPanel>
-							</Grid>
-
-							<TextBlock x:Name="TxtBacklightOffStatus" Text="OFF IN ~30S — KEEP IDLE" Visibility="Collapsed"
-							           Foreground="{StaticResource Steel300Brush}" FontFamily="{StaticResource MonoFontFamily}"
-							           FontSize="10" FontWeight="Bold" HorizontalAlignment="Right" Margin="0,0,0,10" />
-
-							<!-- Row 2: 30S TIMEOUT TOGGLE -->
+							<!-- 30S TIMEOUT TOGGLE (brightness level is not a Dashboard setting; Fn+F11 owns it) -->
 							<Grid x:Name="GrdTimeoutRow">
 								<TextBlock x:Name="TxtTimeoutLabel" Text="30S IDLE TIMEOUT" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" VerticalAlignment="Center" />
 								<CheckBox x:Name="ChkBacklightTimeout" Style="{StaticResource SquareCheckBoxStyle}" HorizontalAlignment="Right"

@@ -430,65 +430,50 @@ public class KeyboardBacklightTests : IDisposable
     }
 
     [Fact]
-    public void KeyboardPageView_AltersBrightnessLevelsAndTimeout()
+    public void KeyboardPageView_HasNoBrightnessButtons_TimeoutToggleSavesOnlySetting()
     {
-        RunInSta(() =>
+        try
         {
-            AcerWmiManager.SetBacklightLevelForTesting(KeyboardBacklightLevel.Level2);
-            AcerWmiManager.SetBacklightTimeoutForTesting(true);
-            AcerWmiManager.SetWmiInvokeForTesting((_, _, _) => true);
-            AcerWmiManager.SetWmiBufferInvokeForTesting((_, _, _) => true);
+            RunInSta(() =>
+            {
+                AcerWmiManager.SetBacklightLevelForTesting(KeyboardBacklightLevel.Level2);
+                AcerWmiManager.SetBacklightTimeoutForTesting(true);
+                AcerWmiManager.SetWmiInvokeForTesting((cls, method, input) =>
+                {
+                    lock (_wmiScalarCalls) { _wmiScalarCalls.Add((cls, method, input)); }
+                    return true;
+                });
+                AcerWmiManager.SetWmiBufferInvokeForTesting((cls, method, buf) =>
+                {
+                    lock (_wmiBufferCalls) { _wmiBufferCalls.Add((cls, method, (byte[])buf.Clone())); }
+                    return true;
+                });
 
-            var page = new KeyboardPageView();
+                var page = new KeyboardPageView();
 
-            var btnOff = page.FindName("BtnBacklightOff") as ChamferButton;
-            var btnL1 = page.FindName("BtnBacklightL1") as ChamferButton;
-            var btnL2 = page.FindName("BtnBacklightL2") as ChamferButton;
-            var chkTimeout = page.FindName("ChkBacklightTimeout") as System.Windows.Controls.CheckBox;
-            var offStatus = page.FindName("TxtBacklightOffStatus") as System.Windows.Controls.TextBlock;
+                // Brightness setting removed: no level/off buttons, no pending-off status.
+                Assert.Null(page.FindName("BtnBacklightOff"));
+                Assert.Null(page.FindName("BtnBacklightL1"));
+                Assert.Null(page.FindName("BtnBacklightL2"));
+                Assert.Null(page.FindName("TxtBacklightOffStatus"));
 
-            Assert.NotNull(btnOff);
-            Assert.NotNull(btnL1);
-            Assert.NotNull(btnL2);
-            Assert.NotNull(chkTimeout);
-            Assert.NotNull(offStatus);
+                var chkTimeout = page.FindName("ChkBacklightTimeout") as System.Windows.Controls.CheckBox;
+                Assert.NotNull(chkTimeout);
+                Assert.True(chkTimeout.IsChecked);
 
-            // Initially L2 is selected and timeout is checked and enabled
-            Assert.Equal(ChamferButtonVariant.Primary, btnL2.Variant);
-            Assert.Equal(ChamferButtonVariant.Secondary, btnOff.Variant);
-            Assert.Equal(ChamferButtonVariant.Secondary, btnL1.Variant);
-            Assert.True(chkTimeout.IsChecked);
-            Assert.True(chkTimeout.IsEnabled);
+                // Toggle saves the setting only; Tray is sole physical applier.
+                chkTimeout.IsChecked = false;
+                Thread.Sleep(600);
 
-            // Click Off button -> arms EC off: 30s timeout checkbox stays enabled and checked,
-            // pending status shows "OFF IN ~30S"
-            btnOff.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-            Assert.Equal(ChamferButtonVariant.Primary, btnOff.Variant);
-            Assert.Equal(ChamferButtonVariant.Secondary, btnL1.Variant);
-            Assert.Equal(ChamferButtonVariant.Secondary, btnL2.Variant);
-            Assert.True(chkTimeout.IsEnabled);
-            Assert.True(chkTimeout.IsChecked);
-            Assert.Equal(Visibility.Visible, offStatus.Visibility);
-
-            // Click L1 button -> re-enables 30s timeout checkbox
-            btnL1.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-            Assert.Equal(ChamferButtonVariant.Primary, btnL1.Variant);
-            Assert.Equal(ChamferButtonVariant.Secondary, btnOff.Variant);
-            Assert.Equal(ChamferButtonVariant.Secondary, btnL2.Variant);
-            Assert.True(chkTimeout.IsEnabled);
-            Assert.Equal(Visibility.Collapsed, offStatus.Visibility);
-
-            // Click L2 button -> keeps 30s timeout checkbox enabled
-            btnL2.RaiseEvent(new RoutedEventArgs(System.Windows.Controls.Primitives.ButtonBase.ClickEvent));
-            Assert.Equal(ChamferButtonVariant.Primary, btnL2.Variant);
-            Assert.Equal(ChamferButtonVariant.Secondary, btnOff.Variant);
-            Assert.Equal(ChamferButtonVariant.Secondary, btnL1.Variant);
-            Assert.True(chkTimeout.IsEnabled);
-
-            // Toggle timeout checkbox
-            chkTimeout.IsChecked = false;
-            Assert.False(chkTimeout.IsChecked);
-        });
+                Assert.False(SettingsManager.Get("KeyboardBacklightTimeout", true));
+                lock (_wmiScalarCalls) { Assert.Empty(_wmiScalarCalls); }
+                lock (_wmiBufferCalls) { Assert.Empty(_wmiBufferCalls); }
+            });
+        }
+        finally
+        {
+            SettingsManager.Save("KeyboardBacklightTimeout", true);
+        }
     }
 
     [Fact]

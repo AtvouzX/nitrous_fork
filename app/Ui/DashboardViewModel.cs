@@ -150,6 +150,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
         UpdateBatteryBadge();
         InitializeGpuTelemetryState();
+        InitializeScenarios(); // after Turbo support resolution for mode list gating
 
         if (!IsTestHost())
         {
@@ -278,6 +279,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
 
     public void SyncSettings()
     {
+        ReloadScenarios();
+
         int cachedTurbo = SettingsManager.Get("IsTurboSupported", -1);
         if (cachedTurbo != -1 && IsTurboSupported != (cachedTurbo == 1))
         {

@@ -306,6 +306,12 @@ public partial class DashboardViewModel
                     ActivePowerProfile = mode;
                     DismissGpuAlert();
 
+                    if (ScenarioStore.IsEnabled && !ScenarioStore.IsSuspended)
+                    {
+                        ScenarioStore.SetSuspended(true);
+                        LogManager.Info("Scenario suspended by manual power change in Dashboard", "ScenarioVM");
+                    }
+
                     SettingsManager.Save("LastPowerMode", (int)mode);
                     _ = AcerWmiManager.ApplyPowerProfileAsync(mode);
                     bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
@@ -339,6 +345,12 @@ public partial class DashboardViewModel
         {
             if (Enum.TryParse(param?.ToString(), out FanProfile mode))
             {
+                if (ScenarioStore.IsEnabled && !ScenarioStore.IsSuspended)
+                {
+                    ScenarioStore.SetSuspended(true);
+                    LogManager.Info("Scenario suspended by manual fan change in Dashboard", "ScenarioVM");
+                }
+
                 IsCustomFanEnabled = mode == FanProfile.Medium;
                 if (mode == FanProfile.Medium)
                 {

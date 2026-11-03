@@ -110,6 +110,7 @@ public partial class TrayApplication : ApplicationContext
                     LogManager.SyncSettings();
                     ReloadHotkeysIfChanged();
                     SyncBacklightSettingsIfChanged();
+                    ReloadScenariosIfChanged();
                 }, null, Timeout.Infinite, false);
             }
             catch (Exception ex)
@@ -124,6 +125,8 @@ public partial class TrayApplication : ApplicationContext
 
             _hotkeys.HotkeyPressed += OnCustomHotkeyPressed;
             ReloadHotkeys();
+            InitializeScenarioSyncBaselines();
+            StartScenarioWatcher();
             _lastSyncedBacklightLevel = AcerWmiManager.GetBacklightLevel();
             _lastSyncedBacklightTimeout = AcerWmiManager.GetBacklightTimeout();
 
@@ -149,6 +152,7 @@ public partial class TrayApplication : ApplicationContext
 
                 await Task.Delay(6000);
                 ApplyPowerSettings(true);
+                await ApplyScenarioAsync(ScenarioStore.GetActiveId(), "Boot");
 
                 bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
                 if (ShouldApplyBootOc(isOnline))
@@ -255,6 +259,7 @@ public partial class TrayApplication : ApplicationContext
             if (eventId != _powerEventId) return;
 
             ApplyPowerSettings(false);
+            await ApplyScenarioAsync(ScenarioStore.GetActiveId(), "PowerChange");
 
             // Defer aggressive working set trimming until after OSD display & fade animations finish
             _ = Task.Delay(4000).ContinueWith(_ => MemoryHelper.TrimWorkingSet(), TaskScheduler.Default);
@@ -461,6 +466,11 @@ public partial class TrayApplication : ApplicationContext
         }
 
         // Apply the new mode
+        if (ScenarioStore.IsEnabled && !ScenarioStore.IsSuspended)
+        {
+            ScenarioStore.SetSuspended(true);
+            LogManager.Info("Scenario suspended by manual power cycle hotkey", "Scenario");
+        }
         SettingsManager.Save("LastPowerMode", (int)nextProfile);
         _ = AcerWmiManager.ApplyPowerProfileAsync(nextProfile);
         SettingsManager.Save(acDcKey, (int)nextProfile);
@@ -503,6 +513,14 @@ public partial class TrayApplication : ApplicationContext
         _settingsSyncEvent?.Dispose();
         _backlightHotkeyWatcher?.Dispose();
         _backlightHotkeyWatcher = null;
+        _foregroundWatcher?.Dispose();
+        _foregroundWatcher = null;
+        _scenarioDebounceTimer?.Dispose();
+        _scenarioDebounceTimer = null;
+        ClearSyncState();
+        _appExitTimer?.Dispose();
+        _appExitTimer = null;
+        SystemEvents.SessionSwitch -= OnScenarioSessionSwitch;
         _engineCts.Cancel();
         _nitroHook?.Dispose();
         SystemEvents.PowerModeChanged -= OnPowerStateChanged;

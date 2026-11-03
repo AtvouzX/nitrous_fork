@@ -30,6 +30,11 @@ public partial class TrayApplication : ApplicationContext
             {
                 try
                 {
+                    if (ScenarioStore.IsEnabled && !ScenarioStore.IsSuspended)
+                    {
+                        ScenarioStore.SetSuspended(true);
+                        LogManager.Info("Scenario suspended by manual power change in Tray menu", "Scenario");
+                    }
                     SettingsManager.Save("LastPowerMode", (int)profile);
                     await AcerWmiManager.ApplyPowerProfileAsync(profile);
                     bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
@@ -70,6 +75,12 @@ public partial class TrayApplication : ApplicationContext
 
         menu.Items.Add(powerMenu);
 
+        // Scenarios Submenu (rebuilt on open; Tray is sole applier)
+        var scenarioMenu = new ToolStripMenuItem("Scenario");
+        _scenarioMenu = scenarioMenu;
+        menu.Opening += (_, _) => RebuildScenarioMenu();
+        menu.Items.Add(scenarioMenu);
+
         // Fan Profiles Submenu
         var fanMenu = new ToolStripMenuItem("Fan Profile");
 
@@ -79,6 +90,11 @@ public partial class TrayApplication : ApplicationContext
             {
                 try
                 {
+                    if (ScenarioStore.IsEnabled && !ScenarioStore.IsSuspended)
+                    {
+                        ScenarioStore.SetSuspended(true);
+                        LogManager.Info("Scenario suspended by manual fan change in Tray menu", "Scenario");
+                    }
                     _lastAppliedCpuSpeed = -1;
                     _lastAppliedGpuSpeed = -1;
 

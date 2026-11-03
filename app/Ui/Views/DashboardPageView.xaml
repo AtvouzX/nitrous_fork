@@ -152,6 +152,12 @@
 					<Grid>
 						<TextBlock Text="POWER" Foreground="{StaticResource Steel300Brush}" FontFamily="{StaticResource MonoFontFamily}"
 						           FontSize="10" FontWeight="Bold" VerticalAlignment="Center" />
+						<controls:ChamferButton x:Name="BtnScenarioManager" Variant="Secondary" ChamferSize="3"
+						                       Click="OpenScenarioManager_Click" Height="20" FontSize="8" Padding="8,0"
+						                       HorizontalAlignment="Right"
+						                       ToolTip="Open Scenario Manager: named mode, fan, and lighting bundles with app auto-switching.">
+							<TextBlock Text="SCENARIO MANAGER" FontFamily="{StaticResource MonoFontFamily}" FontSize="8" FontWeight="Bold" />
+						</controls:ChamferButton>
 					</Grid>
 				</Border>
 
@@ -179,6 +185,7 @@
 						             ToolTip="Maximum power. Processor locked at 100% min/max on AC with CPU boost on, fans at full cooling." />
 					</UniformGrid>
 				</controls:ChamferCard>
+
 			</StackPanel>
 		</controls:ChamferCard>
 

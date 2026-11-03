@@ -105,6 +105,14 @@ public partial class DashboardPageView : UserControl
         }
     }
 
+    private void OpenScenarioManager_Click(object sender, RoutedEventArgs e)
+    {
+        if (Window.GetWindow(this) is NitrousDashboard dash)
+        {
+            dash.OpenScenarioManager();
+        }
+    }
+
     private void Graph_MouseMove(object sender, MouseEventArgs e)
     {
         if (DataContext is DashboardViewModel vm && sender is FrameworkElement fe)

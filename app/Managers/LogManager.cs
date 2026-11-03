@@ -317,6 +317,19 @@ public static class LogManager
         }
 
         sb.AppendLine();
+        sb.AppendLine("[SCENARIOS]");
+        try
+        {
+            // Count + flags only: profile names and linked app paths are user data.
+            sb.AppendLine($"Scenario Count:      {ScenarioStore.LoadProfiles().Count}");
+            sb.AppendLine($"Scenarios Enabled:   {ScenarioStore.IsEnabled}");
+        }
+        catch (Exception ex)
+        {
+            sb.AppendLine($"Scenarios:           Error reading ({ex.Message})");
+        }
+
+        sb.AppendLine();
         sb.AppendLine("[RECENT DIAGNOSTIC LOGS]");
         try
         {

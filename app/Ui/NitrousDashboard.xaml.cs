@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -151,6 +151,7 @@ public partial class NitrousDashboard : Window
         NavSetIcon.Fill = InactiveBrush;
         NavSetText.Foreground = InactiveBrush;
         NavSetBtn.Background = NavInactiveBgBrush;
+
     }
 
     private void NavGpuBtn_Click(object sender, RoutedEventArgs e)
@@ -175,6 +176,7 @@ public partial class NitrousDashboard : Window
         NavSetIcon.Fill = InactiveBrush;
         NavSetText.Foreground = InactiveBrush;
         NavSetBtn.Background = NavInactiveBgBrush;
+
     }
 
     private void NavKeyboardBtn_Click(object sender, RoutedEventArgs e)
@@ -199,6 +201,7 @@ public partial class NitrousDashboard : Window
         NavSetIcon.Fill = InactiveBrush;
         NavSetText.Foreground = InactiveBrush;
         NavSetBtn.Background = NavInactiveBgBrush;
+
     }
 
     private void NavSetBtn_Click(object sender, RoutedEventArgs e)
@@ -220,10 +223,12 @@ public partial class NitrousDashboard : Window
         NavKeyboardText.Foreground = InactiveBrush;
         NavKeyboardBtn.Background = NavInactiveBgBrush;
 
+
         NavSetIcon.Fill = ActiveBrush;
         NavSetText.Foreground = ActiveBrush;
         NavSetBtn.Background = NavActiveBgBrush;
     }
+
 
     internal void NavigateToDashboard() => NavDashBtn_Click(this, new RoutedEventArgs());
     internal void NavigateToGpu() => NavGpuBtn_Click(this, new RoutedEventArgs());
@@ -272,6 +277,8 @@ public partial class NitrousDashboard : Window
 
         // Refresh Hotkey labels in keyboard view
         KeyboardPage?.RefreshHotkeys();
+        KeyboardPage?.InitializeKeyboardLighting();
+        KeyboardPage?.RefreshBacklightUi();
     }
 
     protected override void OnSourceInitialized(EventArgs e)
@@ -400,22 +407,34 @@ public partial class NitrousDashboard : Window
         (DataContext as IDisposable)?.Dispose();
     }
 
-    private FanCurveWindow? _activeCurveWindow;
+    private ScenariosWindow? _activeScenarioWindow;
 
-    internal void OpenCurveEditor()
+    internal void OpenScenarioManager()
     {
-        // If the window is already open, just bring it to the front
-        if (_activeCurveWindow != null && _activeCurveWindow.IsLoaded)
+        if (_activeScenarioWindow != null && _activeScenarioWindow.IsLoaded)
         {
-            _activeCurveWindow.Activate();
+            _activeScenarioWindow.Activate();
             return;
         }
 
-        _activeCurveWindow = new FanCurveWindow((DashboardViewModel)DataContext)
+        _activeScenarioWindow = new ScenariosWindow((DashboardViewModel)DataContext)
         {
             Owner = this,
             WindowStartupLocation = WindowStartupLocation.Manual
         };
+        PositionCompanionWindow(_activeScenarioWindow);
+        _activeScenarioWindow.Closed += (_, _) => { _activeScenarioWindow = null; _isDialogOpen = false; };
+        _isDialogOpen = true;
+        _activeScenarioWindow.Show();
+    }
+
+    /// <summary>
+    /// Docks a companion window to the left of the dashboard using the same
+    /// placement as the Fan Curve editor, clamped inside the nearest monitor.
+    /// </summary>
+    internal void PositionCompanionWindow(Window companion)
+    {
+        companion.WindowStartupLocation = WindowStartupLocation.Manual;
 
         double currentLeft = double.IsNaN(this.Left)
             ? (SystemParameters.WorkArea.Width / 2) - (this.Width / 2)
@@ -440,11 +459,31 @@ public partial class NitrousDashboard : Window
         }
         var (targetLeft, targetTop) = Helpers.WindowPlacementHelper.ComputeCurveEditorPosition(
             currentLeft, currentTop, this.Width, this.Height,
-            _activeCurveWindow.Width, _activeCurveWindow.Height,
+            companion.Width, companion.Height,
             area.Left * scaleX, area.Top * scaleY, area.Right * scaleX, area.Bottom * scaleY);
 
-        _activeCurveWindow.Left = targetLeft;
-        _activeCurveWindow.Top = targetTop;
+        companion.Left = targetLeft;
+        companion.Top = targetTop;
+    }
+
+    private FanCurveWindow? _activeCurveWindow;
+
+    internal void OpenCurveEditor()
+    {
+        // If the window is already open, just bring it to the front
+        if (_activeCurveWindow != null && _activeCurveWindow.IsLoaded)
+        {
+            _activeCurveWindow.Activate();
+            return;
+        }
+
+        _activeCurveWindow = new FanCurveWindow((DashboardViewModel)DataContext)
+        {
+            Owner = this,
+            WindowStartupLocation = WindowStartupLocation.Manual
+        };
+
+        PositionCompanionWindow(_activeCurveWindow);
 
         // Attach an event to clear the flag when the window closes
         _activeCurveWindow.Closed += (s, args) => _isDialogOpen = false;
@@ -453,4 +492,6 @@ public partial class NitrousDashboard : Window
         _activeCurveWindow.Show();
     }
 }
+
+
 

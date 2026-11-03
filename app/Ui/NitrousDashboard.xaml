@@ -1,4 +1,4 @@
-<Window x:Class="Nitrous.Ui.NitrousDashboard"
+﻿<Window x:Class="Nitrous.Ui.NitrousDashboard"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:controls="clr-namespace:Nitrous.Ui.Controls"
@@ -116,7 +116,7 @@
 					<Button Width="24" Height="24"
 					        Click="CloseBtn_Click"
 					        Cursor="Hand"
-					        ToolTip="Close the window — Nitrous keeps running in the tray.">
+					        ToolTip="Close the window â€” Nitrous keeps running in the tray.">
 						<Button.Template>
 							<ControlTemplate TargetType="Button">
 								<Border x:Name="CloseBorder"
