@@ -157,7 +157,9 @@ public partial class TrayApplication : ApplicationContext
                             }
                         }
 
-                        if (isCurveActive && telemetry.CpuTemp > 0)
+                        bool fanControlAllowed = AcerWmiManager.IsFanControlAllowed();
+
+                        if (isCurveActive && telemetry.CpuTemp > 0 && fanControlAllowed)
                         {
                             // 3. Load curves from cache or Registry if profile changed or curve updated
                             var activeMode = (PowerProfile)SettingsManager.GetInt("LastPowerMode", (int)PowerProfile.Performance);
@@ -228,6 +230,13 @@ public partial class TrayApplication : ApplicationContext
                                 _lastAppliedGpuSpeed = appliedGpuSpeed;
                                 await AcerWmiManager.SetFansAsync(FanProfile.Medium, appliedCpuSpeed, appliedGpuSpeed);
                             }
+                        }
+                        else if (isCurveActive && !fanControlAllowed)
+                        {
+                            // Firmware fan table owns the fans; keep the applied-speed cache
+                            // cold so the curve re-applies cleanly once control is handed back.
+                            _lastAppliedCpuSpeed = -1;
+                            _lastAppliedGpuSpeed = -1;
                         }
                     }
 

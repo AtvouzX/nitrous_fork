@@ -177,12 +177,16 @@
 						<RadioButton x:Name="BtnPowerPerf" TabIndex="1" GroupName="Power" Uid="Performance"
 						             Content="PERFORMANCE" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}"
 						             CommandParameter="Performance"
-						             ToolTip="More power. Processor at 100% on AC with CPU boost on (99% on battery, boost off)." />
+						             IsEnabled="{Binding IsOverclockModeAvailable}"
+						             ToolTipService.ShowOnDisabled="True"
+						             ToolTip="{Binding PerformanceTooltip, FallbackValue='More power. Processor at 100% on AC with CPU boost on (99% on battery, boost off).'}" />
 						<RadioButton x:Name="BtnPowerTurbo" TabIndex="1" GroupName="Power" Uid="Turbo"
 						             Content="TURBO" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}"
 						             CommandParameter="Turbo"
+						             IsEnabled="{Binding IsOverclockModeAvailable}"
 						             Visibility="{Binding IsTurboSupported, Converter={StaticResource BoolToVis}}"
-						             ToolTip="Maximum power. Processor locked at 100% min/max on AC with CPU boost on, fans at full cooling." />
+						             ToolTipService.ShowOnDisabled="True"
+						             ToolTip="{Binding TurboTooltip, FallbackValue='Maximum power. Processor locked at 100% min/max on AC with CPU boost on, fans at full cooling.'}" />
 					</UniformGrid>
 				</controls:ChamferCard>
 
@@ -272,6 +276,12 @@
 							<TextBlock Text="FANS" Foreground="{StaticResource Steel300Brush}" FontFamily="{StaticResource MonoFontFamily}"
 							           FontSize="10" FontWeight="Bold" VerticalAlignment="Center" />
 							<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+								<!-- Firmware-owned fan table badge -->
+								<TextBlock Text="{Binding FanLockText}" Visibility="{Binding FanLockVisibility}"
+								           Foreground="{StaticResource Ember400Brush}"
+								           FontFamily="{StaticResource MonoFontFamily}" FontSize="8" FontWeight="Bold"
+								           VerticalAlignment="Center" Margin="0,0,8,0"
+								           ToolTip="{Binding FanLockTooltip}" />
 								<!-- USE CURVE toggle (visible when Custom Fan is enabled) -->
 								<controls:ChamferButton x:Name="BtnCurveToggle"
 								                       Variant="Secondary" ChamferSize="3" Height="20" FontSize="8" Padding="8,0" FontWeight="Bold"
@@ -340,7 +350,8 @@
 						</StackPanel>
 
 						<!-- Write View (Manual fixed sliders) -->
-						<StackPanel Visibility="{Binding FanWriteViewVisibility}" VerticalAlignment="Center">
+						<StackPanel Visibility="{Binding FanWriteViewVisibility}" VerticalAlignment="Center"
+						            IsEnabled="{Binding IsFanControlEnabled}">
 							<!-- CPU Write Slider -->
 							<Grid Margin="0,0,0,6">
 								<Grid.ColumnDefinitions>
@@ -387,7 +398,7 @@
 					<controls:ChamferCard x:Name="FansRail" Grid.Row="2" Background="{StaticResource Steel900Brush}" BorderBrush="{StaticResource Steel600Brush}"
 					                      BorderThickness="1"
 					                      ChamferSize="4" Padding="0" Margin="0,8,0,0">
-						<UniformGrid Rows="1" Height="34">
+						<UniformGrid Rows="1" Height="34" IsEnabled="{Binding IsFanControlEnabled}">
 							<RadioButton x:Name="BtnFanAuto" TabIndex="0" GroupName="Fans" Uid="Auto"
 							             Content="AUTO" Style="{StaticResource CompactActionButtonStyle}" Command="{Binding SetFanCommand}"
 							             CommandParameter="Auto"

@@ -756,6 +756,96 @@ public class DashboardAndTrayUiTests
     }
 
     [Fact]
+    public void DashboardViewModel_PowerModeGate_ReflectsAcAndCharge()
+    {
+        RunInSta(() =>
+        {
+            int originalExpert = SettingsManager.Get("ExpertMode", 0);
+            var vm = new DashboardViewModel();
+            try
+            {
+                SettingsManager.Save("ExpertMode", 0);
+
+                AcerWmiManager.SetPowerStateReaderForTesting(() => (false, 100));
+                vm.RefreshPowerModeAvailability();
+                Assert.False(vm.IsOverclockModeAvailable);
+                Assert.Equal(Visibility.Visible, vm.PowerModeLockVisibility);
+                Assert.Contains("ON BATTERY", vm.PowerModeLockText);
+                Assert.Contains("on battery", vm.PerformanceTooltip, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("on battery", vm.TurboTooltip, StringComparison.OrdinalIgnoreCase);
+
+                AcerWmiManager.SetPowerStateReaderForTesting(() => (true, 100));
+                vm.RefreshPowerModeAvailability();
+                Assert.True(vm.IsOverclockModeAvailable);
+                Assert.Equal(Visibility.Collapsed, vm.PowerModeLockVisibility);
+                Assert.Contains("More power", vm.PerformanceTooltip);
+                Assert.Contains("Maximum power", vm.TurboTooltip);
+
+                AcerWmiManager.SetPowerStateReaderForTesting(() => (true, 10));
+                vm.RefreshPowerModeAvailability();
+                Assert.False(vm.IsOverclockModeAvailable);
+                Assert.Contains("BELOW", vm.PowerModeLockText);
+                Assert.Contains("below 40%", vm.PerformanceTooltip, StringComparison.OrdinalIgnoreCase);
+                Assert.Contains("below 40%", vm.TurboTooltip, StringComparison.OrdinalIgnoreCase);
+
+                SettingsManager.Save("ExpertMode", 1);
+                vm.RefreshPowerModeAvailability();
+                Assert.True(vm.IsOverclockModeAvailable);
+            }
+            finally
+            {
+                AcerWmiManager.SetPowerStateReaderForTesting(null);
+                SettingsManager.Save("ExpertMode", originalExpert);
+                vm.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void DashboardViewModel_FanControlLock_FollowsModeAndExpertMode()
+    {
+        RunInSta(() =>
+        {
+            var vm = new DashboardViewModel();
+            try
+            {
+                int originalPowerMode = SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+                int originalExpert = SettingsManager.Get("ExpertMode", 0);
+                try
+                {
+                    SettingsManager.Save("ExpertMode", 0);
+
+                    vm.ActivePowerProfile = PowerProfile.Quiet;
+                    Assert.True(vm.IsFanControlLocked);
+                    Assert.False(vm.IsFanControlEnabled);
+                    Assert.Equal(Visibility.Visible, vm.FanLockVisibility);
+                    Assert.Contains("QUIET", vm.FanLockText);
+
+                    vm.ActivePowerProfile = PowerProfile.Turbo;
+                    Assert.True(vm.IsFanControlLocked);
+
+                    vm.ActivePowerProfile = PowerProfile.Balanced;
+                    Assert.False(vm.IsFanControlLocked);
+                    Assert.Equal(Visibility.Collapsed, vm.FanLockVisibility);
+
+                    SettingsManager.Save("ExpertMode", 1);
+                    vm.ActivePowerProfile = PowerProfile.Quiet;
+                    Assert.False(vm.IsFanControlLocked);
+                }
+                finally
+                {
+                    SettingsManager.Save("LastPowerMode", originalPowerMode);
+                    SettingsManager.Save("ExpertMode", originalExpert);
+                }
+            }
+            finally
+            {
+                vm.Dispose();
+            }
+        });
+    }
+
+    [Fact]
     public void DashboardViewModel_Properties_UsageAndMaxStatsExist()
     {
         RunInSta(() =>

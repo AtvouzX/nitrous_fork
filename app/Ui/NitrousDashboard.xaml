@@ -116,7 +116,7 @@
 					<Button Width="24" Height="24"
 					        Click="CloseBtn_Click"
 					        Cursor="Hand"
-					        ToolTip="Close the window â€” Nitrous keeps running in the tray.">
+					        ToolTip="Close the window. Nitrous keeps running in the tray.">
 						<Button.Template>
 							<ControlTemplate TargetType="Button">
 								<Border x:Name="CloseBorder"

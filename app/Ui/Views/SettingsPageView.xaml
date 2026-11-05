@@ -263,6 +263,8 @@
 							<RowDefinition Height="Auto" />
 							<RowDefinition Height="8" />
 							<RowDefinition Height="Auto" />
+							<RowDefinition Height="8" />
+							<RowDefinition Height="Auto" />
 						</Grid.RowDefinitions>
 						<Grid.ColumnDefinitions>
 							<ColumnDefinition Width="*" />
@@ -358,6 +360,29 @@
 								<CheckBox Grid.Column="1" x:Name="TogStartup" Style="{StaticResource ChamferMiniToggleStyle}"
 								          IsChecked="{Binding RunOnStartup, UpdateSourceTrigger=PropertyChanged}"
 								          ToolTip="Start Nitrous in the tray at logon via an elevated scheduled task (no UAC prompt)."
+								          VerticalAlignment="Center" Margin="6,0,0,0" />
+							</Grid>
+						</controls:ChamferCard>
+
+						<!-- Rule 5: Expert Mode (full width) -->
+						<controls:ChamferCard Grid.Row="4" Grid.Column="0" Grid.ColumnSpan="3" ChamferSize="4"
+						                      Background="{StaticResource Steel900Brush}"
+						                      BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
+						                      Padding="10,8" Height="52">
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*" />
+									<ColumnDefinition Width="Auto" />
+								</Grid.ColumnDefinitions>
+								<StackPanel Grid.Column="0" VerticalAlignment="Center">
+									<TextBlock Text="Expert Mode" Foreground="White"
+									           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="11.5" />
+									<TextBlock Text="Bypass safety gates" Foreground="{StaticResource Steel400Brush}"
+									           FontFamily="{StaticResource MonoFontFamily}" FontSize="9.5" Margin="0,2,0,0" />
+								</StackPanel>
+								<CheckBox Grid.Column="1" x:Name="TogExpertMode" Style="{StaticResource ChamferMiniToggleStyle}"
+								          Checked="ExpertMode_Toggled" Unchecked="ExpertMode_Toggled"
+								          ToolTip="Allow custom fan speeds in Quiet and Turbo, and drop the 40% charge limit on AC. Fan writes are unverified because no EC HID fan read-back path exists. Performance and Turbo still require AC power."
 								          VerticalAlignment="Center" Margin="6,0,0,0" />
 							</Grid>
 						</controls:ChamferCard>

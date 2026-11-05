@@ -2,6 +2,7 @@ using System.Management;
 using System;
 using System.Threading.Tasks;
 using Nitrous.Enums;
+using Nitrous.Helpers;
 
 namespace Nitrous.Managers;
 
@@ -11,6 +12,14 @@ public static partial class AcerWmiManager
     public readonly record struct UsbChargingState(bool On, int? Floor);
     internal delegate ulong? GamingProfileReaderDelegate();
     internal delegate ulong? UsbChargingReaderDelegate();
+    internal delegate (bool OnAc, int BatteryPercent) PowerStateReaderDelegate();
+
+    private static PowerStateReaderDelegate? _powerStateReader;
+
+    internal static void SetPowerStateReaderForTesting(PowerStateReaderDelegate? testReader)
+    {
+        _powerStateReader = testReader;
+    }
 
     private static GamingProfileReaderDelegate? _gamingProfileReader;
     private static UsbChargingReaderDelegate? _usbChargingReader;
@@ -272,6 +281,18 @@ public static partial class AcerWmiManager
 
     public static async Task ApplyPowerProfileAsync(PowerProfile profile, int cpuFanSpeed = 0, int gpuFanSpeed = 0)
     {
+        bool expertMode = SettingsManager.GetInt("ExpertMode", 0) == 1;
+        var (onAc, batteryPercent) = ReadPowerState();
+
+        var resolved = HardwareSafetyPolicy.ResolveProfileWrite(profile, onAc, batteryPercent, expertMode);
+        if (resolved != profile)
+        {
+            LogManager.Warn(
+                $"Power mode {profile} held back (AC={onAc}, battery={batteryPercent}%, expert={expertMode}); applying {resolved}",
+                "AcerWmi");
+            profile = resolved;
+        }
+
         if (profile == PowerProfile.Turbo && !IsTurboModeSupported())
         {
             LogManager.Warn("Turbo profile unsupported; falling back to Performance", "AcerWmi");
@@ -279,17 +300,61 @@ public static partial class AcerWmiManager
         }
 
         await SetPowerModeAsync(profile).ConfigureAwait(false);
+        SettingsManager.Save("LastPowerMode", (int)profile);
 
-        if (cpuFanSpeed > 0 || gpuFanSpeed > 0)
+        if (!HardwareSafetyPolicy.AllowCustomFanWrite(profile, expertMode))
+        {
+            ResetFansToAutoSync();
+        }
+        else if (cpuFanSpeed > 0 || gpuFanSpeed > 0)
         {
             int cpu = Math.Clamp(cpuFanSpeed, 0, 100);
             int gpu = Math.Clamp(gpuFanSpeed, 0, 100);
-            await SetFansAsync(FanProfile.Medium, cpu, gpu).ConfigureAwait(false);
-            SettingsManager.Save("CustomFanSpeedCpu", cpu);
-            SettingsManager.Save("CustomFanSpeedGpu", gpu);
+            if (await SetFansAsync(FanProfile.Medium, cpu, gpu).ConfigureAwait(false))
+            {
+                SettingsManager.Save("CustomFanSpeedCpu", cpu);
+                SettingsManager.Save("CustomFanSpeedGpu", gpu);
+            }
         }
+    }
 
-        SettingsManager.Save("LastPowerMode", (int)profile);
+    /// <summary>Current power state (AC online status and battery percent).</summary>
+    public static (bool OnAc, int BatteryPercent) GetPowerState() => ReadPowerState();
+
+    private static (bool OnAc, int BatteryPercent) ReadPowerState()
+    {
+        var reader = _powerStateReader;
+        if (reader != null) return reader();
+
+        try
+        {
+            var state = BatteryManager.GetBatteryState();
+            return (state.AcOnLine, HardwareSafetyPolicy.BatteryPercent(state.MaxCapacity, state.RemainingCapacity));
+        }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"Power state read failed: {ex.Message}", "AcerWmi");
+            return (true, 100);
+        }
+    }
+
+    /// <summary>
+    /// The mode that would actually be written right now. UI uses this to preview a
+    /// downgrade instead of showing a mode the firmware will refuse.
+    /// </summary>
+    public static PowerProfile ResolvePowerProfileRequest(PowerProfile requested)
+    {
+        var (onAc, batteryPercent) = ReadPowerState();
+        return HardwareSafetyPolicy.ResolveProfileWrite(
+            requested, onAc, batteryPercent, SettingsManager.GetInt("ExpertMode", 0) == 1);
+    }
+
+    /// <summary>True when Performance/Turbo may be written right now.</summary>
+    public static bool IsOverclockModeAvailable()
+    {
+        var (onAc, batteryPercent) = ReadPowerState();
+        return HardwareSafetyPolicy.AllowsOverclockMode(
+            onAc, batteryPercent, SettingsManager.GetInt("ExpertMode", 0) == 1);
     }
 
     private static ulong? ReadGamingProfile()

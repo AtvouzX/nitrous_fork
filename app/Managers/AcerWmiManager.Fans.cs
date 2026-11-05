@@ -1,6 +1,7 @@
 using System;
 using System.Threading.Tasks;
 using Nitrous.Enums;
+using Nitrous.Helpers;
 
 namespace Nitrous.Managers;
 
@@ -13,7 +14,7 @@ public static partial class AcerWmiManager
 
     public static bool ResetFansToAutoSync()
     {
-        if (!IsHardwareSupported()) return false;
+        if (!IsHardwareSupported() && _wmiInvokeOverride == null) return false;
         try
         {
             LogManager.Info("Resetting fan mode to Auto (synchronous failsafe)", "AcerWmi");
@@ -26,8 +27,30 @@ public static partial class AcerWmiManager
         }
     }
 
-    public static async Task SetFansAsync(FanProfile profile, int cpuSpeed = 0, int gpuSpeed = 0)
+    /// <summary>
+    /// True when the active power mode lets software drive the fans. The EC fan table
+    /// owns them in Quiet and Turbo, so manual writes are refused there unless the
+    /// Expert Mode setting is on.
+    /// </summary>
+    public static bool IsFanControlAllowed()
     {
+        var mode = (PowerProfile)SettingsManager.GetInt("LastPowerMode", (int)PowerProfile.Performance);
+        return HardwareSafetyPolicy.AllowCustomFanWrite(mode, SettingsManager.GetInt("ExpertMode", 0) == 1);
+    }
+
+    /// <summary>
+    /// Applies fan speeds. Returns false when the active power mode owns the fan table
+    /// and the write was refused, so callers never persist speeds that did not land.
+    /// </summary>
+    public static async Task<bool> SetFansAsync(FanProfile profile, int cpuSpeed = 0, int gpuSpeed = 0)
+    {
+        if (!IsFanControlAllowed())
+        {
+            LogManager.Warn("Active power mode owns the fan table; ignoring manual fan write", "AcerWmi");
+            ResetFansToAutoSync();
+            return false;
+        }
+
         LogManager.Info($"Setting fans to {profile} (CPU={cpuSpeed}%, GPU={gpuSpeed}%)", "AcerWmi");
         if (profile == FanProfile.Auto)
         {
@@ -52,5 +75,7 @@ public static partial class AcerWmiManager
             await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 2ul | ((ulong)gpu << 8)).ConfigureAwait(false);
             await InvokeWmiAsync("AcerGamingFunction", "SetGamingFanSpeed", 4ul | ((ulong)gpu << 8)).ConfigureAwait(false);
         }
+
+        return true;
     }
 }

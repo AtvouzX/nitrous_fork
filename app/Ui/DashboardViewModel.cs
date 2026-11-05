@@ -149,6 +149,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         }
 
         UpdateBatteryBadge();
+        RefreshPowerModeAvailability();
         InitializeGpuTelemetryState();
         InitializeScenarios(); // after Turbo support resolution for mode list gating
 
@@ -302,6 +303,13 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             GpuCoreOffset = syncedCore;
             GpuMemoryOffset = syncedMemory;
         }
+
+        // Expert Mode or the active mode may have changed behind our back.
+        OnPropertyChanged(nameof(IsFanControlLocked));
+        OnPropertyChanged(nameof(IsFanControlEnabled));
+        OnPropertyChanged(nameof(FanLockVisibility));
+        OnPropertyChanged(nameof(FanLockText));
+        RefreshPowerModeAvailability();
 
         var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f)
             ? f

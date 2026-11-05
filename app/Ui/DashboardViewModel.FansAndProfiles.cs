@@ -50,7 +50,92 @@ public partial class DashboardViewModel
     public PowerProfile ActivePowerProfile
     {
         get => _activePowerProfile;
-        set => SetProperty(ref _activePowerProfile, value);
+        set
+        {
+            if (SetProperty(ref _activePowerProfile, value))
+            {
+                OnPropertyChanged(nameof(IsFanControlLocked));
+                OnPropertyChanged(nameof(IsFanControlEnabled));
+                OnPropertyChanged(nameof(FanLockVisibility));
+                OnPropertyChanged(nameof(FanLockText));
+            }
+        }
+    }
+
+    /// <summary>
+    /// True while the active power mode's firmware fan table owns the fans, so manual
+    /// writes are refused. Mirrors the guard inside <see cref="AcerWmiManager.SetFansAsync"/>.
+    /// </summary>
+    public bool IsFanControlLocked =>
+        HardwareSafetyPolicy.LocksFanControl(ActivePowerProfile) &&
+        SettingsManager.GetInt("ExpertMode", 0) != 1;
+
+    public bool IsFanControlEnabled => !IsFanControlLocked;
+
+    public Visibility FanLockVisibility => IsFanControlLocked ? Visibility.Visible : Visibility.Collapsed;
+
+    public string FanLockText => $"{ActivePowerProfile.ToString().ToUpperInvariant()} LOCKED";
+
+    public string FanLockTooltip =>
+        "This power mode runs the firmware fan table. Enable Expert Mode in Settings to force manual speeds.";
+
+    private bool _isOverclockModeAvailable;
+
+    /// <summary>
+    /// True when Performance/Turbo may be written right now. Mirrors the gate inside
+    /// <see cref="AcerWmiManager.ApplyPowerProfileAsync"/> so the rail cannot offer a
+    /// mode the firmware will refuse.
+    /// </summary>
+    public bool IsOverclockModeAvailable => _isOverclockModeAvailable;
+
+    public Visibility PowerModeLockVisibility =>
+        _isOverclockModeAvailable ? Visibility.Collapsed : Visibility.Visible;
+
+    public string PowerModeLockText
+    {
+        get
+        {
+            if (_isOverclockModeAvailable) return string.Empty;
+
+            bool onAc = AcerWmiManager.GetPowerState().OnAc;
+            return onAc
+                ? $"BELOW {HardwareSafetyPolicy.MinimumBatteryPercentForOverclock}% · PERFORMANCE AND TURBO LOCKED"
+                : "ON BATTERY · PERFORMANCE AND TURBO LOCKED";
+        }
+    }
+
+    public string PowerModeLockTooltip =>
+        $"Performance and Turbo need AC power. On AC they also need {HardwareSafetyPolicy.MinimumBatteryPercentForOverclock}% charge unless Expert Mode is on.";
+
+    public string PerformanceTooltip =>
+        _isOverclockModeAvailable
+            ? "More power. Processor at 100% on AC with CPU boost on (99% on battery, boost off)."
+            : (AcerWmiManager.GetPowerState().OnAc
+                ? $"Performance locked below {HardwareSafetyPolicy.MinimumBatteryPercentForOverclock}% battery: connect AC and charge (bypass in Settings > Expert Mode)."
+                : "Performance locked on battery: connect AC charger to enable.");
+
+    public string TurboTooltip =>
+        _isOverclockModeAvailable
+            ? "Maximum power. Processor locked at 100% min/max on AC with CPU boost on, fans at full cooling."
+            : (AcerWmiManager.GetPowerState().OnAc
+                ? $"Turbo locked below {HardwareSafetyPolicy.MinimumBatteryPercentForOverclock}% battery: connect AC and charge (bypass in Settings > Expert Mode)."
+                : "Turbo locked on battery: connect AC charger to enable.");
+
+    /// <summary>Recomputes the AC/charge gate. Cheap: one cached power-status read.</summary>
+    public void RefreshPowerModeAvailability()
+    {
+        bool available = AcerWmiManager.IsOverclockModeAvailable();
+        bool changed = _isOverclockModeAvailable != available;
+        _isOverclockModeAvailable = available;
+
+        if (changed)
+        {
+            OnPropertyChanged(nameof(IsOverclockModeAvailable));
+            OnPropertyChanged(nameof(PowerModeLockVisibility));
+        }
+        OnPropertyChanged(nameof(PowerModeLockText));
+        OnPropertyChanged(nameof(PerformanceTooltip));
+        OnPropertyChanged(nameof(TurboTooltip));
     }
 
     public IReadOnlyList<string> FanRampOptions => FanRamp.Options;
@@ -303,7 +388,16 @@ public partial class DashboardViewModel
             {
                 try
                 {
-                    ActivePowerProfile = mode;
+                    // The firmware refuses these modes on battery (and below the charge
+                    // floor). Resolve first so the UI never shows a mode that did not land.
+                    var resolved = AcerWmiManager.ResolvePowerProfileRequest(mode);
+                    if (resolved != mode)
+                    {
+                        LogManager.Warn(
+                            $"{mode} downgraded to {resolved}: AC power or charge level not met", "DashboardVM");
+                    }
+
+                    ActivePowerProfile = resolved;
                     DismissGpuAlert();
 
                     if (ScenarioStore.IsEnabled && !ScenarioStore.IsSuspended)
@@ -312,18 +406,18 @@ public partial class DashboardViewModel
                         LogManager.Info("Scenario suspended by manual power change in Dashboard", "ScenarioVM");
                     }
 
-                    SettingsManager.Save("LastPowerMode", (int)mode);
-                    _ = AcerWmiManager.ApplyPowerProfileAsync(mode);
+                    SettingsManager.Save("LastPowerMode", (int)resolved);
+                    _ = AcerWmiManager.ApplyPowerProfileAsync(resolved);
                     bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
-                    SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)mode);
+                    SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)resolved);
 
                     if (ManageCpuPower)
                     {
-                        _ = CpuPowerManager.ApplyProfileLimitsAsync(mode, isOnline);
+                        _ = CpuPowerManager.ApplyProfileLimitsAsync(resolved, isOnline);
                     }
 
-                    await _gpuManager.ApplyProfileOcAsync(mode, isOnline);
-                    var (profileCore, profileMemory) = _gpuManager.ResolveProfileOffsets(mode);
+                    await _gpuManager.ApplyProfileOcAsync(resolved, isOnline);
+                    var (profileCore, profileMemory) = _gpuManager.ResolveProfileOffsets(resolved);
                     GpuCoreOffset = profileCore;
                     GpuMemoryOffset = profileMemory;
 
@@ -332,7 +426,8 @@ public partial class DashboardViewModel
                         ApplyCurrentFanCurve();
                     }
 
-                    TrayApplication.Instance?.TriggerProfileOsd(mode);
+                    RefreshPowerModeAvailability();
+                    TrayApplication.Instance?.TriggerProfileOsd(resolved);
                 }
                 catch (Exception ex)
                 {
@@ -345,6 +440,12 @@ public partial class DashboardViewModel
         {
             if (Enum.TryParse(param?.ToString(), out FanProfile mode))
             {
+                if (!AcerWmiManager.IsFanControlAllowed())
+                {
+                    LogManager.Warn($"Fan control is disabled in {ActivePowerProfile} mode", "ScenarioVM");
+                    return;
+                }
+
                 if (ScenarioStore.IsEnabled && !ScenarioStore.IsSuspended)
                 {
                     ScenarioStore.SetSuspended(true);

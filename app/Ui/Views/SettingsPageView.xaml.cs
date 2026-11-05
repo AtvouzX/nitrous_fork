@@ -11,15 +11,31 @@ public partial class SettingsPageView : UserControl
     private int _usbChargingFloor = 30;
     private bool _usbChargingAvailable;
     private bool _usbChargingLoading = true;
+    private bool _expertModeLoading = true;
 
     public SettingsPageView()
     {
         InitializeComponent();
         SettingsVersionText.Text = $"Nitrous {UpdateManager.CurrentVersion}";
         InitializeUsbCharging();
+        InitializeExpertMode();
     }
 
     public TextBlock VersionTextElement => SettingsVersionText;
+
+    private void InitializeExpertMode()
+    {
+        TogExpertMode.IsChecked = SettingsManager.Get("ExpertMode", 0) == 1;
+        _expertModeLoading = false;
+    }
+
+    private void ExpertMode_Toggled(object sender, RoutedEventArgs e)
+    {
+        if (_expertModeLoading) return;
+        bool on = TogExpertMode.IsChecked == true;
+        SettingsManager.Save("ExpertMode", on ? 1 : 0);
+        LogManager.Info($"Expert mode {(on ? "enabled" : "disabled")}", "SettingsPage");
+    }
 
     private void InitializeUsbCharging()
     {

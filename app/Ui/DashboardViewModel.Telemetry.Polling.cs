@@ -86,6 +86,7 @@ public partial class DashboardViewModel
 
                         // 0. Update Battery Telemetry
                         UpdateBatteryBadge(batteryState);
+                        RefreshPowerModeAvailability();
 
                         // 1. Update WMI CPU/GPU Telemetry
                         CpuTempText = telemetry.CpuTemp > 0 ? $"{telemetry.CpuTemp} C" : "-- C";

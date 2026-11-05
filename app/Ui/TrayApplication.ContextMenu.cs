@@ -12,7 +12,7 @@ public partial class TrayApplication : ApplicationContext
     private void BuildContextMenu()
     {
         trayIcon.ContextMenuStrip?.Dispose();
-        var menu = new ContextMenuStrip { ShowImageMargin = false, ShowCheckMargin = true };
+        var menu = new ContextMenuStrip { ShowImageMargin = false, ShowCheckMargin = true, ShowItemToolTips = true };
 
         var openItem = new ToolStripMenuItem("Open Nitrous", null, (s, e) => ShowDashboard())
         {
@@ -30,28 +30,37 @@ public partial class TrayApplication : ApplicationContext
             {
                 try
                 {
+                    // Firmware refuses these modes on battery; resolve so the checkmark
+                    // and the OSD show the mode that actually landed.
+                    var resolved = AcerWmiManager.ResolvePowerProfileRequest(profile);
+                    if (resolved != profile)
+                    {
+                        LogManager.Warn(
+                            $"{profile} downgraded to {resolved}: AC power or charge level not met", "Tray");
+                    }
+
                     if (ScenarioStore.IsEnabled && !ScenarioStore.IsSuspended)
                     {
                         ScenarioStore.SetSuspended(true);
                         LogManager.Info("Scenario suspended by manual power change in Tray menu", "Scenario");
                     }
-                    SettingsManager.Save("LastPowerMode", (int)profile);
-                    await AcerWmiManager.ApplyPowerProfileAsync(profile);
+                    SettingsManager.Save("LastPowerMode", (int)resolved);
+                    await AcerWmiManager.ApplyPowerProfileAsync(resolved);
                     bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
-                    SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)profile);
+                    SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)resolved);
 
                     if (SettingsManager.Get("ManageCpuPower", 0) == 1)
                     {
-                        _ = CpuPowerManager.ApplyProfileLimitsAsync(profile, isOnline);
+                        _ = CpuPowerManager.ApplyProfileLimitsAsync(resolved, isOnline);
                     }
 
-                    await _gpuManager.ApplyProfileOcAsync(profile, isOnline);
-                    TriggerProfileOsd(profile);
+                    await _gpuManager.ApplyProfileOcAsync(resolved, isOnline);
+                    TriggerProfileOsd(resolved);
 
                     foreach (ToolStripItem sibling in powerMenu.DropDownItems)
                     {
                         if (sibling is ToolStripMenuItem mi)
-                            mi.Checked = (mi.Tag is PowerProfile p && p == profile);
+                            mi.Checked = (mi.Tag is PowerProfile p && p == resolved);
                     }
                 }
                 catch (Exception ex)
@@ -64,6 +73,23 @@ public partial class TrayApplication : ApplicationContext
             };
             powerMenu.DropDownItems.Add(item);
         }
+
+        // Performance and Turbo are refused by the firmware on battery (and below the
+        // charge floor): grey them out with a reason instead of letting clicks no-op.
+        powerMenu.DropDownOpening += (_, _) =>
+        {
+            bool overclockOk = AcerWmiManager.IsOverclockModeAvailable();
+            foreach (ToolStripItem entry in powerMenu.DropDownItems)
+            {
+                if (entry is not ToolStripMenuItem mi || mi.Tag is not PowerProfile p) continue;
+                if (!HardwareSafetyPolicy.RequiresAcGate(p)) continue;
+
+                mi.Enabled = overclockOk;
+                mi.ToolTipText = overclockOk
+                    ? string.Empty
+                    : $"Needs AC power. On AC, {HardwareSafetyPolicy.MinimumBatteryPercentForOverclock}% charge unless Expert Mode is on.";
+            }
+        };
 
         AddPowerItem("Quiet", PowerProfile.Quiet);
         AddPowerItem("Balanced", PowerProfile.Balanced);
@@ -84,6 +110,21 @@ public partial class TrayApplication : ApplicationContext
         // Fan Profiles Submenu
         var fanMenu = new ToolStripMenuItem("Fan Profile");
 
+        // The active power mode owns the fan table in Quiet and Turbo: show that in the
+        // menu itself instead of letting clicks silently do nothing.
+        fanMenu.DropDownOpening += (_, _) =>
+        {
+            bool allowed = AcerWmiManager.IsFanControlAllowed();
+            fanMenu.Text = allowed ? "Fan Profile" : "Fan Profile (locked)";
+            fanMenu.ToolTipText = allowed
+                ? string.Empty
+                : "The active power mode runs the firmware fan table. Enable Expert Mode in Settings to force manual speeds.";
+            foreach (ToolStripItem item in fanMenu.DropDownItems)
+            {
+                item.Enabled = allowed;
+            }
+        };
+
         void AddFanItem(string name, FanProfile profile)
         {
             var item = new ToolStripMenuItem(name, null, async (s, e) =>
@@ -97,6 +138,12 @@ public partial class TrayApplication : ApplicationContext
                     }
                     _lastAppliedCpuSpeed = -1;
                     _lastAppliedGpuSpeed = -1;
+
+                    if (!AcerWmiManager.IsFanControlAllowed())
+                    {
+                        LogManager.Warn("Fan control is disabled by the active power mode", "Tray");
+                        return;
+                    }
 
                     if (profile == FanProfile.Medium)
                     {

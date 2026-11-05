@@ -157,7 +157,8 @@ public partial class TrayApplication : ApplicationContext
                 bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
                 if (ShouldApplyBootOc(isOnline))
                 {
-                    var bootProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+                    var bootProfile = AcerWmiManager.ResolvePowerProfileRequest(
+                        (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance));
                     await _gpuManager.ApplyProfileOcAsync(bootProfile, isOnline);
                 }
 
@@ -290,6 +291,7 @@ public partial class TrayApplication : ApplicationContext
             string keyMode = isOnline ? "LastAcPowerMode" : "LastDcPowerMode";
             var activeMode = (PowerProfile)SettingsManager.Get(keyMode,
                 (int)(isOnline ? PowerProfile.Performance : PowerProfile.Quiet));
+            activeMode = AcerWmiManager.ResolvePowerProfileRequest(activeMode);
 
             SettingsManager.Save("LastPowerMode", (int)activeMode);
 
@@ -314,7 +316,13 @@ public partial class TrayApplication : ApplicationContext
             }
         }
 
-        var currentProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+        var savedMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+        var currentProfile = AcerWmiManager.ResolvePowerProfileRequest(savedMode);
+        if (currentProfile != savedMode)
+        {
+            LogManager.Warn($"{savedMode} downgraded to {currentProfile}: AC power or charge level not met", "Tray");
+            SettingsManager.Save("LastPowerMode", (int)currentProfile);
+        }
 
         // Apply CPU Power Management
         if (SettingsManager.Get("ManageCpuPower", 0) == 1)
@@ -444,25 +452,34 @@ public partial class TrayApplication : ApplicationContext
 
         // Get the current mode
         var currentProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+        bool overclockOk = AcerWmiManager.IsOverclockModeAvailable();
         PowerProfile nextProfile;
 
-        // Determine the next mode in the sequence
+        // Determine the next mode in the sequence. On battery the firmware refuses
+        // Performance and Turbo, so skip them instead of cycling into a downgrade.
         switch (currentProfile)
         {
             case PowerProfile.Quiet:
                 nextProfile = PowerProfile.Balanced;
                 break;
             case PowerProfile.Balanced:
-                nextProfile = PowerProfile.Performance;
+                nextProfile = overclockOk ? PowerProfile.Performance : PowerProfile.Quiet;
                 break;
             case PowerProfile.Performance:
-                // Skip Turbo and wrap around to Quiet if it isn't supported
-                nextProfile = AcerWmiManager.IsTurboModeSupported() ? PowerProfile.Turbo : PowerProfile.Quiet;
+                nextProfile = overclockOk && AcerWmiManager.IsTurboModeSupported()
+                    ? PowerProfile.Turbo
+                    : PowerProfile.Quiet;
                 break;
             case PowerProfile.Turbo:
             default:
                 nextProfile = PowerProfile.Quiet;
                 break;
+        }
+
+        var resolved = AcerWmiManager.ResolvePowerProfileRequest(nextProfile);
+        if (resolved != nextProfile)
+        {
+            LogManager.Warn($"{nextProfile} downgraded to {resolved}: AC power or charge level not met", "Tray");
         }
 
         // Apply the new mode
@@ -471,17 +488,17 @@ public partial class TrayApplication : ApplicationContext
             ScenarioStore.SetSuspended(true);
             LogManager.Info("Scenario suspended by manual power cycle hotkey", "Scenario");
         }
-        SettingsManager.Save("LastPowerMode", (int)nextProfile);
-        _ = AcerWmiManager.ApplyPowerProfileAsync(nextProfile);
-        SettingsManager.Save(acDcKey, (int)nextProfile);
+        SettingsManager.Save("LastPowerMode", (int)resolved);
+        _ = AcerWmiManager.ApplyPowerProfileAsync(resolved);
+        SettingsManager.Save(acDcKey, (int)resolved);
 
         if (SettingsManager.Get("ManageCpuPower", 0) == 1)
         {
-            _ = CpuPowerManager.ApplyProfileLimitsAsync(nextProfile, isOnline);
+            _ = CpuPowerManager.ApplyProfileLimitsAsync(resolved, isOnline);
         }
 
-        _ = _gpuManager.ApplyProfileOcAsync(nextProfile, isOnline);
-        TriggerProfileOsd(nextProfile);
+        _ = _gpuManager.ApplyProfileOcAsync(resolved, isOnline);
+        TriggerProfileOsd(resolved);
     }
 
     public void TriggerProfileOsd(PowerProfile profile)
