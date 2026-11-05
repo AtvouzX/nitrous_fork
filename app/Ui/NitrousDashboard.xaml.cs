@@ -244,7 +244,38 @@ public partial class NitrousDashboard : Window
 
     private void Window_IsVisibleChanged(object sender, DependencyPropertyChangedEventArgs e)
     {
-        if (this.Visibility == Visibility.Visible) RefreshDashboardState();
+        if (this.Visibility == Visibility.Visible)
+        {
+            CheckForPowerModeDrift();
+            RefreshDashboardState();
+        }
+    }
+
+    private void CheckForPowerModeDrift()
+    {
+        try
+        {
+            var detected = AcerWmiManager.GetActivePowerMode();
+            var saved = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+
+            if (HardwareSafetyPolicy.HasDrift(detected, saved))
+            {
+                var resolved = HardwareSafetyPolicy.ResolveDrift(detected, saved);
+                LogManager.Info($"Hardware power mode drift detected on window activation: {saved} -> {resolved}", "UI");
+                bool isOnline = AcerWmiManager.GetPowerState().OnAc;
+                SettingsManager.Save("LastPowerMode", (int)resolved);
+                SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)resolved);
+
+                if (DataContext is DashboardViewModel vm)
+                {
+                    vm.ActivePowerProfile = resolved;
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"Drift check on window activation failed: {ex.Message}", "UI");
+        }
     }
 
     public void RefreshDashboardState()
@@ -400,6 +431,7 @@ public partial class NitrousDashboard : Window
             _activeCurveWindow.Activate();
         }
 
+        CheckForPowerModeDrift();
         RefreshDashboardState();
     }
 

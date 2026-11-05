@@ -51,9 +51,9 @@ public partial class TrayApplication : ApplicationContext
     private System.Threading.Timer? _appExitTimer;
 
     /// <summary>Pure apply-plan seam: decides mode + fan action without touching hardware.</summary>
-    internal static ScenarioApplyPlan BuildScenarioApplyPlan(ScenarioProfile profile, bool isAcOnline, bool turboSupported)
+    internal static ScenarioApplyPlan BuildScenarioApplyPlan(ScenarioProfile profile, bool isAcOnline, IReadOnlyList<PowerProfile> supportedProfiles)
     {
-        var effective = ScenarioResolver.EffectiveMode(profile, isAcOnline, turboSupported);
+        var effective = ScenarioResolver.EffectiveMode(profile, isAcOnline, supportedProfiles);
         var fanAction = profile.FanCurvePreset != "Auto"
             ? ScenarioFanAction.Curve
             : profile.FanMode == FanProfile.Medium
@@ -63,6 +63,11 @@ public partial class TrayApplication : ApplicationContext
             effective, fanAction, profile.FanMode,
             profile.CustomFanSpeedCpu, profile.CustomFanSpeedGpu, profile.FanCurvePreset);
     }
+
+    internal static ScenarioApplyPlan BuildScenarioApplyPlan(ScenarioProfile profile, bool isAcOnline, bool turboSupported) =>
+        BuildScenarioApplyPlan(profile, isAcOnline, turboSupported
+            ? [PowerProfile.Quiet, PowerProfile.Balanced, PowerProfile.Performance, PowerProfile.Turbo]
+            : [PowerProfile.Quiet, PowerProfile.Balanced, PowerProfile.Performance]);
 
     internal void InitializeScenarioSyncBaselines()
     {
@@ -478,7 +483,7 @@ public partial class TrayApplication : ApplicationContext
             }
 
             bool isAc = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
-            var plan = BuildScenarioApplyPlan(profile, isAc, AcerWmiManager.IsTurboModeSupported());
+            var plan = BuildScenarioApplyPlan(profile, isAc, AcerWmiManager.GetSupportedProfiles());
 
             string signature = $"{profile.Id}|{plan.EffectiveMode}|{plan.FanAction}|{plan.FanMode}|{plan.CustomFanSpeedCpu}|{plan.CustomFanSpeedGpu}|{plan.FanCurvePreset}|{isAc}|{profile.BacklightTimeout}|{profile.LightingEffect}|{string.Join(",", profile.ZoneColors)}";
             bool changed = signature != _lastAppliedScenarioSignature;

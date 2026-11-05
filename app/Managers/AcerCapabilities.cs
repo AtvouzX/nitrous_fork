@@ -50,12 +50,16 @@ internal sealed record AcerCapabilities(
 
     public bool CanSetPowerMode => PowerModeChannel is PowerModeChannel.EcHid or PowerModeChannel.Wmi;
 
-    public bool SupportsTurbo => PowerModeChannel switch
+    private static readonly PowerProfile[] FallbackProfiles = [PowerProfile.Quiet, PowerProfile.Balanced, PowerProfile.Performance];
+
+    public IReadOnlyList<PowerProfile> SupportedProfiles => PowerModeChannel switch
     {
-        PowerModeChannel.EcHid => EcHid is { } hid && hid.Modes.Contains(PowerProfile.Turbo),
-        PowerModeChannel.Wmi => Wmi.SupportedProfiles.Contains(PowerProfile.Turbo),
-        _ => false
+        PowerModeChannel.EcHid => EcHid is { Modes.Count: > 0 } ? EcHid.Modes : FallbackProfiles,
+        PowerModeChannel.Wmi => Wmi.SupportedProfiles.Count > 0 ? Wmi.SupportedProfiles : FallbackProfiles,
+        _ => Wmi.SupportedProfiles.Count > 0 ? Wmi.SupportedProfiles : FallbackProfiles
     };
+
+    public bool SupportsTurbo => SupportedProfiles.Contains(PowerProfile.Turbo);
 
     public string Describe() =>
         $"model {Model ?? "unknown"} ({BiosVersion ?? "unknown BIOS"}); " +

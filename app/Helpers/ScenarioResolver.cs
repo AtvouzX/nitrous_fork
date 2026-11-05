@@ -21,12 +21,24 @@ public readonly record struct ScenarioResolution(string TargetActiveId, Scenario
 /// </summary>
 public static class ScenarioResolver
 {
-    public static PowerProfile EffectiveMode(ScenarioProfile profile, bool isAcOnline, bool turboSupported)
+    public static PowerProfile EffectiveMode(ScenarioProfile profile, bool isAcOnline, IReadOnlyList<PowerProfile> supportedProfiles)
     {
         var mode = isAcOnline ? profile.AcMode : profile.DcMode;
-        if (mode == PowerProfile.Turbo && !turboSupported) mode = PowerProfile.Performance;
+        if (supportedProfiles != null && supportedProfiles.Count > 0 && !supportedProfiles.Contains(mode))
+        {
+            if (mode == PowerProfile.Turbo && supportedProfiles.Contains(PowerProfile.Performance))
+                return PowerProfile.Performance;
+            return supportedProfiles.Contains(PowerProfile.Balanced)
+                ? PowerProfile.Balanced
+                : supportedProfiles[0];
+        }
         return mode;
     }
+
+    public static PowerProfile EffectiveMode(ScenarioProfile profile, bool isAcOnline, bool turboSupported) =>
+        EffectiveMode(profile, isAcOnline, turboSupported
+            ? [PowerProfile.Quiet, PowerProfile.Balanced, PowerProfile.Performance, PowerProfile.Turbo]
+            : [PowerProfile.Quiet, PowerProfile.Balanced, PowerProfile.Performance]);
 
     public static ScenarioProfile? FindProfileByName(IReadOnlyList<ScenarioProfile> profiles, string? name)
     {

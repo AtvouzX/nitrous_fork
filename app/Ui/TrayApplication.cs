@@ -285,6 +285,20 @@ public partial class TrayApplication : ApplicationContext
         if (!isStartup && _wasOnAcPower.HasValue && _wasOnAcPower.Value == isOnline) return;
         _wasOnAcPower = isOnline;
 
+        // Check for hardware drift on AC/DC transition (external writer: NitroSense / BIOS)
+        var detectedMode = AcerWmiManager.GetActivePowerMode();
+        var storedMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+        string currentAcDcKey = isOnline ? "LastAcPowerMode" : "LastDcPowerMode";
+
+        if (HardwareSafetyPolicy.HasDrift(detectedMode, storedMode))
+        {
+            var driftedMode = HardwareSafetyPolicy.ResolveDrift(detectedMode, storedMode);
+            LogManager.Info($"Hardware power mode drift detected on AC/DC transition: {storedMode} -> {driftedMode}", "Tray");
+            SettingsManager.Save("LastPowerMode", (int)driftedMode);
+            SettingsManager.Save(currentAcDcKey, (int)driftedMode);
+            TriggerProfileOsd(driftedMode);
+        }
+
         if (SettingsManager.Get("AutoSwitch", 0) == 1)
         {
             var previousMode = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
@@ -453,28 +467,9 @@ public partial class TrayApplication : ApplicationContext
         // Get the current mode
         var currentProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
         bool overclockOk = AcerWmiManager.IsOverclockModeAvailable();
-        PowerProfile nextProfile;
+        var supported = AcerWmiManager.GetSupportedProfiles();
 
-        // Determine the next mode in the sequence. On battery the firmware refuses
-        // Performance and Turbo, so skip them instead of cycling into a downgrade.
-        switch (currentProfile)
-        {
-            case PowerProfile.Quiet:
-                nextProfile = PowerProfile.Balanced;
-                break;
-            case PowerProfile.Balanced:
-                nextProfile = overclockOk ? PowerProfile.Performance : PowerProfile.Quiet;
-                break;
-            case PowerProfile.Performance:
-                nextProfile = overclockOk && AcerWmiManager.IsTurboModeSupported()
-                    ? PowerProfile.Turbo
-                    : PowerProfile.Quiet;
-                break;
-            case PowerProfile.Turbo:
-            default:
-                nextProfile = PowerProfile.Quiet;
-                break;
-        }
+        PowerProfile nextProfile = HardwareSafetyPolicy.GetNextCycleProfile(currentProfile, supported, overclockOk);
 
         var resolved = AcerWmiManager.ResolvePowerProfileRequest(nextProfile);
         if (resolved != nextProfile)

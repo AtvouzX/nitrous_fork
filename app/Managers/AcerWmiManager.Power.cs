@@ -46,42 +46,45 @@ public static partial class AcerWmiManager
         return GetGamingFunctionInstance() != null || AcerCapabilitiesProvider.Current.CanSetPowerMode;
     }
 
-    private static bool? _isTurboSupportedCached;
+    internal delegate PowerProfile? ActivePowerModeReaderDelegate();
+    private static ActivePowerModeReaderDelegate? _activePowerModeReader;
 
+    internal static void SetActivePowerModeReaderForTesting(ActivePowerModeReaderDelegate? testReader)
+    {
+        _activePowerModeReader = testReader;
+    }
+
+    private static bool? _isTurboSupportedCached;
+    private static System.Collections.Generic.IReadOnlyList<PowerProfile>? _supportedProfilesOverride;
+
+    internal static void SetSupportedProfilesForTesting(System.Collections.Generic.IReadOnlyList<PowerProfile>? profiles)
+    {
+        _supportedProfilesOverride = profiles;
+        _isTurboSupportedCached = profiles?.Contains(PowerProfile.Turbo);
+    }
+
+    /// <summary>
+    /// Single source of truth for hardware-supported power profiles.
+    /// Uses EC HID, register 0x0A, or test override.
+    /// </summary>
+    public static System.Collections.Generic.IReadOnlyList<PowerProfile> GetSupportedProfiles()
+    {
+        if (_supportedProfilesOverride != null) return _supportedProfilesOverride;
+        if (_isTurboSupportedCached.HasValue && !_isTurboSupportedCached.Value)
+        {
+            return System.Linq.Enumerable.ToArray(
+                System.Linq.Enumerable.Where(
+                    AcerCapabilitiesProvider.Current.SupportedProfiles,
+                    p => p != PowerProfile.Turbo));
+        }
+        return AcerCapabilitiesProvider.Current.SupportedProfiles;
+    }
+
+    /// <summary>Thin wrapper over <see cref="GetSupportedProfiles"/>.</summary>
     public static bool IsTurboModeSupported()
     {
-        if (_isTurboSupportedCached.HasValue)
-        {
-            return _isTurboSupportedCached.Value;
-        }
-
-        try
-        {
-            var capabilities = AcerCapabilitiesProvider.Current;
-            if (capabilities.PowerModeChannel == PowerModeChannel.EcHid)
-            {
-                return capabilities.SupportsTurbo;
-            }
-
-            ulong? rawOutput = ReadMiscSetting(0x0A);
-            if (rawOutput.HasValue)
-            {
-                // 0x0A represents the "Supported Profiles" registry
-                int supportedBitmap = (int)((rawOutput.Value >> 8) & 0xFF);
-
-                // Check if Bit 5 (Turbo Mode) is set in the bitmap
-                bool isSupported = (supportedBitmap & (1 << 5)) != 0;
-                _isTurboSupportedCached = isSupported;
-                return isSupported;
-            }
-        }
-        catch (Exception ex)
-        {
-            LogManager.Debug($"IsTurboModeSupported check failed: {ex.Message}", "AcerWmi");
-        }
-
-        _isTurboSupportedCached = false;
-        return false;
+        if (_isTurboSupportedCached.HasValue) return _isTurboSupportedCached.Value;
+        return System.Linq.Enumerable.Contains(GetSupportedProfiles(), PowerProfile.Turbo);
     }
 
     internal static void SetTurboSupportedForTesting(bool? value)
@@ -181,6 +184,8 @@ public static partial class AcerWmiManager
 
     public static PowerProfile? GetActivePowerMode()
     {
+        if (_activePowerModeReader != null) return _activePowerModeReader();
+
         try
         {
             var capabilities = AcerCapabilitiesProvider.Current;
