@@ -165,6 +165,7 @@ public partial class NvidiaGpuManager : IDisposable
     public NvidiaGpuManager()
     {
         MigrateLegacyDefaultOffsets();
+        MigrateLegacyGpuSources();
         InitializeNvAPI();
     }
 
@@ -389,6 +390,30 @@ public partial class NvidiaGpuManager : IDisposable
 
         // Ultimate fallback — assume awake so telemetry is never permanently blocked
         return true;
+    }
+
+    /// <summary>
+    /// PCI identity of the installed NVIDIA adapter as
+    /// <c>DEV_xxxx&amp;SUBSYS_xxxxxxxx</c>. Keys the vendor OC table.
+    /// Reuses the cached CM API instance ID; never touches the GPU driver.
+    /// </summary>
+    internal static string? GetNvidiaPciId()
+    {
+        try
+        {
+            if (!_instanceIdResolved)
+            {
+                _nvidiaInstanceId = ResolveNvidiaInstanceId();
+                _instanceIdResolved = true;
+            }
+
+            return VendorGpuOcDefaults.NormalizePciId(_nvidiaInstanceId);
+        }
+        catch (Exception ex)
+        {
+            LogManager.Debug($"GetNvidiaPciId failed: {ex.Message}", "NvidiaGpu");
+            return null;
+        }
     }
 
     /// <summary>

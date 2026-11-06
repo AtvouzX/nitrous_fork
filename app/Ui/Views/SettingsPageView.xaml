@@ -265,6 +265,8 @@
 							<RowDefinition Height="Auto" />
 							<RowDefinition Height="8" />
 							<RowDefinition Height="Auto" />
+							<RowDefinition Height="8" />
+							<RowDefinition Height="Auto" />
 						</Grid.RowDefinitions>
 						<Grid.ColumnDefinitions>
 							<ColumnDefinition Width="*" />
@@ -383,6 +385,29 @@
 								<CheckBox Grid.Column="1" x:Name="TogExpertMode" Style="{StaticResource ChamferMiniToggleStyle}"
 								          Checked="ExpertMode_Toggled" Unchecked="ExpertMode_Toggled"
 								          ToolTip="Allow custom fan speeds in Quiet and Turbo, and drop the 40% charge limit on AC. Fan writes are unverified because no EC HID fan read-back path exists. Performance and Turbo still require AC power."
+								          VerticalAlignment="Center" Margin="6,0,0,0" />
+							</Grid>
+						</controls:ChamferCard>
+
+						<!-- Rule 6: Vendor GPU Defaults (full width) -->
+						<controls:ChamferCard Grid.Row="6" Grid.Column="0" Grid.ColumnSpan="3" ChamferSize="4"
+						                      Background="{StaticResource Steel900Brush}"
+						                      BorderBrush="{StaticResource Steel700Brush}" BorderThickness="1"
+						                      Padding="10,8" Height="52">
+							<Grid>
+								<Grid.ColumnDefinitions>
+									<ColumnDefinition Width="*" />
+									<ColumnDefinition Width="Auto" />
+								</Grid.ColumnDefinitions>
+								<StackPanel Grid.Column="0" VerticalAlignment="Center">
+									<TextBlock Text="Vendor GPU Defaults" Foreground="White"
+									           FontFamily="{StaticResource MonoFontFamily}" FontWeight="Bold" FontSize="11.5" />
+									<TextBlock Text="NitroSense per-SKU offsets" Foreground="{StaticResource Steel400Brush}"
+									           FontFamily="{StaticResource MonoFontFamily}" FontSize="9.5" Margin="0,2,0,0" />
+								</StackPanel>
+								<CheckBox Grid.Column="1" x:Name="TogVendorGpuDefaults" Style="{StaticResource ChamferMiniToggleStyle}"
+								          IsChecked="{Binding UseVendorGpuDefaults, UpdateSourceTrigger=PropertyChanged}"
+								          ToolTip="{Binding UseVendorGpuDefaultsTooltip}"
 								          VerticalAlignment="Center" Margin="6,0,0,0" />
 							</Grid>
 						</controls:ChamferCard>

@@ -174,16 +174,61 @@ public partial class NvidiaGpuManager
     private long _lastAutoApplyTick;
     public const int AutoApplyCooldownMs = 30000; // 30s cooldown per profile to prevent NvAPI hammering on transient wakes
 
-    // Helpers to track default values per profile (opt-in stock defaults)
-    public int GetDefaultCore(PowerProfile profile) => 0;
+    private static readonly PowerProfile[] AllProfiles =
+        [PowerProfile.Quiet, PowerProfile.Balanced, PowerProfile.Performance, PowerProfile.Turbo];
 
-    public int GetDefaultMemory(PowerProfile profile) => 0;
+    // Helpers to track default values per profile (opt-in vendor defaults)
+    public int GetDefaultCore(PowerProfile profile) => GetVendorDefaults(profile).Core;
+
+    public int GetDefaultMemory(PowerProfile profile) => GetVendorDefaults(profile).Memory;
+
+    private static (int Core, int Memory) GetVendorDefaults(PowerProfile profile)
+    {
+        if (SettingsManager.GetInt(VendorGpuOcDefaults.ToggleSettingKey, 0) != 1)
+        {
+            return (0, 0);
+        }
+
+        return VendorGpuOcDefaults.GetOffsets(GetNvidiaPciId(), profile);
+    }
+
+    /// <summary>
+    /// Authorship migration for installs predating <c>GpuSource_{profile}</c>.
+    /// Non-zero offsets become Custom; 0/0 is stock, so Default is safe.
+    /// </summary>
+    private static void MigrateLegacyGpuSources()
+    {
+        try
+        {
+            if (SettingsManager.Get("GpuSourceMigrated_v1", 0) == 1) return;
+
+            foreach (var profile in AllProfiles)
+            {
+                string key = VendorGpuOcDefaults.SourceKey(profile);
+                if (SettingsManager.GetString(key, string.Empty).Length > 0) continue;
+
+                int core = SettingsManager.GetInt($"GpuCore_{profile}", 0);
+                int memory = SettingsManager.GetInt($"GpuMemory_{profile}", 0);
+                var source = VendorGpuOcDefaults.InferLegacySource(core, memory);
+                SettingsManager.Save(key, VendorGpuOcDefaults.FormatSource(source));
+            }
+
+            SettingsManager.Save("GpuSourceMigrated_v1", 1);
+        }
+        catch (Exception ex)
+        {
+            LogManager.Warn($"MigrateLegacyGpuSources failed: {ex.Message}", "NvidiaGpu");
+        }
+    }
 
     // Saves the user's custom slider values to the active profile
     public void SaveCustomProfileOc(PowerProfile profile, int core, int memory)
     {
         SettingsManager.Save($"GpuCore_{profile}", ClampCoreOffset(core));
         SettingsManager.Save($"GpuMemory_{profile}", ClampMemoryOffset(memory));
+        SettingsManager.Save(
+            VendorGpuOcDefaults.SourceKey(profile),
+            VendorGpuOcDefaults.FormatSource(VendorGpuOcSource.Custom));
     }
 
     // Overwrites the custom save with defaults
@@ -191,8 +236,65 @@ public partial class NvidiaGpuManager
     {
         SettingsManager.Save($"GpuCore_{profile}", GetDefaultCore(profile));
         SettingsManager.Save($"GpuMemory_{profile}", GetDefaultMemory(profile));
+        // An explicit reset is an authored choice: never let the vendor toggle overwrite it.
+        SettingsManager.Save(
+            VendorGpuOcDefaults.SourceKey(profile),
+            VendorGpuOcDefaults.FormatSource(VendorGpuOcSource.Custom));
         _lastAutoApplyTick = 0;
         _lastAutoAppliedProfile = null;
         await ApplyProfileOcAsync(profile, true);
+    }
+
+    /// <summary>
+    /// Seeds or clears per-profile offsets from the vendor table. Custom profiles
+    /// are never modified. Returns true when any profile value changed.
+    /// </summary>
+    public bool ApplyVendorGpuDefaultsToSettings(bool enable, string? pciId = null)
+    {
+        SettingsManager.Save(VendorGpuOcDefaults.ToggleSettingKey, enable ? 1 : 0);
+
+        string? identity = pciId ?? GetNvidiaPciId();
+        bool changed = false;
+
+        foreach (var profile in AllProfiles)
+        {
+            var current = VendorGpuOcDefaults.ParseSource(
+                SettingsManager.GetString(VendorGpuOcDefaults.SourceKey(profile), string.Empty));
+
+            var (vendorCore, vendorMemory) = VendorGpuOcDefaults.GetOffsets(identity, profile);
+            var plan = VendorGpuOcDefaults.ResolveTogglePlan(current, enable, vendorCore, vendorMemory);
+            if (plan.Action == VendorGpuOcToggleAction.None) continue;
+
+            SettingsManager.Save($"GpuCore_{profile}", ClampCoreOffset(plan.Core));
+            SettingsManager.Save($"GpuMemory_{profile}", ClampMemoryOffset(plan.Memory));
+            SettingsManager.Save(
+                VendorGpuOcDefaults.SourceKey(profile),
+                VendorGpuOcDefaults.FormatSource(plan.ResultSource));
+            changed = true;
+        }
+
+        if (changed)
+        {
+            LogManager.Info(
+                $"Vendor GPU defaults {(enable ? "enabled" : "disabled")}; per-profile offsets updated.",
+                "NvidiaGpu");
+        }
+
+        return changed;
+    }
+
+    /// <summary>
+    /// Toggle entry point: seeds settings, then applies the active profile once
+    /// when the dGPU is awake on AC. Otherwise defers to the wake auto-apply path.
+    /// </summary>
+    public async Task SetUseVendorGpuDefaultsAsync(bool enable)
+    {
+        bool changed = ApplyVendorGpuDefaultsToSettings(enable);
+        if (!changed) return;
+        if (!VendorGpuOcDefaults.AllowsImmediateApply(IsGpuAwake(), IsAcPowerConnected())) return;
+
+        _lastAutoApplyTick = 0;
+        var active = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
+        await ApplyProfileOcAsync(active, isAcOnline: true);
     }
 }

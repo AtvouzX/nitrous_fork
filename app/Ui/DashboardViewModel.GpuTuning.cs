@@ -110,9 +110,44 @@ public partial class DashboardViewModel
     public ICommand ResetGpuClocksCommand { get; private set; } = null!;
     public ICommand DismissGpuAlertCommand { get; private set; } = null!;
 
+    private bool _useVendorGpuDefaults;
+
+    public bool UseVendorGpuDefaults
+    {
+        get => _useVendorGpuDefaults;
+        set
+        {
+            if (!SetProperty(ref _useVendorGpuDefaults, value)) return;
+            _ = ApplyVendorGpuDefaultsAsync(value);
+        }
+    }
+
+    // Static per-machine text computed once: names the exact offsets this SKU receives.
+    public string UseVendorGpuDefaultsTooltip { get; private set; } =
+        "Applies NitroSense's per-laptop GPU offsets. Custom profiles are never overwritten.";
+
+    private async Task ApplyVendorGpuDefaultsAsync(bool enable)
+    {
+        try
+        {
+            await _gpuManager.SetUseVendorGpuDefaultsAsync(enable);
+            var (core, memory) = _gpuManager.ResolveProfileOffsets(ActivePowerProfile);
+            GpuCoreOffset = core;
+            GpuMemoryOffset = memory;
+        }
+        catch (Exception ex)
+        {
+            LogManager.Warn($"Failed to apply vendor GPU defaults: {ex.Message}", "DashboardVM");
+        }
+    }
+
     private void InitializeGpuTuning()
     {
         DismissGpuAlertCommand = new RelayCommand(_ => DismissGpuAlert());
+
+        _useVendorGpuDefaults = SettingsManager.GetInt(VendorGpuOcDefaults.ToggleSettingKey, 0) == 1;
+        UseVendorGpuDefaultsTooltip =
+            VendorGpuOcDefaults.DescribeOffsets(NvidiaGpuManager.GetNvidiaPciId());
 
         ApplyGpuClocksCommand = new RelayCommand(async _ =>
         {
