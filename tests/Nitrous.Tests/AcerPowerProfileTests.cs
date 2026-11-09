@@ -303,6 +303,34 @@ public class AcerPowerProfileTests : IDisposable
     }
 
     [Fact]
+    public async Task SetFansAsync_WithExplicitZeroSpeeds_WritesZeroNotProfilePercent()
+    {
+        SettingsManager.Save("LastPowerMode", (int)PowerProfile.Performance);
+        RecordWmi();
+
+        bool applied = await AcerWmiManager.SetFansAsync(FanProfile.Medium, 0, 0);
+
+        Assert.True(applied);
+        Assert.Contains(_wmiCalls, c => c.Method == "SetGamingFanSpeed" && c.Input == (1ul | (0ul << 8)));
+        Assert.Contains(_wmiCalls, c => c.Method == "SetGamingFanSpeed" && c.Input == (2ul | (0ul << 8)));
+        Assert.Contains(_wmiCalls, c => c.Method == "SetGamingFanSpeed" && c.Input == (4ul | (0ul << 8)));
+        Assert.DoesNotContain(_wmiCalls, c => c.Method == "SetGamingFanSpeed"
+            && c.Input == (1ul | ((ulong)FanProfile.Medium << 8)));
+    }
+
+    [Fact]
+    public async Task SetFansAsync_WithoutSpeeds_StillUsesProfilePercent()
+    {
+        SettingsManager.Save("LastPowerMode", (int)PowerProfile.Performance);
+        RecordWmi();
+
+        await AcerWmiManager.SetFansAsync(FanProfile.Quiet);
+
+        Assert.Contains(_wmiCalls, c => c.Method == "SetGamingFanSpeed"
+            && c.Input == (1ul | ((ulong)FanProfile.Quiet << 8)));
+    }
+
+    [Fact]
     public async Task SetFansAsync_InQuietMode_WithExpertMode_Applies()
     {
         SettingsManager.Save("LastPowerMode", (int)PowerProfile.Quiet);

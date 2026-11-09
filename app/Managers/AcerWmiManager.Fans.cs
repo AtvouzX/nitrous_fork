@@ -41,8 +41,10 @@ public static partial class AcerWmiManager
     /// <summary>
     /// Applies fan speeds. Returns false when the active power mode owns the fan table
     /// and the write was refused, so callers never persist speeds that did not land.
+    /// Omitted speeds (-1) fall back to the profile percentage; an explicit 0 is a real
+    /// request to stop the fan and must reach the EC unchanged.
     /// </summary>
-    public static async Task<bool> SetFansAsync(FanProfile profile, int cpuSpeed = 0, int gpuSpeed = 0)
+    public static async Task<bool> SetFansAsync(FanProfile profile, int cpuSpeed = -1, int gpuSpeed = -1)
     {
         if (!IsFanControlAllowed())
         {
@@ -64,7 +66,7 @@ public static partial class AcerWmiManager
         {
             int cpu = Math.Clamp(cpuSpeed, 0, 100);
             int gpu = Math.Clamp(gpuSpeed, 0, 100);
-            if (cpu <= 0 && gpu <= 0)
+            if (cpuSpeed < 0 && gpuSpeed < 0)
             {
                 int unified = Math.Clamp((int)profile, 0, 100);
                 cpu = unified;

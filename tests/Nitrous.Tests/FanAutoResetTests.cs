@@ -120,17 +120,28 @@ public class FanAutoResetTests
         });
         try
         {
-            await AcerWmiManager.SetFansAsync(FanProfile.Auto);
-            Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanBehavior" && c.Input == AcerWmiManager.FanBehaviorAuto);
-            wmiCalls.Clear();
-            await AcerWmiManager.SetFansAsync(FanProfile.Max);
-            Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanBehavior" && c.Input == AcerWmiManager.FanBehaviorMax);
-            wmiCalls.Clear();
-            await AcerWmiManager.SetFansAsync(FanProfile.Medium, 60, 70);
-            Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanBehavior" && c.Input == AcerWmiManager.FanBehaviorCustom);
-            Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanSpeed" && c.Input == (1ul | (60ul << 8)));
-            Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanSpeed" && c.Input == (2ul | (70ul << 8)));
-            Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanSpeed" && c.Input == (4ul | (70ul << 8)));
+            // The fan gate reads the ambient power mode; pin a permissive one so this
+            // test does not depend on the host machine's real LastPowerMode value.
+            int origPowerMode = SettingsManager.GetInt("LastPowerMode", (int)PowerProfile.Performance);
+            SettingsManager.Save("LastPowerMode", (int)PowerProfile.Performance);
+            try
+            {
+                await AcerWmiManager.SetFansAsync(FanProfile.Auto);
+                Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanBehavior" && c.Input == AcerWmiManager.FanBehaviorAuto);
+                wmiCalls.Clear();
+                await AcerWmiManager.SetFansAsync(FanProfile.Max);
+                Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanBehavior" && c.Input == AcerWmiManager.FanBehaviorMax);
+                wmiCalls.Clear();
+                await AcerWmiManager.SetFansAsync(FanProfile.Medium, 60, 70);
+                Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanBehavior" && c.Input == AcerWmiManager.FanBehaviorCustom);
+                Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanSpeed" && c.Input == (1ul | (60ul << 8)));
+                Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanSpeed" && c.Input == (2ul | (70ul << 8)));
+                Assert.Contains(wmiCalls, c => c.Method == "SetGamingFanSpeed" && c.Input == (4ul | (70ul << 8)));
+            }
+            finally
+            {
+                SettingsManager.Save("LastPowerMode", origPowerMode);
+            }
         }
         finally
         {
