@@ -7,6 +7,7 @@ namespace Nitrous.Tests;
 public class DialGeometryHelperTests
 {
     [Theory]
+    [InlineData(PowerProfile.Eco, 135.0)]
     [InlineData(PowerProfile.Quiet, 180.0)]
     [InlineData(PowerProfile.Balanced, 270.0)]
     [InlineData(PowerProfile.Performance, 360.0)]
@@ -41,6 +42,10 @@ public class DialGeometryHelperTests
         int cx = 100;
         int cy = 100;
         double radius = 50.0;
+
+        // Eco: 135 deg -> dx = Round(50 * Cos(135°)) = -35, dy = Round(50 * Sin(135°)) = 35 -> (65, 135)
+        var ecoTip = DialGeometryHelper.CalculateNeedleTip(cx, cy, radius, PowerProfile.Eco);
+        Assert.Equal((65, 135), ecoTip);
 
         // Quiet: 180 deg -> (-50, 0) relative to center -> (50, 100)
         var quietTip = DialGeometryHelper.CalculateNeedleTip(cx, cy, radius, PowerProfile.Quiet);

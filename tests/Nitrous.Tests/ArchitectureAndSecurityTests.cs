@@ -1,4 +1,4 @@
-﻿using System.IO;
+using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
 using Nitrous.Managers;
@@ -163,6 +163,13 @@ public class ArchitectureAndSecurityTests
     {
         int size = Marshal.SizeOf<Nitrous.Interop.User32.DISPLAYCONFIG_MODE_INFO>();
         Assert.Equal(64, size);
+    }
+
+    [Fact]
+    public void Nvapi_NvToppsJpacControl_StructSize_MatchesVendorStandard()
+    {
+        int size = Marshal.SizeOf<Nitrous.Managers.NvidiaGpuManager.NvToppsJpacControl>();
+        Assert.Equal(0x4C8, size); // 1224 bytes vendor payload
     }
 
     [Fact]

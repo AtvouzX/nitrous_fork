@@ -15,10 +15,16 @@ public static class HardwareSafetyPolicy
 
     /// <summary>
     /// Modes where the firmware fan table owns the fans; the vendor UI disables
-    /// manual fan control in these modes. Eco joins this set in Phase 4.
+    /// manual fan control in these modes.
     /// </summary>
     public static bool LocksFanControl(PowerProfile profile) =>
-        profile is PowerProfile.Quiet or PowerProfile.Turbo;
+        profile is PowerProfile.Quiet or PowerProfile.Turbo or PowerProfile.Eco;
+
+    /// <summary>
+    /// Modes that are only available on battery.
+    /// </summary>
+    public static bool RequiresBatteryGate(PowerProfile profile) =>
+        profile == PowerProfile.Eco;
 
     /// <summary>
     /// True when a custom fan speed write is allowed. Expert mode overrides the
@@ -44,6 +50,7 @@ public static class HardwareSafetyPolicy
     /// Returns the mode that may actually be written to hardware.
     /// Overclock modes fall back to Balanced on battery unconditionally, and on AC
     /// below <see cref="MinimumBatteryPercentForOverclock"/> unless expert mode is on.
+    /// Eco mode falls back to Balanced on AC unconditionally.
     /// </summary>
     public static PowerProfile ResolveProfileWrite(
         PowerProfile requested,
@@ -51,6 +58,11 @@ public static class HardwareSafetyPolicy
         int batteryPercent,
         bool expertMode)
     {
+        if (RequiresBatteryGate(requested))
+        {
+            return onAc ? PowerProfile.Balanced : requested;
+        }
+
         if (!RequiresAcGate(requested)) return requested;
         return AllowsOverclockMode(onAc, batteryPercent, expertMode) ? requested : PowerProfile.Balanced;
     }
@@ -85,7 +97,8 @@ public static class HardwareSafetyPolicy
     public static PowerProfile GetNextCycleProfile(
         PowerProfile current,
         System.Collections.Generic.IReadOnlyList<PowerProfile> supported,
-        bool overclockAvailable)
+        bool overclockAvailable,
+        bool onAc = true)
     {
         if (supported == null || supported.Count == 0)
         {
@@ -97,6 +110,7 @@ public static class HardwareSafetyPolicy
         {
             var p = supported[i];
             if (!overclockAvailable && RequiresAcGate(p)) continue;
+            if (onAc && RequiresBatteryGate(p)) continue;
             candidates.Add(p);
         }
 

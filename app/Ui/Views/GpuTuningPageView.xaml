@@ -147,7 +147,7 @@
 				<!-- Secondary Action: RESET -->
 			<controls:ChamferButton Grid.Column="0" Variant="Secondary" Content="RESET" 
 			                        Command="{Binding ResetGpuClocksCommand}" Height="36" FontSize="11"
-			                        ToolTip="Reset both clock offsets to stock (0 MHz)." />
+			                        ToolTip="Reset both offsets to stock (0/0), or to the vendor defaults when the Vendor GPU Defaults toggle is on." />
 
 			<!-- Primary Action: APPLY -->
 			<controls:ChamferButton Grid.Column="2" Variant="Primary" Content="{Binding ApplyBtnText}" 

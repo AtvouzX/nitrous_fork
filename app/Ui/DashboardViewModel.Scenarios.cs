@@ -31,7 +31,9 @@ public partial class DashboardViewModel
 
     public ObservableCollection<ScenarioProfile> ScenarioProfiles => _scenarioProfiles;
 
-    public ObservableCollection<PowerProfile> ScenarioPowerModes { get; } = [];
+    public ObservableCollection<PowerProfile> ScenarioAcPowerModes { get; } = [];
+    public ObservableCollection<PowerProfile> ScenarioDcPowerModes { get; } = [];
+    public ObservableCollection<PowerProfile> ScenarioPowerModes => ScenarioAcPowerModes;
 
     /// <summary>False on single-color / unreachable keyboards: RGB effect and zone editors hide.</summary>
     public bool ScenarioRgbSupported { get; private set; }
@@ -121,11 +123,18 @@ public partial class DashboardViewModel
 
     private void InitializeScenarios()
     {
-        ScenarioPowerModes.Clear();
-        ScenarioPowerModes.Add(PowerProfile.Quiet);
-        ScenarioPowerModes.Add(PowerProfile.Balanced);
-        ScenarioPowerModes.Add(PowerProfile.Performance);
-        if (IsTurboSupported) ScenarioPowerModes.Add(PowerProfile.Turbo);
+        ScenarioAcPowerModes.Clear();
+        ScenarioAcPowerModes.Add(PowerProfile.Quiet);
+        ScenarioAcPowerModes.Add(PowerProfile.Balanced);
+        ScenarioAcPowerModes.Add(PowerProfile.Performance);
+        if (IsTurboSupported) ScenarioAcPowerModes.Add(PowerProfile.Turbo);
+
+        ScenarioDcPowerModes.Clear();
+        if (IsEcoSupported) ScenarioDcPowerModes.Add(PowerProfile.Eco);
+        ScenarioDcPowerModes.Add(PowerProfile.Quiet);
+        ScenarioDcPowerModes.Add(PowerProfile.Balanced);
+        ScenarioDcPowerModes.Add(PowerProfile.Performance);
+        if (IsTurboSupported) ScenarioDcPowerModes.Add(PowerProfile.Turbo);
 
         try
         {
@@ -186,7 +195,13 @@ public partial class DashboardViewModel
     public PowerProfile ScenarioAcMode
     {
         get => _selectedScenario?.AcMode ?? PowerProfile.Balanced;
-        set { if (_selectedScenario != null) _selectedScenario.AcMode = value; }
+        set
+        {
+            if (_selectedScenario != null)
+            {
+                _selectedScenario.AcMode = value == PowerProfile.Eco ? PowerProfile.Balanced : value;
+            }
+        }
     }
 
     public PowerProfile ScenarioDcMode

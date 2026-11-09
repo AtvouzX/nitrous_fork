@@ -193,9 +193,21 @@ public class NvidiaGpuManagerTests
     [InlineData(Nitrous.Enums.PowerProfile.Turbo)]
     public void GetDefaultCore_And_GetDefaultMemory_ReturnZeroStockOffsets(Nitrous.Enums.PowerProfile profile)
     {
-        using var manager = new NvidiaGpuManager();
-        Assert.Equal(0, manager.GetDefaultCore(profile));
-        Assert.Equal(0, manager.GetDefaultMemory(profile));
+        // The opt-in vendor table changes the meaning of "default". Force stock mode
+        // so the assertion does not depend on ambient registry state.
+        int originalToggle = SettingsManager.GetInt(VendorGpuOcDefaults.ToggleSettingKey, 0);
+        try
+        {
+            SettingsManager.Save(VendorGpuOcDefaults.ToggleSettingKey, 0);
+
+            using var manager = new NvidiaGpuManager();
+            Assert.Equal(0, manager.GetDefaultCore(profile));
+            Assert.Equal(0, manager.GetDefaultMemory(profile));
+        }
+        finally
+        {
+            SettingsManager.Save(VendorGpuOcDefaults.ToggleSettingKey, originalToggle);
+        }
     }
 
     [Theory]

@@ -102,6 +102,7 @@ public static class AcerEcHidProtocol
         3 => new[] { PowerProfile.Quiet, PowerProfile.Balanced, PowerProfile.Performance },
         4 => new[] { PowerProfile.Quiet, PowerProfile.Balanced, PowerProfile.Performance, PowerProfile.Turbo },
         5 => new[] { PowerProfile.Quiet, PowerProfile.Balanced, PowerProfile.Performance, PowerProfile.Turbo },
+        6 => new[] { PowerProfile.Eco, PowerProfile.Quiet, PowerProfile.Balanced, PowerProfile.Performance, PowerProfile.Turbo },
         _ => Array.Empty<PowerProfile>()
     };
 

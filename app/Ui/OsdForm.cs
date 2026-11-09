@@ -577,6 +577,9 @@ public class OsdForm : Form
     {
         switch (profile)
         {
+            case PowerProfile.Eco:
+                DrawLeafIcon(g, bounds, color);
+                break;
             case PowerProfile.Quiet:
                 DrawMoonIcon(g, bounds, color);
                 break;
@@ -593,6 +596,37 @@ public class OsdForm : Form
                 DrawBalancedIcon(g, bounds, color);
                 break;
         }
+    }
+
+    private static void DrawLeafIcon(Graphics g, Rectangle bounds, Color color)
+    {
+        float x = bounds.X;
+        float y = bounds.Y;
+        float w = bounds.Width;
+        float h = bounds.Height;
+
+        var basePoint = new PointF(x + 0.30f * w, y + 0.85f * h);
+        var tip = new PointF(x + 0.75f * w, y + 0.15f * h);
+
+        using var path = new GraphicsPath();
+        path.StartFigure();
+        path.AddBezier(
+            basePoint,
+            new PointF(x + 0.20f * w, y + 0.35f * h),
+            new PointF(x + 0.50f * w, y + 0.10f * h),
+            tip);
+        path.AddBezier(
+            tip,
+            new PointF(x + 0.85f * w, y + 0.60f * h),
+            new PointF(x + 0.55f * w, y + 0.88f * h),
+            basePoint);
+        path.CloseFigure();
+
+        using var brush = new SolidBrush(color);
+        g.FillPath(brush, path);
+
+        using var pen = new Pen(OsdThemeHelper.Surface, 2f) { StartCap = LineCap.Round, EndCap = LineCap.Round };
+        g.DrawLine(pen, basePoint.X, basePoint.Y, tip.X - 0.15f * w, tip.Y + 0.15f * h);
     }
 
     private static void DrawMoonIcon(Graphics g, Rectangle bounds, Color color)

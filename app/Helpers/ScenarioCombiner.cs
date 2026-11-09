@@ -16,10 +16,11 @@ public static class ScenarioCombiner
 {
     private static int PowerRank(PowerProfile mode) => mode switch
     {
-        PowerProfile.Turbo => 3,
-        PowerProfile.Performance => 2,
-        PowerProfile.Balanced => 1,
-        _ => 0, // Quiet and anything else
+        PowerProfile.Turbo => 4,
+        PowerProfile.Performance => 3,
+        PowerProfile.Balanced => 2,
+        PowerProfile.Quiet => 1,
+        _ => 0, // Eco and anything else
     };
 
     private static int FanRank(ScenarioProfile p) => p.FanMode switch

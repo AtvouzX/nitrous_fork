@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Windows;
 using System.Windows.Input;
 using System.Windows.Media;
@@ -15,6 +15,7 @@ public partial class NitrousDashboard : Window
     private bool _isDialogOpen = false;
     private long _lastActivationTick = Environment.TickCount64;
 
+    public System.Windows.Controls.RadioButton BtnPowerEco => DashPage.BtnPowerEco;
     public System.Windows.Controls.RadioButton BtnPowerQuiet => DashPage.BtnPowerQuiet;
     public System.Windows.Controls.RadioButton BtnPowerBal => DashPage.BtnPowerBal;
     public System.Windows.Controls.RadioButton BtnPowerPerf => DashPage.BtnPowerPerf;
@@ -286,6 +287,7 @@ public partial class NitrousDashboard : Window
             : FanProfile.Auto;
         var activeRefresh = (RefreshProfile)SettingsManager.Get("RefreshMode", (int)RefreshProfile.Auto);
 
+        BtnPowerEco.IsChecked = activeMode == PowerProfile.Eco;
         BtnPowerQuiet.IsChecked = activeMode == PowerProfile.Quiet;
         BtnPowerBal.IsChecked = activeMode == PowerProfile.Balanced;
         BtnPowerPerf.IsChecked = activeMode == PowerProfile.Performance;

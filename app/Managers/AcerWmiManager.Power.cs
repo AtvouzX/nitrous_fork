@@ -87,6 +87,19 @@ public static partial class AcerWmiManager
         return System.Linq.Enumerable.Contains(GetSupportedProfiles(), PowerProfile.Turbo);
     }
 
+    /// <summary>Thin wrapper over <see cref="GetSupportedProfiles"/>.</summary>
+    public static bool IsEcoModeSupported()
+    {
+        return System.Linq.Enumerable.Contains(GetSupportedProfiles(), PowerProfile.Eco);
+    }
+
+    /// <summary>True when Eco mode may be selected right now (supported and on battery).</summary>
+    public static bool IsEcoModeAvailable()
+    {
+        var (onAc, _) = ReadPowerState();
+        return !onAc && IsEcoModeSupported();
+    }
+
     internal static void SetTurboSupportedForTesting(bool? value)
     {
         _isTurboSupportedCached = value;
@@ -302,6 +315,12 @@ public static partial class AcerWmiManager
         {
             LogManager.Warn("Turbo profile unsupported; falling back to Performance", "AcerWmi");
             profile = PowerProfile.Performance;
+        }
+
+        if (profile == PowerProfile.Eco && !IsEcoModeSupported())
+        {
+            LogManager.Warn("Eco profile unsupported; falling back to Balanced", "AcerWmi");
+            profile = PowerProfile.Balanced;
         }
 
         await SetPowerModeAsync(profile).ConfigureAwait(false);

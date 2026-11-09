@@ -64,6 +64,8 @@ public partial class NvidiaGpuManager
     /// </summary>
     public async Task<int> ApplyProfileOcAsync(PowerProfile profile, bool? isAcOnline = null)
     {
+        SetWhisperMode(IsWhisperProfile(profile));
+
         bool online = isAcOnline ?? IsAcPowerConnected();
         if (!online || !IsGpuAwake())
         {

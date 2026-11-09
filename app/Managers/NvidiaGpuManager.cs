@@ -344,6 +344,8 @@ public partial class NvidiaGpuManager : IDisposable
     /// </summary>
     public static bool IsGpuAwake()
     {
+        if (_isGpuAwakeForTesting.HasValue) return _isGpuAwakeForTesting.Value;
+
         try
         {
             // Resolve the PNP instance ID once

@@ -7,6 +7,8 @@ namespace Nitrous.Tests;
 public class HardwareSafetyPolicyTests
 {
     [Theory]
+    [InlineData(PowerProfile.Eco, false, false)]
+    [InlineData(PowerProfile.Eco, true, true)]
     [InlineData(PowerProfile.Quiet, false, false)]
     [InlineData(PowerProfile.Quiet, true, true)]
     [InlineData(PowerProfile.Turbo, false, false)]
@@ -20,6 +22,11 @@ public class HardwareSafetyPolicyTests
     }
 
     [Theory]
+    // Eco (battery-only: keeps on DC, downgrades to Balanced on AC unconditionally)
+    [InlineData(PowerProfile.Eco, false, 100, false, PowerProfile.Eco)]
+    [InlineData(PowerProfile.Eco, false, 30, false, PowerProfile.Eco)]
+    [InlineData(PowerProfile.Eco, true, 100, false, PowerProfile.Balanced)]
+    [InlineData(PowerProfile.Eco, true, 100, true, PowerProfile.Balanced)]
     // Quiet
     [InlineData(PowerProfile.Quiet, false, 100, false, PowerProfile.Quiet)]
     [InlineData(PowerProfile.Quiet, true, 30, false, PowerProfile.Quiet)]
@@ -134,5 +141,53 @@ public class HardwareSafetyPolicyTests
         Assert.Equal(100, HardwareSafetyPolicy.BatteryPercent(0, 0));
         Assert.Equal(100, HardwareSafetyPolicy.BatteryPercent(5000, 9000));
         Assert.Equal(0, HardwareSafetyPolicy.BatteryPercent(10000, 0));
+    }
+
+    [Theory]
+    [InlineData(PowerProfile.Eco, true)]
+    [InlineData(PowerProfile.Quiet, false)]
+    [InlineData(PowerProfile.Balanced, false)]
+    [InlineData(PowerProfile.Performance, false)]
+    [InlineData(PowerProfile.Turbo, false)]
+    public void RequiresBatteryGate_ReturnsTrueOnlyForEco(PowerProfile profile, bool expected)
+    {
+        Assert.Equal(expected, HardwareSafetyPolicy.RequiresBatteryGate(profile));
+    }
+
+    [Fact]
+    public void GetNextCycleProfile_OnAc_SkipsEcoAndCyclesAcModes()
+    {
+        PowerProfile[] supported = [
+            PowerProfile.Eco,
+            PowerProfile.Quiet,
+            PowerProfile.Balanced,
+            PowerProfile.Performance,
+            PowerProfile.Turbo
+        ];
+
+        // On AC with overclock available: Eco is skipped
+        Assert.Equal(PowerProfile.Balanced, HardwareSafetyPolicy.GetNextCycleProfile(PowerProfile.Quiet, supported, overclockAvailable: true, onAc: true));
+        Assert.Equal(PowerProfile.Performance, HardwareSafetyPolicy.GetNextCycleProfile(PowerProfile.Balanced, supported, overclockAvailable: true, onAc: true));
+        Assert.Equal(PowerProfile.Turbo, HardwareSafetyPolicy.GetNextCycleProfile(PowerProfile.Performance, supported, overclockAvailable: true, onAc: true));
+        Assert.Equal(PowerProfile.Quiet, HardwareSafetyPolicy.GetNextCycleProfile(PowerProfile.Turbo, supported, overclockAvailable: true, onAc: true));
+        // If current is Eco but on AC, cycle advances to Quiet
+        Assert.Equal(PowerProfile.Quiet, HardwareSafetyPolicy.GetNextCycleProfile(PowerProfile.Eco, supported, overclockAvailable: true, onAc: true));
+    }
+
+    [Fact]
+    public void GetNextCycleProfile_OnBattery_IncludesEcoAndSkipsOverclockModes()
+    {
+        PowerProfile[] supported = [
+            PowerProfile.Eco,
+            PowerProfile.Quiet,
+            PowerProfile.Balanced,
+            PowerProfile.Performance,
+            PowerProfile.Turbo
+        ];
+
+        // On battery: overclock modes (Performance, Turbo) are skipped, Eco is included
+        Assert.Equal(PowerProfile.Quiet, HardwareSafetyPolicy.GetNextCycleProfile(PowerProfile.Eco, supported, overclockAvailable: false, onAc: false));
+        Assert.Equal(PowerProfile.Balanced, HardwareSafetyPolicy.GetNextCycleProfile(PowerProfile.Quiet, supported, overclockAvailable: false, onAc: false));
+        Assert.Equal(PowerProfile.Eco, HardwareSafetyPolicy.GetNextCycleProfile(PowerProfile.Balanced, supported, overclockAvailable: false, onAc: false));
     }
 }

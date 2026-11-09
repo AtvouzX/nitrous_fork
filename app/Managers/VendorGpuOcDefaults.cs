@@ -314,6 +314,14 @@ public static class VendorGpuOcDefaults
     }
 
     /// <summary>
+    /// Source written by an explicit reset. With vendor defaults enabled the
+    /// reset restores the vendor numbers and keeps them vendor-owned; otherwise
+    /// it is an authored stock 0/0 choice.
+    /// </summary>
+    public static VendorGpuOcSource ResolveResetSource(bool vendorDefaultsEnabled) =>
+        vendorDefaultsEnabled ? VendorGpuOcSource.Vendor : VendorGpuOcSource.Custom;
+
+    /// <summary>
     /// Immediate apply is only safe with the dGPU awake and on AC power.
     /// Otherwise the existing wake auto-apply path picks the change up later.
     /// </summary>

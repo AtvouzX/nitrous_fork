@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -176,6 +176,35 @@ public partial class NvidiaGpuManager
         [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
         public static extern NvmlReturn DeviceGetComputeRunningProcesses(IntPtr device, ref uint infoCount,
             [Out] NvmlProcessInfo[] infos);
+    }
+
+    #endregion
+
+    #region NvAPI Native Bindings
+
+    [StructLayout(LayoutKind.Sequential, Size = StructSize)]
+    public struct NvToppsJpacControl
+    {
+        public const int StructSize = 0x4C8;
+        public const uint VersionMagic = 0x000104C8;
+
+        public uint Version;
+        public uint Field4;
+        public uint ControlType;
+        public int Value;
+    }
+
+    internal static class NativeNvapi
+    {
+        private const string Nvapi64Dll = "nvapi64.dll";
+        public const uint NvToppsJpacSetControlId = 0xD2561B69;
+
+        [DllImport(Nvapi64Dll, EntryPoint = "nvapi_QueryInterface")]
+        [DefaultDllImportSearchPaths(DllImportSearchPath.System32)]
+        public static extern IntPtr QueryInterface(uint id);
+
+        [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+        public delegate int NvToppsJpacSetControlDelegate(ref NvToppsJpacControl control);
     }
 
     #endregion

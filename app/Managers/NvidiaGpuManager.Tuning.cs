@@ -236,10 +236,13 @@ public partial class NvidiaGpuManager
     {
         SettingsManager.Save($"GpuCore_{profile}", GetDefaultCore(profile));
         SettingsManager.Save($"GpuMemory_{profile}", GetDefaultMemory(profile));
-        // An explicit reset is an authored choice: never let the vendor toggle overwrite it.
+        // Vendor mode: reset restores the vendor numbers and keeps them vendor-owned.
+        // Stock mode: an explicit 0/0 is an authored choice the vendor toggle must respect.
+        var source = VendorGpuOcDefaults.ResolveResetSource(
+            SettingsManager.GetInt(VendorGpuOcDefaults.ToggleSettingKey, 0) == 1);
         SettingsManager.Save(
             VendorGpuOcDefaults.SourceKey(profile),
-            VendorGpuOcDefaults.FormatSource(VendorGpuOcSource.Custom));
+            VendorGpuOcDefaults.FormatSource(source));
         _lastAutoApplyTick = 0;
         _lastAutoAppliedProfile = null;
         await ApplyProfileOcAsync(profile, true);

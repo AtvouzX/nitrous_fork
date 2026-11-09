@@ -179,6 +179,15 @@ public class VendorGpuOcDefaultsTests : IDisposable
     }
 
     [Theory]
+    [InlineData(true, VendorGpuOcSource.Vendor)]
+    [InlineData(false, VendorGpuOcSource.Custom)]
+    public void ResolveResetSource_KeepsVendorOwnershipWhenVendorModeIsOn(
+        bool vendorDefaultsEnabled, VendorGpuOcSource expected)
+    {
+        Assert.Equal(expected, VendorGpuOcDefaults.ResolveResetSource(vendorDefaultsEnabled));
+    }
+
+    [Theory]
     [InlineData(true, true, true)]
     [InlineData(true, false, false)]
     [InlineData(false, true, false)]

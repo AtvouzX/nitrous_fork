@@ -469,7 +469,7 @@ public partial class TrayApplication : ApplicationContext
         bool overclockOk = AcerWmiManager.IsOverclockModeAvailable();
         var supported = AcerWmiManager.GetSupportedProfiles();
 
-        PowerProfile nextProfile = HardwareSafetyPolicy.GetNextCycleProfile(currentProfile, supported, overclockOk);
+        PowerProfile nextProfile = HardwareSafetyPolicy.GetNextCycleProfile(currentProfile, supported, overclockOk, isOnline);
 
         var resolved = AcerWmiManager.ResolvePowerProfileRequest(nextProfile);
         if (resolved != nextProfile)

@@ -17,6 +17,7 @@ public static class DialGeometryHelper
     /// </summary>
     public static double GetNeedleAngle(PowerProfile profile) => profile switch
     {
+        PowerProfile.Eco => 135.0,
         PowerProfile.Quiet => 180.0,
         PowerProfile.Balanced => 270.0,
         PowerProfile.Performance => 360.0,

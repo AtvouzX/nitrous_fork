@@ -74,7 +74,7 @@ public static class ScenarioProfileCodec
             }
 
             p.Name = SanitizeName(p.Name, result.Count + 1, usedNames);
-            p.AcMode = Enum.IsDefined(p.AcMode) ? p.AcMode : PowerProfile.Balanced;
+            p.AcMode = Enum.IsDefined(p.AcMode) && p.AcMode != PowerProfile.Eco ? p.AcMode : PowerProfile.Balanced;
             p.DcMode = Enum.IsDefined(p.DcMode) ? p.DcMode : PowerProfile.Balanced;
             p.FanMode = Enum.IsDefined(p.FanMode) ? p.FanMode : FanProfile.Auto;
             p.CustomFanSpeedCpu = Math.Clamp(p.CustomFanSpeedCpu, 0, 100);

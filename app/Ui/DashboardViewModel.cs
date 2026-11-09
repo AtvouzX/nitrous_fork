@@ -143,9 +143,26 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             SettingsManager.Save("IsTurboSupported", isTurbo ? 1 : 0);
         }
 
+        int cachedEco = SettingsManager.Get("IsEcoSupported", -1);
+        if (cachedEco != -1)
+        {
+            _isEcoSupported = cachedEco == 1;
+        }
+        else
+        {
+            bool isEco = AcerWmiManager.IsEcoModeSupported();
+            _isEcoSupported = isEco;
+            SettingsManager.Save("IsEcoSupported", isEco ? 1 : 0);
+        }
+
         if (!_isTurboSupported && ActivePowerProfile == PowerProfile.Turbo)
         {
             ActivePowerProfile = PowerProfile.Performance;
+        }
+
+        if (!_isEcoSupported && ActivePowerProfile == PowerProfile.Eco)
+        {
+            ActivePowerProfile = PowerProfile.Balanced;
         }
 
         UpdateBatteryBadge();
@@ -159,6 +176,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             {
                 var actualMode = AcerWmiManager.GetActivePowerMode();
                 bool isTurbo = AcerWmiManager.IsTurboModeSupported();
+                bool isEco = AcerWmiManager.IsEcoModeSupported();
                 bool isTaskEnabled = StartupManager.CheckStartupTask();
                 bool isNitroKeyEnabled = false;
 
@@ -191,9 +209,20 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
                         SettingsManager.Save("IsTurboSupported", isTurbo ? 1 : 0);
                     }
 
+                    if (IsEcoSupported != isEco)
+                    {
+                        IsEcoSupported = isEco;
+                        SettingsManager.Save("IsEcoSupported", isEco ? 1 : 0);
+                    }
+
                     if (!isTurbo && ActivePowerProfile == PowerProfile.Turbo)
                     {
                         ActivePowerProfile = PowerProfile.Performance;
+                    }
+
+                    if (!isEco && ActivePowerProfile == PowerProfile.Eco)
+                    {
+                        ActivePowerProfile = PowerProfile.Balanced;
                     }
 
                     _runOnStartup = isTaskEnabled;
@@ -288,10 +317,21 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             IsTurboSupported = cachedTurbo == 1;
         }
 
+        int cachedEco = SettingsManager.Get("IsEcoSupported", -1);
+        if (cachedEco != -1 && IsEcoSupported != (cachedEco == 1))
+        {
+            IsEcoSupported = cachedEco == 1;
+        }
+
         var newPowerProfile = (PowerProfile)SettingsManager.Get("LastPowerMode", (int)PowerProfile.Performance);
         if (!_isTurboSupported && newPowerProfile == PowerProfile.Turbo)
         {
             newPowerProfile = PowerProfile.Performance;
+        }
+
+        if (!_isEcoSupported && newPowerProfile == PowerProfile.Eco)
+        {
+            newPowerProfile = PowerProfile.Balanced;
         }
 
         if (_activePowerProfile != newPowerProfile)

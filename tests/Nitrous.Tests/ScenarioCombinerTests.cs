@@ -32,6 +32,17 @@ public class ScenarioCombinerTests
     }
 
     [Fact]
+    public void Combine_PowerRank_EcoRanksLowest()
+    {
+        var a = Profile("Saver", PowerProfile.Balanced, PowerProfile.Eco);
+        var b = Profile("Quiet", PowerProfile.Balanced, PowerProfile.Quiet);
+
+        var merged = ScenarioCombiner.Combine([a, b]);
+
+        Assert.Equal(PowerProfile.Quiet, merged.DcMode);
+    }
+
+    [Fact]
     public void Combine_FanGoesToStrongestFanSetting()
     {
         var a = Profile("A", PowerProfile.Balanced, PowerProfile.Balanced);

@@ -59,6 +59,14 @@ public static class CpuPowerManager
 
         switch (profile)
         {
+            case PowerProfile.Eco:
+                acMin = 5;
+                acMax = 80;
+                acBoost = 0;
+                dcMin = 5;
+                dcMax = 70;
+                dcBoost = 0;
+                break;
             case PowerProfile.Quiet:
                 acMin = 5;
                 acMax = 85;

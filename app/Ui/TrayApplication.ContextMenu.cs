@@ -79,18 +79,31 @@ public partial class TrayApplication : ApplicationContext
         powerMenu.DropDownOpening += (_, _) =>
         {
             bool overclockOk = AcerWmiManager.IsOverclockModeAvailable();
+            var (onAc, _) = AcerWmiManager.GetPowerState();
             foreach (ToolStripItem entry in powerMenu.DropDownItems)
             {
                 if (entry is not ToolStripMenuItem mi || mi.Tag is not PowerProfile p) continue;
-                if (!HardwareSafetyPolicy.RequiresAcGate(p)) continue;
-
-                mi.Enabled = overclockOk;
-                mi.ToolTipText = overclockOk
-                    ? string.Empty
-                    : $"Needs AC power. On AC, {HardwareSafetyPolicy.MinimumBatteryPercentForOverclock}% charge unless Expert Mode is on.";
+                if (HardwareSafetyPolicy.RequiresAcGate(p))
+                {
+                    mi.Enabled = overclockOk;
+                    mi.ToolTipText = overclockOk
+                        ? string.Empty
+                        : $"Needs AC power. On AC, {HardwareSafetyPolicy.MinimumBatteryPercentForOverclock}% charge unless Expert Mode is on.";
+                }
+                else if (HardwareSafetyPolicy.RequiresBatteryGate(p))
+                {
+                    mi.Enabled = !onAc;
+                    mi.ToolTipText = !onAc
+                        ? string.Empty
+                        : "Eco mode is only available on battery.";
+                }
             }
         };
 
+        if (AcerWmiManager.IsEcoModeSupported())
+        {
+            AddPowerItem("Eco", PowerProfile.Eco);
+        }
         AddPowerItem("Quiet", PowerProfile.Quiet);
         AddPowerItem("Balanced", PowerProfile.Balanced);
         AddPowerItem("Performance", PowerProfile.Performance);

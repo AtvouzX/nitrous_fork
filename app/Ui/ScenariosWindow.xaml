@@ -166,11 +166,11 @@
 								         Text="{Binding ScenarioName, Mode=TwoWay, UpdateSourceTrigger=PropertyChanged}" />
 								<TextBlock Text="MODE (AC PLUGGED IN)" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" Margin="0,0,0,4" />
 								<ComboBox Style="{StaticResource CompactComboBoxStyle}" Height="26" Margin="0,0,0,10"
-								          ItemsSource="{Binding ScenarioPowerModes}" SelectedItem="{Binding ScenarioAcMode, Mode=TwoWay}"
+								          ItemsSource="{Binding ScenarioAcPowerModes}" SelectedItem="{Binding ScenarioAcMode, Mode=TwoWay}"
 								          ToolTip="Power mode used while AC adapter is connected." />
 								<TextBlock Text="MODE (ON BATTERY)" Foreground="White" FontFamily="{StaticResource MonoFontFamily}" FontSize="11" FontWeight="Bold" Margin="0,0,0,4" />
 								<ComboBox Style="{StaticResource CompactComboBoxStyle}" Height="26"
-								          ItemsSource="{Binding ScenarioPowerModes}" SelectedItem="{Binding ScenarioDcMode, Mode=TwoWay}"
+								          ItemsSource="{Binding ScenarioDcPowerModes}" SelectedItem="{Binding ScenarioDcMode, Mode=TwoWay}"
 								          ToolTip="Power mode used on battery. Turbo falls back to Performance when unsupported." />
 							</StackPanel>
 						</controls:ChamferCard>

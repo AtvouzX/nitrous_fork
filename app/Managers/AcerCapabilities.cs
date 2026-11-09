@@ -60,6 +60,7 @@ internal sealed record AcerCapabilities(
     };
 
     public bool SupportsTurbo => SupportedProfiles.Contains(PowerProfile.Turbo);
+    public bool SupportsEco => SupportedProfiles.Contains(PowerProfile.Eco);
 
     public string Describe() =>
         $"model {Model ?? "unknown"} ({BiosVersion ?? "unknown BIOS"}); " +

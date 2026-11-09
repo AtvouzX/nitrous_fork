@@ -18,6 +18,7 @@ public static class OsdThemeHelper
 
     public static Color GetAccent(PowerProfile profile) => profile switch
     {
+        PowerProfile.Eco => Color.FromArgb(0x2E, 0xC4, 0xB6),
         PowerProfile.Quiet => Color.FromArgb(0x4A, 0xA3, 0xBA),
         PowerProfile.Balanced => Color.FromArgb(0x5C, 0xAF, 0x6F),
         PowerProfile.Performance => Color.FromArgb(0xE6, 0x75, 0x36),

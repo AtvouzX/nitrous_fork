@@ -133,4 +133,18 @@ public class ScenarioProfileCodecTests
         Assert.False(string.IsNullOrWhiteSpace(clean[1].Id));
         Assert.NotEqual(clean[0].Id, clean[1].Id);
     }
+
+    [Fact]
+    public void Sanitize_EcoMode_DowngradesAcModeToBalanced_AndPreservesDcMode()
+    {
+        var p = Profile("EcoTest");
+        p.AcMode = PowerProfile.Eco;
+        p.DcMode = PowerProfile.Eco;
+
+        var clean = ScenarioProfileCodec.Sanitize([p]);
+        var c = Assert.Single(clean);
+
+        Assert.Equal(PowerProfile.Balanced, c.AcMode);
+        Assert.Equal(PowerProfile.Eco, c.DcMode);
+    }
 }

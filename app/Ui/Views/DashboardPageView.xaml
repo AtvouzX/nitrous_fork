@@ -166,6 +166,13 @@
 				                      BorderThickness="1"
 				                      ChamferSize="4" Padding="0">
 					<UniformGrid Rows="1" Height="42">
+						<RadioButton x:Name="BtnPowerEco" TabIndex="0" GroupName="Power" Uid="Eco"
+						             Content="ECO" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}"
+						             CommandParameter="Eco"
+						             Visibility="{Binding IsEcoSupported, Converter={StaticResource BoolToVis}}"
+						             IsEnabled="{Binding IsEcoModeAvailable}"
+						             ToolTipService.ShowOnDisabled="True"
+						             ToolTip="{Binding EcoTooltip, FallbackValue='Maximum battery saving. Available on battery only, processor capped at 70%, fans quiet.'}" />
 						<RadioButton x:Name="BtnPowerQuiet" TabIndex="0" GroupName="Power" Uid="Quiet"
 						             Content="QUIET" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}"
 						             CommandParameter="Quiet"

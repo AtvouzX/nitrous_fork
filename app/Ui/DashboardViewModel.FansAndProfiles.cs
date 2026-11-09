@@ -45,6 +45,14 @@ public partial class DashboardViewModel
         set => SetProperty(ref _isTurboSupported, value);
     }
 
+    private bool _isEcoSupported;
+
+    public bool IsEcoSupported
+    {
+        get => _isEcoSupported;
+        set => SetProperty(ref _isEcoSupported, value);
+    }
+
     private PowerProfile _activePowerProfile;
 
     public PowerProfile ActivePowerProfile
@@ -121,6 +129,15 @@ public partial class DashboardViewModel
                 ? $"Turbo locked below {HardwareSafetyPolicy.MinimumBatteryPercentForOverclock}% battery: connect AC and charge (bypass in Settings > Expert Mode)."
                 : "Turbo locked on battery: connect AC charger to enable.");
 
+    private bool _isEcoModeAvailable;
+
+    public bool IsEcoModeAvailable => _isEcoModeAvailable;
+
+    public string EcoTooltip =>
+        _isEcoModeAvailable
+            ? "Maximum battery saving. Available on battery only, processor capped at 70%, fans quiet."
+            : "Eco mode locked on AC: disconnect AC charger to enable.";
+
     /// <summary>Recomputes the AC/charge gate. Cheap: one cached power-status read.</summary>
     public void RefreshPowerModeAvailability()
     {
@@ -136,6 +153,16 @@ public partial class DashboardViewModel
         OnPropertyChanged(nameof(PowerModeLockText));
         OnPropertyChanged(nameof(PerformanceTooltip));
         OnPropertyChanged(nameof(TurboTooltip));
+
+        bool onAc = AcerWmiManager.GetPowerState().OnAc;
+        bool ecoAvailable = !onAc;
+        bool ecoChanged = _isEcoModeAvailable != ecoAvailable;
+        _isEcoModeAvailable = ecoAvailable;
+        if (ecoChanged)
+        {
+            OnPropertyChanged(nameof(IsEcoModeAvailable));
+        }
+        OnPropertyChanged(nameof(EcoTooltip));
     }
 
     public IReadOnlyList<string> FanRampOptions => FanRamp.Options;
