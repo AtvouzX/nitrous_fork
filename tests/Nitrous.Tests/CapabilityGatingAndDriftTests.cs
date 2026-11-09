@@ -113,6 +113,22 @@ public class CapabilityGatingAndDriftTests : IDisposable
     }
 
     [Fact]
+    public void Eco_IsHiddenWhenCapabilityBitIsClear()
+    {
+        AcerWmiManager.SetSupportedProfilesForTesting(
+            new[] { PowerProfile.Quiet, PowerProfile.Balanced, PowerProfile.Performance });
+
+        Assert.False(AcerWmiManager.IsEcoModeSupported());
+        Assert.DoesNotContain(PowerProfile.Eco, AcerWmiManager.GetSupportedProfiles());
+
+        AcerWmiManager.SetSupportedProfilesForTesting(
+            new[] { PowerProfile.Quiet, PowerProfile.Balanced, PowerProfile.Performance, PowerProfile.Eco });
+
+        Assert.True(AcerWmiManager.IsEcoModeSupported());
+        Assert.Contains(PowerProfile.Eco, AcerWmiManager.GetSupportedProfiles());
+    }
+
+    [Fact]
     public void ScenarioApplyPlan_FollowsSupportedProfiles()
     {
         var profile = new ScenarioProfile
