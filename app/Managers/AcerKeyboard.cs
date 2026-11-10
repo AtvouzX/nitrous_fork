@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Runtime.InteropServices;
 using Microsoft.Win32.SafeHandles;
 using Nitrous.Helpers;
@@ -61,16 +62,44 @@ internal static class AcerKeyboard
     private const uint ShareReadWrite = 3;
     private const uint OpenExisting = 3;
 
-    public static bool IsAvailable()
+    private static bool? _hidAvailableForTesting;
+    private static bool? _wmiRgbForTesting;
+
+    internal static void SetHidAvailabilityForTesting(bool? available) => _hidAvailableForTesting = available;
+
+    internal static void SetWmiRgbAvailabilityForTesting(bool? available) => _wmiRgbForTesting = available;
+
+    /// <summary>True when the ENE HID controller is present (HID effects + direct zone packets).</summary>
+    internal static bool SupportsEffects => IsHidAvailable();
+
+    /// <summary>
+    /// True when either lighting channel can drive the keyboard: the ENE HID controller,
+    /// or the AcerGamingFunction WMI methods used by WMI-only 4-zone keyboards (AN517-42).
+    /// </summary>
+    public static bool IsAvailable() => IsHidAvailable() || IsWmiRgbSupported();
+
+    private static bool IsHidAvailable()
     {
+        if (_hidAvailableForTesting.HasValue) return _hidAvailableForTesting.Value;
+
         using var handle = OpenKeyboardDevice();
         return handle != null && !handle.IsInvalid;
     }
 
+    private static bool IsWmiRgbSupported()
+    {
+        if (_wmiRgbForTesting.HasValue) return _wmiRgbForTesting.Value;
+
+        return AcerCapabilitiesProvider.Current.Smbios.KeyboardColor != 1 &&
+               AcerCapabilitiesProvider.Current.Wmi.GamingMethods.Contains("SetGamingRgbKb");
+    }
+
     public static bool SetZoneColors(IReadOnlyList<KeyboardColor> colors, int brightness)
     {
+        if (_hidAvailableForTesting == false) return ApplyWmiZoneColors(colors);
+
         using var handle = OpenKeyboardDevice();
-        if (handle == null || handle.IsInvalid) return false;
+        if (handle == null || handle.IsInvalid) return ApplyWmiZoneColors(colors);
 
         bool sent = false;
         for (int zone = 0; zone < ZoneCount; zone++)
@@ -82,6 +111,13 @@ internal static class AcerKeyboard
 
         return sent;
     }
+
+    /// <summary>
+    /// Writes zone colors over WMI, but only on keyboards whose capability probe reports
+    /// 4-zone RGB with <c>SetGamingRgbKb</c>; other models must not receive these payloads.
+    /// </summary>
+    private static bool ApplyWmiZoneColors(IReadOnlyList<KeyboardColor> colors) =>
+        IsWmiRgbSupported() && AcerWmiManager.SetKeyboardZoneColors(colors);
 
     public static bool SetEffect(
         KeyboardEffect effect, int brightness, int speed, bool leftwards, KeyboardColor color)

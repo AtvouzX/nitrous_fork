@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading.Tasks;
 using Nitrous.Enums;
 using Nitrous.Helpers;
@@ -83,6 +84,26 @@ public static partial class AcerWmiManager
         }).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// Applies four-zone static colors over AcerGamingFunction WMI (NitroSense V3 path used on
+    /// WMI-only RGB keyboards such as AN517-42, where no ENE HID device exists).
+    /// Enables all zones first, then writes one SetGamingRgbKb payload per zone.
+    /// </summary>
+    public static bool SetKeyboardZoneColors(IReadOnlyList<KeyboardColor> colors)
+    {
+        bool sent = InvokeWmiSync(
+            "AcerGamingFunction", "SetGamingLEDBehavior", KeyboardZoneCodec.BuildWmiZoneEnablePayload());
+
+        for (int zone = 0; zone < KeyboardZoneCodec.ZoneCount; zone++)
+        {
+            var color = zone < colors.Count ? colors[zone] : KeyboardColor.White;
+            sent |= InvokeWmiSync(
+                "AcerGamingFunction", "SetGamingRgbKb", KeyboardZoneCodec.BuildWmiZoneColorPayload(zone, color));
+        }
+
+        return sent;
+    }
+
     public static async Task SetBacklightLevelAsync(KeyboardBacklightLevel level)
     {
         LogManager.Info($"Setting keyboard backlight level to {level}", "AcerWmi");
@@ -107,17 +128,17 @@ public static partial class AcerWmiManager
 
         await Task.Run(() =>
         {
-            // 1. Hardware EC 30s timeout via AcerGamingFunction.SetGamingProfile (AcerAgentService RVA 0x3E1D6)
-            ulong profileScalar = KeyboardBacklightCodec.EncodeGamingProfileTimeout(enabled);
-            InvokeWmiSync("AcerGamingFunction", "SetGamingProfile", profileScalar);
-
-            // 2. Hardware APGeAction.SetFunction 30s timeout + active brightness (AcerAgentService RVA 0x3E062)
+            // Hardware APGeAction.SetFunction carries the 30s timeout + active brightness
+            // (AcerAgentService RVA 0x3E062; NitroSense V3 Backlightoff_Checkbox_* does the same).
+            // Never add AcerGamingFunction.SetGamingProfile here: the vendor timeout path does not
+            // touch it, and on AN517-42 the "disabled" payload 0x00000002 kills the Windows key
+            // (issue #4) while 0x01000002 restores it.
             var currentLevel = GetBacklightLevel() ?? KeyboardBacklightLevel.Level2;
             int hotkeyNum = GetBkHotkeyNumber();
             ulong apGePayload = KeyboardBacklightCodec.EncodeApGeActionSetBacklight(currentLevel, enabled, hotkeyNum);
             InvokeApGeActionSync("SetFunction", apGePayload);
 
-            // 3. Optional HID report fallback
+            // Optional HID report fallback
             byte[] report = KeyboardBacklightCodec.EncodeTimeoutReport(enabled);
             SendKeyboardHidReport(report);
         }).ConfigureAwait(false);

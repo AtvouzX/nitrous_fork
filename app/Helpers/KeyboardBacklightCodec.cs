@@ -11,9 +11,6 @@ public static class KeyboardBacklightCodec
     public const byte SubCommandTimeout = 0x01;
     public const byte ChecksumBase = 0xCE;
 
-    public const ulong GamingProfileTimeoutEnabled = 0x01000002ul;
-    public const ulong GamingProfileTimeoutDisabled = 0x00000002ul;
-
     public const int DefaultBkHotkeyNumber = 132; // 0x84 on Nitro ANV14-41
 
     // EC brightness inverted on ANV14-41 (hardware probe): 50 = bright, 100 = dim.
@@ -92,13 +89,6 @@ public static class KeyboardBacklightCodec
         if (payload.Length < 3) return KeyboardBacklightLevel.Off;
         return DecodeBrightnessLevel(payload[2]);
     }
-
-    /// <summary>
-    /// Encodes AcerGamingFunction.SetGamingProfile 64-bit input for 30s keyboard backlight timeout
-    /// per AcerAgentService.exe (RVA 0x3E1D6).
-    /// </summary>
-    public static ulong EncodeGamingProfileTimeout(bool enabled) =>
-        enabled ? GamingProfileTimeoutEnabled : GamingProfileTimeoutDisabled;
 
     /// <summary>
     /// Encodes the 16-byte gmInput buffer for AcerGamingFunction.SetGamingLED

@@ -13,6 +13,9 @@ public static class KeyboardZoneCodec
     public const int MinSpeed = 1;
     public const int MaxSpeed = 9;
 
+    /// <summary>SetGamingLEDBehavior payload that enables all four zones (NitroSense V3).</summary>
+    public const ulong AllZonesEnabledBehavior = 0x08ul | ((ulong)AllZones << 40);
+
     public static byte[] BuildZonePacket(int zoneIndex, KeyboardColor color, int brightness)
     {
         if (zoneIndex < 0 || zoneIndex >= ZoneCount)
@@ -51,6 +54,25 @@ public static class KeyboardZoneCodec
         packet[10] = 0;
         return packet;
     }
+
+    /// <summary>
+    /// Encodes AcerGamingFunction.SetGamingRgbKb 64-bit gmInput for one keyboard zone,
+    /// per NitroSense V3 Change_Zone_Color:
+    /// Byte 0: zone mask (1, 2, 4, 8); Byte 1..3: R, G, B.
+    /// </summary>
+    public static ulong BuildWmiZoneColorPayload(int zoneIndex, KeyboardColor color)
+    {
+        if (zoneIndex < 0 || zoneIndex >= ZoneCount)
+            throw new ArgumentOutOfRangeException(nameof(zoneIndex), $"Zone index must be 0..{ZoneCount - 1}, got {zoneIndex}");
+
+        return (1ul << zoneIndex) | ((ulong)color.R << 8) | ((ulong)color.G << 16) | ((ulong)color.B << 24);
+    }
+
+    /// <summary>
+    /// Encodes AcerGamingFunction.SetGamingLEDBehavior 64-bit gmInput that enables all four zones
+    /// (NitroSense V3 Change_Zone_Status: byte 0 = 0x08, zone enables at bits 40..43).
+    /// </summary>
+    public static ulong BuildWmiZoneEnablePayload() => AllZonesEnabledBehavior;
 
     public static uint UpdateStickyKeysFlags(uint currentFlags, bool enable)
     {

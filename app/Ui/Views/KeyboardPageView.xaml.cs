@@ -138,7 +138,10 @@ public partial class KeyboardPageView : UserControl
                 ? "Single-color keyboard"
                 : string.Empty;
 
-        KeyboardEffectBox.IsEnabled = _keyboardAvailable;
+        KeyboardEffectBox.IsEnabled = _keyboardAvailable && AcerKeyboard.SupportsEffects;
+        KeyboardEffectBox.ToolTip = _keyboardAvailable && !AcerKeyboard.SupportsEffects
+            ? "This keyboard exposes static zone colors only; effects need the ENE HID controller."
+            : null;
         UpdateZoneButtons();
         _keyboardLoading = false;
     }

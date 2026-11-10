@@ -101,14 +101,6 @@ public class KeyboardBacklightTests : IDisposable
     }
 
     [Fact]
-    public void EncodeGamingProfileTimeout_ProducesExpectedWmiScalar()
-    {
-        // Per AcerAgentService RVA 0x3E1D6: SetGamingProfile takes 0x01000002ul (enabled) or 0x00000002ul (disabled)
-        Assert.Equal(0x01000002ul, KeyboardBacklightCodec.EncodeGamingProfileTimeout(true));
-        Assert.Equal(0x00000002ul, KeyboardBacklightCodec.EncodeGamingProfileTimeout(false));
-    }
-
-    [Fact]
     public void EncodeApGeActionBacklightPayload_EncodesBrightnessAndTimeoutCorrectly()
     {
         // Per AcerAgentService RVA 0x3E062..0x3E0B0:
@@ -295,10 +287,11 @@ public class KeyboardBacklightTests : IDisposable
     }
 
     [Theory]
-    [InlineData(true, 0x01000002ul)]
-    [InlineData(false, 0x00000002ul)]
-    public async Task AcerWmiManager_SetBacklightTimeoutAsync_AltersHardwareTimeoutAndSaves(bool timeoutEnabled, ulong expectedProfileScalar)
+    [InlineData(true, 0x00001E32ul)]
+    [InlineData(false, 0x00000032ul)]
+    public async Task AcerWmiManager_SetBacklightTimeoutAsync_AltersHardwareTimeoutAndSaves(bool timeoutEnabled, ulong expectedHighDword)
     {
+        AcerWmiManager.SetBacklightLevelForTesting(KeyboardBacklightLevel.Level2);
         AcerWmiManager.SetWmiInvokeForTesting((cls, method, input) =>
         {
             lock (_wmiScalarCalls)
@@ -312,7 +305,11 @@ public class KeyboardBacklightTests : IDisposable
         await AcerWmiManager.SetBacklightTimeoutAsync(timeoutEnabled);
 
         Assert.Equal(timeoutEnabled, AcerWmiManager.GetBacklightTimeout());
-        Assert.Contains(_wmiScalarCalls, c => c.Class == "AcerGamingFunction" && c.Method == "SetGamingProfile" && c.Input == expectedProfileScalar);
+        // Issue #4: SetGamingProfile is not part of the vendor timeout path, and its 0x00000002
+        // payload disables the Windows key on AN517-42. Timeout lives only on APGeAction.SetFunction.
+        Assert.DoesNotContain(_wmiScalarCalls, c => c.Method == "SetGamingProfile");
+        Assert.Contains(_wmiScalarCalls, c =>
+            c.Class == "APGeAction" && c.Method == "SetFunction" && (c.Input >> 32) == expectedHighDword);
     }
 
     [Fact]
@@ -547,7 +544,9 @@ public class KeyboardBacklightTests : IDisposable
 
         // Timeout armed first, then Off written
         Assert.True(AcerWmiManager.GetBacklightTimeout());
-        Assert.Contains(_wmiScalarCalls, c => c.Class == "AcerGamingFunction" && c.Method == "SetGamingProfile" && c.Input == 0x01000002ul);
+        Assert.DoesNotContain(_wmiScalarCalls, c => c.Method == "SetGamingProfile");
+        Assert.Contains(_wmiScalarCalls, c =>
+            c.Class == "APGeAction" && c.Method == "SetFunction" && ((c.Input >> 32) & 0xFFFF) == 0x1E00ul);
         Assert.Equal((int)KeyboardBacklightLevel.Off, SettingsManager.Get("KeyboardBacklightLevel", -1));
         Assert.True(AcerWmiManager.IsBacklightOffPending());
         Assert.Equal((int)KeyboardBacklightLevel.Level1, SettingsManager.Get(AcerWmiManager.BacklightPreviousLevelKey, -1));

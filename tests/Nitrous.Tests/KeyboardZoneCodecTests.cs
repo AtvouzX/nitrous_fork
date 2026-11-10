@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Threading;
 using System.Windows;
 using Nitrous.Helpers;
@@ -117,6 +118,114 @@ public class KeyboardZoneCodecTests
         Assert.Equal(r, color.R);
         Assert.Equal(g, color.G);
         Assert.Equal(b, color.B);
+    }
+
+    [Theory]
+    [InlineData(0, 0x01u)]
+    [InlineData(1, 0x02u)]
+    [InlineData(2, 0x04u)]
+    [InlineData(3, 0x08u)]
+    public void BuildWmiZoneColorPayload_EncodesZoneMaskAndColor(int zoneIndex, uint expectedMask)
+    {
+        var color = new KeyboardColor(0x12, 0x34, 0x56);
+
+        ulong payload = KeyboardZoneCodec.BuildWmiZoneColorPayload(zoneIndex, color);
+
+        Assert.Equal(expectedMask | (0x12u << 8) | (0x34u << 16) | (0x56u << 24), (uint)payload);
+    }
+
+    [Fact]
+    public void BuildWmiZoneEnablePayload_EnablesAllZonesAtByte5()
+    {
+        ulong payload = KeyboardZoneCodec.BuildWmiZoneEnablePayload();
+
+        Assert.Equal(0x08ul | (0x0Ful << 40), payload);
+    }
+
+    [Fact]
+    public void AcerKeyboard_SetZoneColors_WithoutHid_FallsBackToWmi()
+    {
+        var calls = new List<(string Class, string Method, ulong Input)>();
+        AcerWmiManager.SetWmiInvokeForTesting((cls, method, input) =>
+        {
+            calls.Add((cls, method, input));
+            return true;
+        });
+        AcerKeyboard.SetHidAvailabilityForTesting(false);
+        AcerKeyboard.SetWmiRgbAvailabilityForTesting(true);
+
+        try
+        {
+            KeyboardColor[] zones =
+            [
+                new(255, 0, 0),
+                new(0, 255, 0),
+                new(0, 0, 255),
+                new(255, 255, 255)
+            ];
+
+            bool applied = AcerKeyboard.SetZoneColors(zones, 100);
+
+            Assert.True(applied);
+            Assert.Equal(4, calls.Count(c => c.Method == "SetGamingRgbKb"));
+            Assert.Contains(calls, c => c.Method == "SetGamingRgbKb" && c.Input == (1ul | (255ul << 8)));
+            Assert.Contains(calls, c => c.Method == "SetGamingRgbKb" && c.Input == (2ul | (255ul << 16)));
+            Assert.Contains(calls, c => c.Method == "SetGamingRgbKb" && c.Input == (4ul | (255ul << 24)));
+            Assert.Contains(calls, c => c.Method == "SetGamingLEDBehavior" && c.Input == KeyboardZoneCodec.BuildWmiZoneEnablePayload());
+            Assert.False(AcerKeyboard.SupportsEffects);
+        }
+        finally
+        {
+            AcerKeyboard.SetHidAvailabilityForTesting(null);
+            AcerKeyboard.SetWmiRgbAvailabilityForTesting(null);
+            AcerWmiManager.SetWmiInvokeForTesting(null);
+        }
+    }
+
+    [Fact]
+    public void AcerKeyboard_SetZoneColors_WithoutHidOrWmiRgb_DoesNotWriteWmi()
+    {
+        var calls = new List<(string Class, string Method, ulong Input)>();
+        AcerWmiManager.SetWmiInvokeForTesting((cls, method, input) =>
+        {
+            calls.Add((cls, method, input));
+            return true;
+        });
+        AcerKeyboard.SetHidAvailabilityForTesting(false);
+        AcerKeyboard.SetWmiRgbAvailabilityForTesting(false);
+
+        try
+        {
+            KeyboardColor[] zones = [new(255, 0, 0), new(0, 255, 0), new(0, 0, 255), new(255, 255, 255)];
+
+            bool applied = AcerKeyboard.SetZoneColors(zones, 100);
+
+            Assert.False(applied);
+            Assert.Empty(calls);
+        }
+        finally
+        {
+            AcerKeyboard.SetHidAvailabilityForTesting(null);
+            AcerKeyboard.SetWmiRgbAvailabilityForTesting(null);
+            AcerWmiManager.SetWmiInvokeForTesting(null);
+        }
+    }
+
+    [Fact]
+    public void AcerKeyboard_IsAvailable_TrueForWmiRgbOnlyModel()
+    {
+        AcerKeyboard.SetHidAvailabilityForTesting(false);
+        AcerKeyboard.SetWmiRgbAvailabilityForTesting(true);
+
+        try
+        {
+            Assert.True(AcerKeyboard.IsAvailable());
+        }
+        finally
+        {
+            AcerKeyboard.SetHidAvailabilityForTesting(null);
+            AcerKeyboard.SetWmiRgbAvailabilityForTesting(null);
+        }
     }
 
     [Fact]
