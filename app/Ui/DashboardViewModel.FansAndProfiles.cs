@@ -69,6 +69,8 @@ public partial class DashboardViewModel
                 OnPropertyChanged(nameof(IsFanControlEnabled));
                 OnPropertyChanged(nameof(FanLockVisibility));
                 OnPropertyChanged(nameof(FanLockText));
+                OnPropertyChanged(nameof(IsEcoSelected));
+                OnPropertyChanged(nameof(IsQuietSelected));
             }
         }
     }
@@ -168,6 +170,17 @@ public partial class DashboardViewModel
     /// </summary>
     public bool IsQuietVisible => !_isEcoModeAvailable;
 
+    /// <summary>
+    /// Rail selection. When Quiet is hidden because Eco took its slot, a hardware
+    /// Quiet mode must read as Eco instead of leaving the rail with no selection.
+    /// </summary>
+    public bool IsEcoSelected =>
+        _activePowerProfile == PowerProfile.Eco ||
+        (_activePowerProfile == PowerProfile.Quiet && _isEcoModeAvailable);
+
+    public bool IsQuietSelected =>
+        _activePowerProfile == PowerProfile.Quiet && !_isEcoModeAvailable;
+
     public string EcoTooltip =>
         "Maximum battery saving. Processor capped at 70%, fans quiet. Battery only.";
 
@@ -195,6 +208,8 @@ public partial class DashboardViewModel
         {
             OnPropertyChanged(nameof(IsEcoModeAvailable));
             OnPropertyChanged(nameof(IsQuietVisible));
+            OnPropertyChanged(nameof(IsEcoSelected));
+            OnPropertyChanged(nameof(IsQuietSelected));
         }
         OnPropertyChanged(nameof(EcoTooltip));
     }
@@ -576,9 +591,8 @@ public partial class DashboardViewModel
                     _ = AcerWmiManager.SetFansAsync(mode);
                 }
 
-                SettingsManager.Save("LastFanMode", mode.ToString());
-                bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
-                SettingsManager.Save(isOnline ? "LastAcFanMode" : "LastDcFanMode", mode.ToString());
+                AcerWmiManager.SaveTrackedFanMode(
+                    mode, SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online);
             }
         });
 

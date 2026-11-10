@@ -39,6 +39,17 @@ public static partial class AcerWmiManager
     }
 
     /// <summary>
+    /// Persists the tracked fan mode for the current power source. An explicit user
+    /// choice always supersedes a pending restore, so the suspended flag is cleared.
+    /// </summary>
+    public static void SaveTrackedFanMode(FanProfile mode, bool onAc)
+    {
+        SettingsManager.Save("LastFanMode", mode.ToString());
+        SettingsManager.Save(onAc ? "LastAcFanMode" : "LastDcFanMode", mode.ToString());
+        SettingsManager.Save(FanModeSuspendedKey, 0);
+    }
+
+    /// <summary>
     /// Applies fan speeds. Returns false when the active power mode owns the fan table
     /// and the write was refused, so callers never persist speeds that did not land.
     /// Omitted speeds (-1) fall back to the profile percentage; an explicit 0 is a real

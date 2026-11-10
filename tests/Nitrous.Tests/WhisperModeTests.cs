@@ -86,6 +86,22 @@ public class WhisperModeTests : IDisposable
     }
 
     [Fact]
+    public void SetWhisperMode_WhenFpsCapRejected_DoesNotClaimOn()
+    {
+        NvidiaGpuManager.SetGpuAwakeForTesting(true);
+        NvidiaGpuManager.SetWhisperDelegateForTesting(
+            (ref NvidiaGpuManager.NvToppsJpacControl ctl) => ctl.ControlType == 2 ? -1 : 0);
+        using var manager = new NvidiaGpuManager();
+
+        bool applied = manager.SetWhisperMode(true);
+
+        Assert.False(applied);
+        Assert.Equal(
+            NvidiaGpuManager.WhisperStateUnavailable,
+            SettingsManager.GetInt(NvidiaGpuManager.WhisperStateKey, -1));
+    }
+
+    [Fact]
     public void SetWhisperMode_WhenDisabling_SendsDisableCommand()
     {
         NvidiaGpuManager.SetGpuAwakeForTesting(true);

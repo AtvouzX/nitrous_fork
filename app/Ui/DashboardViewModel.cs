@@ -338,6 +338,8 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         {
             _activePowerProfile = newPowerProfile;
             OnPropertyChanged(nameof(ActivePowerProfile));
+            OnPropertyChanged(nameof(IsEcoSelected));
+            OnPropertyChanged(nameof(IsQuietSelected));
 
             var (syncedCore, syncedMemory) = _gpuManager.ResolveProfileOffsets(newPowerProfile);
             GpuCoreOffset = syncedCore;

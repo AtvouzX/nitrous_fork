@@ -189,9 +189,8 @@ public partial class TrayApplication : ApplicationContext
                     {
                         await AcerWmiManager.SetFansAsync(profile);
                     }
-                    SettingsManager.Save("LastFanMode", profile.ToString());
-                    bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
-                    SettingsManager.Save(isOnline ? "LastAcFanMode" : "LastDcFanMode", profile.ToString());
+                    AcerWmiManager.SaveTrackedFanMode(
+                        profile, SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online);
 
                     foreach (ToolStripItem sibling in fanMenu.DropDownItems)
                     {

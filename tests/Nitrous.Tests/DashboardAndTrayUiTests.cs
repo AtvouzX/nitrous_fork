@@ -356,6 +356,58 @@ public class DashboardAndTrayUiTests
     }
 
     [Fact]
+    public void DashboardViewModel_QuietOnBatteryWithEco_SelectsEcoChip()
+    {
+        RunInSta(() =>
+        {
+            AcerWmiManager.SetPowerStateReaderForTesting(() => (false, 80));
+            var vm = new DashboardViewModel();
+            try
+            {
+                vm.IsEcoSupported = true;
+                vm.RefreshPowerModeAvailability();
+                vm.ActivePowerProfile = PowerProfile.Quiet;
+
+                // Quiet is hidden while Eco holds its battery slot, so the rail must
+                // read Eco as selected instead of showing no active mode at all.
+                Assert.True(vm.IsEcoModeAvailable);
+                Assert.False(vm.IsQuietVisible);
+                Assert.True(vm.IsEcoSelected);
+                Assert.False(vm.IsQuietSelected);
+            }
+            finally
+            {
+                AcerWmiManager.SetPowerStateReaderForTesting(null);
+                vm.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void DashboardViewModel_QuietOnAc_SelectsQuietChip()
+    {
+        RunInSta(() =>
+        {
+            AcerWmiManager.SetPowerStateReaderForTesting(() => (true, 100));
+            var vm = new DashboardViewModel();
+            try
+            {
+                vm.RefreshPowerModeAvailability();
+                vm.ActivePowerProfile = PowerProfile.Quiet;
+
+                Assert.True(vm.IsQuietVisible);
+                Assert.True(vm.IsQuietSelected);
+                Assert.False(vm.IsEcoSelected);
+            }
+            finally
+            {
+                AcerWmiManager.SetPowerStateReaderForTesting(null);
+                vm.Dispose();
+            }
+        });
+    }
+
+    [Fact]
     public void DashboardViewModel_SetRefreshCommand_UpdatesActiveRefreshProfile()
     {
         RunInSta(() =>

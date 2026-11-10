@@ -153,6 +153,18 @@ public class AcerPowerProfileTests : IDisposable
     }
 
     [Fact]
+    public void SaveTrackedFanMode_WritesBothKeysAndClearsSuspension()
+    {
+        SettingsManager.Save("FanModeSuspended", 1);
+
+        AcerWmiManager.SaveTrackedFanMode(FanProfile.Max, onAc: true);
+
+        Assert.Equal(FanProfile.Max.ToString(), SettingsManager.GetString("LastFanMode", "Auto"));
+        Assert.Equal(FanProfile.Max.ToString(), SettingsManager.GetString("LastAcFanMode", "Auto"));
+        Assert.Equal(0, SettingsManager.Get("FanModeSuspended", 1));
+    }
+
+    [Fact]
     public async Task ApplyPowerProfileAsync_WithZeroFans_DoesNotTouchFanWmi()
     {
         SetAcPower();

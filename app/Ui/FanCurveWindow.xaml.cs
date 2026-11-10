@@ -454,10 +454,9 @@ public partial class FanCurveWindow : Window
         SettingsManager.Save("IsCurveModeEnabled", _viewModel.IsCurveModeEnabled ? 1 : 0);
         if (fanWritable)
         {
-            SettingsManager.Save("LastFanMode", "Medium");
             bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
                             System.Windows.Forms.PowerLineStatus.Online;
-            SettingsManager.Save(isOnline ? "LastAcFanMode" : "LastDcFanMode", "Medium");
+            AcerWmiManager.SaveTrackedFanMode(FanProfile.Medium, isOnline);
         }
         SettingsManager.Save("FanCurveVersion", DateTime.UtcNow.Ticks);
 

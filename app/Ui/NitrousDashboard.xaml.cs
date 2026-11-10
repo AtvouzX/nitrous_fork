@@ -289,8 +289,6 @@ public partial class NitrousDashboard : Window
             : FanProfile.Auto;
         var activeRefresh = (RefreshProfile)SettingsManager.Get("RefreshMode", (int)RefreshProfile.Auto);
 
-        BtnPowerEco.IsChecked = activeMode == PowerProfile.Eco;
-        BtnPowerQuiet.IsChecked = activeMode == PowerProfile.Quiet;
         BtnPowerBal.IsChecked = activeMode == PowerProfile.Balanced;
         BtnPowerPerf.IsChecked = activeMode == PowerProfile.Performance;
         BtnPowerTurbo.IsChecked = activeMode == PowerProfile.Turbo;
@@ -306,10 +304,21 @@ public partial class NitrousDashboard : Window
         if (DataContext is DashboardViewModel vm)
         {
             vm.ActivePowerProfile = activeMode;
+            // Quiet is hidden while Eco holds its battery slot, so availability must be
+            // fresh before the rail decides which of the two reads as selected.
+            vm.RefreshPowerModeAvailability();
+            BtnPowerEco.IsChecked = vm.IsEcoSelected;
+            BtnPowerQuiet.IsChecked = vm.IsQuietSelected;
+
             vm.SyncActiveFanMode(activeFan);
             vm.ActiveRefreshProfile = activeRefresh;
             vm.UpdateBatteryBadge();
             vm.RefreshWhisperState();
+        }
+        else
+        {
+            BtnPowerEco.IsChecked = activeMode == PowerProfile.Eco;
+            BtnPowerQuiet.IsChecked = activeMode == PowerProfile.Quiet;
         }
 
         // Refresh Hotkey labels in keyboard view

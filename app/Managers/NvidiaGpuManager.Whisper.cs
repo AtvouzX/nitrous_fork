@@ -122,7 +122,7 @@ public partial class NvidiaGpuManager
                     ControlType = 1,
                     Value = 1 // QUIET mode
                 };
-                _ = setControl(ref ctlMode);
+                int modeRet = setControl(ref ctlMode);
 
                 var ctlFps = new NvToppsJpacControl
                 {
@@ -131,7 +131,16 @@ public partial class NvidiaGpuManager
                     ControlType = 2,
                     Value = 45 // 45 FPS target
                 };
-                _ = setControl(ref ctlFps);
+                int fpsRet = setControl(ref ctlFps);
+
+                // The chip claims ON, so all three controls must land. A silent partial
+                // apply would report Whisper as active while power/FPS caps did not stick.
+                if (modeRet != 0 || fpsRet != 0)
+                {
+                    LogManager.Warn(
+                        $"SetWhisperMode partial apply: quiet mode ret={modeRet}, fps cap ret={fpsRet}", "NvidiaGpu");
+                    return false;
+                }
 
                 return true;
             }
