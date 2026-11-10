@@ -329,6 +329,16 @@ public static partial class AcerWmiManager
         if (!HardwareSafetyPolicy.AllowCustomFanWrite(profile, expertMode))
         {
             ResetFansToAutoSync();
+
+            // The firmware owns the fans in this mode, so the tracked fan mode must
+            // follow: a stale "Medium" would leave the UI showing manual control the
+            // EC refuses and keep the curve poller running for nothing.
+            if (SettingsManager.GetString("LastFanMode", "Auto") != FanProfile.Auto.ToString())
+            {
+                LogManager.Info($"{profile} runs the firmware fan table; fan mode reset to Auto", "AcerWmi");
+                SettingsManager.Save("LastFanMode", FanProfile.Auto.ToString());
+                SettingsManager.Save(onAc ? "LastAcFanMode" : "LastDcFanMode", FanProfile.Auto.ToString());
+            }
         }
         else if (cpuFanSpeed > 0 || gpuFanSpeed > 0)
         {

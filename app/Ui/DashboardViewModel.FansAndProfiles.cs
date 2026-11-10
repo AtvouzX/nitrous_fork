@@ -262,7 +262,6 @@ public partial class DashboardViewModel
         {
             if (SetProperty(ref _cpuFanSpeed, value))
             {
-                if (IsUnifiedFans) GpuFanSpeed = value;
                 TriggerFanSave();
             }
         }
@@ -277,26 +276,38 @@ public partial class DashboardViewModel
         {
             if (SetProperty(ref _gpuFanSpeed, value))
             {
-                if (IsUnifiedFans) CpuFanSpeed = value;
                 TriggerFanSave();
             }
         }
     }
 
-    private bool _isUnifiedFans;
+    private FanProfile _activeFanMode;
 
-    public bool IsUnifiedFans
+    /// <summary>
+    /// Fan mode the rail shows. Quiet, Turbo, and Eco run the firmware fan table,
+    /// so entering them drops this back to Auto instead of leaving the rail on a
+    /// manual mode the EC refuses.
+    /// </summary>
+    public FanProfile ActiveFanMode
     {
-        get => _isUnifiedFans;
-        set
+        get => _activeFanMode;
+        private set
         {
-            if (SetProperty(ref _isUnifiedFans, value))
-            {
-                SettingsManager.Save("UnifiedFans", value ? 1 : 0);
-                if (value) GpuFanSpeed = CpuFanSpeed;
-            }
+            bool changed = SetProperty(ref _activeFanMode, value);
+            IsCustomFanEnabled = value == FanProfile.Medium;
+            if (!changed) return;
+            OnPropertyChanged(nameof(IsAutoFanMode));
+            OnPropertyChanged(nameof(IsMaxFanMode));
+            OnPropertyChanged(nameof(IsCustomFanMode));
         }
     }
+
+    public bool IsAutoFanMode => _activeFanMode == FanProfile.Auto;
+    public bool IsMaxFanMode => _activeFanMode == FanProfile.Max;
+    public bool IsCustomFanMode => _activeFanMode == FanProfile.Medium;
+
+    /// <summary>Pulls the rail state from settings after an external fan change.</summary>
+    internal void SyncActiveFanMode(FanProfile mode) => ActiveFanMode = mode;
 
     private bool _isCustomFanEnabled;
 
@@ -430,7 +441,6 @@ public partial class DashboardViewModel
         _gpuFanSpeed = SettingsManager.Get("CustomFanSpeedGpu", 50);
         _cpuFanPercentage = _cpuFanSpeed;
         _gpuFanPercentage = _gpuFanSpeed;
-        _isUnifiedFans = SettingsManager.Get("UnifiedFans", 1) == 1;
         _isCurveModeEnabled = SettingsManager.Get("IsCurveModeEnabled", 0) == 1;
         _manageCpuPower = SettingsManager.Get("ManageCpuPower", 0) == 1;
         _activeRefreshProfile = (RefreshProfile)SettingsManager.Get("RefreshMode", (int)RefreshProfile.Auto);
@@ -438,6 +448,7 @@ public partial class DashboardViewModel
         var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f)
             ? f
             : FanProfile.Auto;
+        _activeFanMode = activeFan;
         IsCustomFanEnabled = activeFan == FanProfile.Medium;
 
         int maxHz = DisplayManager.GetPrimaryMaxRefreshRate();
@@ -471,6 +482,15 @@ public partial class DashboardViewModel
                     _ = AcerWmiManager.ApplyPowerProfileAsync(resolved);
                     bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
                     SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)resolved);
+
+                    // Quiet, Turbo, and Eco hand the fans to the firmware table, so a
+                    // leftover manual rail would claim control the EC refuses.
+                    if (IsFanControlLocked)
+                    {
+                        ActiveFanMode = FanProfile.Auto;
+                        SettingsManager.Save("LastFanMode", FanProfile.Auto.ToString());
+                        SettingsManager.Save(isOnline ? "LastAcFanMode" : "LastDcFanMode", FanProfile.Auto.ToString());
+                    }
 
                     if (ManageCpuPower)
                     {
@@ -513,7 +533,7 @@ public partial class DashboardViewModel
                     LogManager.Info("Scenario suspended by manual fan change in Dashboard", "ScenarioVM");
                 }
 
-                IsCustomFanEnabled = mode == FanProfile.Medium;
+                ActiveFanMode = mode;
                 if (mode == FanProfile.Medium)
                 {
                     if (IsCurveModeEnabled)

@@ -355,19 +355,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f)
             ? f
             : FanProfile.Auto;
-        var newCustomFan = activeFan == FanProfile.Medium;
-        if (_isCustomFanEnabled != newCustomFan)
-        {
-            _isCustomFanEnabled = newCustomFan;
-            OnPropertyChanged(nameof(IsCustomFanEnabled));
-            OnPropertyChanged(nameof(CustomFanOpacity));
-            OnPropertyChanged(nameof(IsManualSliderEnabled));
-            OnPropertyChanged(nameof(FanReadViewVisibility));
-            OnPropertyChanged(nameof(FanWriteViewVisibility));
-            OnPropertyChanged(nameof(CustomFanHeaderText));
-            OnPropertyChanged(nameof(CustomFanHeaderColor));
-            OnPropertyChanged(nameof(SliderDisabledTooltip));
-        }
+        SyncActiveFanMode(activeFan);
 
         var newCpu = SettingsManager.Get("CustomFanSpeedCpu", 50);
         if (_cpuFanSpeed != newCpu)
@@ -381,13 +369,6 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         {
             _gpuFanSpeed = newGpu;
             OnPropertyChanged(nameof(GpuFanSpeed));
-        }
-
-        var newUnified = SettingsManager.Get("UnifiedFans", 1) == 1;
-        if (_isUnifiedFans != newUnified)
-        {
-            _isUnifiedFans = newUnified;
-            OnPropertyChanged(nameof(IsUnifiedFans));
         }
 
         var newCurve = SettingsManager.Get("IsCurveModeEnabled", 0) == 1;

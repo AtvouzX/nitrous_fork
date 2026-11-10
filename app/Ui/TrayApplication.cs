@@ -312,6 +312,13 @@ public partial class TrayApplication : ApplicationContext
             string keyFan = isOnline ? "LastAcFanMode" : "LastDcFanMode";
             var activeFan = Enum.TryParse(SettingsManager.Get(keyFan, "Auto"), out FanProfile f) ? f : FanProfile.Auto;
 
+            // The firmware owns the fans in Quiet/Turbo/Eco; never re-assert a stored
+            // manual fan mode there or the saved state drifts from the EC.
+            if (!AcerWmiManager.IsFanControlAllowed())
+            {
+                activeFan = FanProfile.Auto;
+            }
+
             if (activeFan == FanProfile.Medium)
                 _ = AcerWmiManager.ApplyPowerProfileAsync(activeMode,
                     SettingsManager.Get("CustomFanSpeedCpu", 50),

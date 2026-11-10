@@ -14,6 +14,9 @@ public class AcerPowerProfileTests : IDisposable
     private readonly int _origCpuFan;
     private readonly int _origGpuFan;
     private readonly int _origExpertMode;
+    private readonly string _origFanMode;
+    private readonly string _origAcFanMode;
+    private readonly string _origDcFanMode;
 
     public AcerPowerProfileTests()
     {
@@ -21,6 +24,9 @@ public class AcerPowerProfileTests : IDisposable
         _origCpuFan = SettingsManager.Get("CustomFanSpeedCpu", 50);
         _origGpuFan = SettingsManager.Get("CustomFanSpeedGpu", 50);
         _origExpertMode = SettingsManager.Get("ExpertMode", 0);
+        _origFanMode = SettingsManager.GetString("LastFanMode", "Auto");
+        _origAcFanMode = SettingsManager.GetString("LastAcFanMode", "Auto");
+        _origDcFanMode = SettingsManager.GetString("LastDcFanMode", "Auto");
     }
 
     public void Dispose()
@@ -33,6 +39,9 @@ public class AcerPowerProfileTests : IDisposable
         SettingsManager.Save("CustomFanSpeedCpu", _origCpuFan);
         SettingsManager.Save("CustomFanSpeedGpu", _origGpuFan);
         SettingsManager.Save("ExpertMode", _origExpertMode);
+        SettingsManager.Save("LastFanMode", _origFanMode);
+        SettingsManager.Save("LastAcFanMode", _origAcFanMode);
+        SettingsManager.Save("LastDcFanMode", _origDcFanMode);
     }
 
     private static void SetAcPower(bool onAc = true, int percent = 100)
@@ -183,6 +192,35 @@ public class AcerPowerProfileTests : IDisposable
         Assert.DoesNotContain(_wmiCalls, c => c.Method == "SetGamingFanSpeed");
         Assert.DoesNotContain(_wmiCalls, c => c.Method == "SetGamingFanBehavior"
             && c.Input == AcerWmiManager.FanBehaviorCustom);
+    }
+
+    [Fact]
+    public async Task ApplyPowerProfileAsync_InQuietMode_ResetsTrackedFanModeToAuto()
+    {
+        SetAcPower();
+        SettingsManager.Save("ExpertMode", 0);
+        AcerWmiManager.SetTurboSupportedForTesting(true);
+        RecordWmi();
+        SettingsManager.Save("LastFanMode", FanProfile.Medium.ToString());
+
+        await AcerWmiManager.ApplyPowerProfileAsync(PowerProfile.Quiet);
+
+        Assert.Equal(FanProfile.Auto.ToString(), SettingsManager.GetString("LastFanMode", "Auto"));
+        Assert.Equal(FanProfile.Auto.ToString(), SettingsManager.GetString("LastAcFanMode", "Auto"));
+    }
+
+    [Fact]
+    public async Task ApplyPowerProfileAsync_InBalancedMode_KeepsTrackedFanMode()
+    {
+        SetAcPower();
+        SettingsManager.Save("ExpertMode", 0);
+        AcerWmiManager.SetTurboSupportedForTesting(true);
+        RecordWmi();
+        SettingsManager.Save("LastFanMode", FanProfile.Medium.ToString());
+
+        await AcerWmiManager.ApplyPowerProfileAsync(PowerProfile.Balanced);
+
+        Assert.Equal(FanProfile.Medium.ToString(), SettingsManager.GetString("LastFanMode", "Auto"));
     }
 
     [Fact]

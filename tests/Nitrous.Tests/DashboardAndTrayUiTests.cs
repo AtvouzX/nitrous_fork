@@ -845,6 +845,70 @@ public class DashboardAndTrayUiTests
     }
 
     [Fact]
+    public void DashboardViewModel_ActiveFanMode_DrivesRailAndSliderState()
+    {
+        RunInSta(() =>
+        {
+            int originalCpu = SettingsManager.Get("CustomFanSpeedCpu", 50);
+            int originalGpu = SettingsManager.Get("CustomFanSpeedGpu", 50);
+            var vm = new DashboardViewModel();
+            try
+            {
+                vm.SyncActiveFanMode(FanProfile.Medium);
+                Assert.True(vm.IsCustomFanMode);
+                Assert.False(vm.IsAutoFanMode);
+                Assert.True(vm.IsCustomFanEnabled);
+                Assert.True(vm.IsManualSliderEnabled);
+
+                vm.SyncActiveFanMode(FanProfile.Auto);
+                Assert.True(vm.IsAutoFanMode);
+                Assert.False(vm.IsCustomFanMode);
+                Assert.False(vm.IsCustomFanEnabled);
+                Assert.False(vm.IsManualSliderEnabled);
+
+                // CPU and GPU sliders are independent manual channels.
+                vm.CpuFanSpeed = 40;
+                vm.GpuFanSpeed = 70;
+                Assert.Equal(40, vm.CpuFanSpeed);
+                Assert.Equal(70, vm.GpuFanSpeed);
+            }
+            finally
+            {
+                SettingsManager.Save("CustomFanSpeedCpu", originalCpu);
+                SettingsManager.Save("CustomFanSpeedGpu", originalGpu);
+                vm.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void Dashboard_RefreshDashboardState_SyncsFanRailFromSettings()
+    {
+        RunInSta(() =>
+        {
+            string originalFan = SettingsManager.GetString("LastFanMode", "Auto");
+            var window = new NitrousDashboard();
+            try
+            {
+                SettingsManager.Save("LastFanMode", FanProfile.Medium.ToString());
+                window.RefreshDashboardState();
+                Assert.True(window.BtnFanCustom.IsChecked);
+                Assert.False(window.BtnFanAuto.IsChecked);
+
+                SettingsManager.Save("LastFanMode", FanProfile.Auto.ToString());
+                window.RefreshDashboardState();
+                Assert.True(window.BtnFanAuto.IsChecked);
+                Assert.False(window.BtnFanCustom.IsChecked);
+            }
+            finally
+            {
+                SettingsManager.Save("LastFanMode", originalFan);
+                window.Close();
+            }
+        });
+    }
+
+    [Fact]
     public void DashboardViewModel_PowerModeGate_ReflectsAcAndCharge()
     {
         RunInSta(() =>

@@ -430,9 +430,11 @@ public partial class FanCurveWindow : Window
 
     private async void SaveBtn_Click(object sender, RoutedEventArgs e)
     {
-        // 1. Respect the Curve Override state from the ViewModel
-        if (_viewModel.IsCurveModeEnabled)
-            _viewModel.IsCustomFanEnabled = true;
+        // 1. Respect the Curve Override state from the ViewModel. A firmware-owned fan
+        // table (Quiet/Turbo/Eco) refuses manual writes, so do not claim manual control.
+        bool fanWritable = AcerWmiManager.IsFanControlAllowed();
+        if (_viewModel.IsCurveModeEnabled && fanWritable)
+            _viewModel.SyncActiveFanMode(FanProfile.Medium);
 
         // 2. Save curves to registry
         if (_editingPreset == "Auto")
@@ -450,10 +452,13 @@ public partial class FanCurveWindow : Window
         // 3. Persist settings and bump version so background engine immediately reloads
         SettingsManager.Save("ActiveFanCurvePreset", _editingPreset);
         SettingsManager.Save("IsCurveModeEnabled", _viewModel.IsCurveModeEnabled ? 1 : 0);
-        SettingsManager.Save("LastFanMode", "Medium");
-        bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
-                        System.Windows.Forms.PowerLineStatus.Online;
-        SettingsManager.Save(isOnline ? "LastAcFanMode" : "LastDcFanMode", "Medium");
+        if (fanWritable)
+        {
+            SettingsManager.Save("LastFanMode", "Medium");
+            bool isOnline = System.Windows.Forms.SystemInformation.PowerStatus.PowerLineStatus ==
+                            System.Windows.Forms.PowerLineStatus.Online;
+            SettingsManager.Save(isOnline ? "LastAcFanMode" : "LastDcFanMode", "Medium");
+        }
         SettingsManager.Save("FanCurveVersion", DateTime.UtcNow.Ticks);
 
         // 4. Immediately evaluate current telemetry and apply fans to hardware EC

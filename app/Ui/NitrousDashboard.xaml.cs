@@ -38,7 +38,9 @@ public partial class NitrousDashboard : Window
     {
         InitializeComponent();
 
-        DataContext = new DashboardViewModel();
+        var dashboardViewModel = new DashboardViewModel();
+        DataContext = dashboardViewModel;
+        dashboardViewModel.PropertyChanged += OnDashboardViewModelPropertyChanged;
 
         UpdateChamferGeometry();
         NavDashBtn.Background = NavActiveBgBrush;
@@ -304,6 +306,7 @@ public partial class NitrousDashboard : Window
         if (DataContext is DashboardViewModel vm)
         {
             vm.ActivePowerProfile = activeMode;
+            vm.SyncActiveFanMode(activeFan);
             vm.ActiveRefreshProfile = activeRefresh;
             vm.UpdateBatteryBadge();
             vm.RefreshWhisperState();
@@ -438,6 +441,24 @@ public partial class NitrousDashboard : Window
         RefreshDashboardState();
     }
 
+    /// <summary>
+    /// Keeps the fan rail in step with the view model. Switching into a mode whose
+    /// firmware fan table owns the fans drops the rail back to Auto, so the UI never
+    /// claims manual control the EC refuses.
+    /// </summary>
+    private void OnDashboardViewModelPropertyChanged(object? sender, System.ComponentModel.PropertyChangedEventArgs e)
+    {
+        if (e.PropertyName != nameof(DashboardViewModel.IsAutoFanMode) ||
+            DataContext is not DashboardViewModel vm)
+        {
+            return;
+        }
+
+        BtnFanAuto.IsChecked = vm.IsAutoFanMode;
+        BtnFanMax.IsChecked = vm.IsMaxFanMode;
+        BtnFanCustom.IsChecked = vm.IsCustomFanMode;
+    }
+
     protected override void OnClosed(EventArgs e)
     {
         base.OnClosed(e);
@@ -445,6 +466,7 @@ public partial class NitrousDashboard : Window
         SystemEvents.PowerModeChanged -= OnPowerStateChanged;
         SystemEvents.DisplaySettingsChanged -= OnDisplaySettingsChanged;
         SettingsManager.Save("IsPinned", this.Topmost);
+        if (DataContext is DashboardViewModel viewModel) viewModel.PropertyChanged -= OnDashboardViewModelPropertyChanged;
         (DataContext as IDisposable)?.Dispose();
     }
 
