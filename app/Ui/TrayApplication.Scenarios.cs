@@ -432,7 +432,7 @@ public partial class TrayApplication : ApplicationContext
             var colors = new List<KeyboardColor>(4);
             foreach (string hex in profile.ZoneColors) colors.Add(KeyboardColor.FromHex(hex));
 
-            bool applied = profile.LightingEffect == KeyboardEffect.Static
+            bool applied = profile.LightingEffect == KeyboardEffect.Static || !AcerKeyboard.SupportsEffects
                 ? AcerKeyboard.SetZoneColors(colors, 100)
                 : AcerKeyboard.SetEffect(profile.LightingEffect, 100, 4, leftwards: false, colors[0]);
 

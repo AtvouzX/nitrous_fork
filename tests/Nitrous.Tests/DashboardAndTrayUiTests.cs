@@ -756,6 +756,95 @@ public class DashboardAndTrayUiTests
     }
 
     [Fact]
+    public void DashboardPageView_EcoButton_HiddenOnAcAndShownOnBattery()
+    {
+        RunInSta(() =>
+        {
+            AcerWmiManager.SetPowerStateReaderForTesting(() => (true, 100));
+            var vm = new DashboardViewModel();
+            try
+            {
+                vm.IsEcoSupported = true;
+                var page = new DashboardPageView { DataContext = vm };
+                var eco = (FrameworkElement)page.FindName("BtnPowerEco");
+                Assert.NotNull(eco);
+
+                // Bindings activate on load, so assert the wiring itself: ECO visibility must
+                // follow the same battery-and-support gate the view model drives.
+                var binding = System.Windows.Data.BindingOperations.GetBinding(eco, UIElement.VisibilityProperty);
+                Assert.NotNull(binding);
+                Assert.Equal(nameof(DashboardViewModel.IsEcoModeAvailable), binding.Path.Path);
+                Assert.IsType<System.Windows.Controls.BooleanToVisibilityConverter>(binding.Converter);
+
+                var quietBinding = System.Windows.Data.BindingOperations
+                    .GetBinding((FrameworkElement)page.FindName("BtnPowerQuiet"), UIElement.VisibilityProperty);
+                Assert.Equal(nameof(DashboardViewModel.IsQuietVisible), quietBinding?.Path.Path);
+
+                Assert.False(vm.IsEcoModeAvailable);
+
+                AcerWmiManager.SetPowerStateReaderForTesting(() => (false, 80));
+                vm.RefreshPowerModeAvailability();
+                Assert.True(vm.IsEcoModeAvailable);
+            }
+            finally
+            {
+                AcerWmiManager.SetPowerStateReaderForTesting(null);
+                vm.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void DashboardViewModel_EcoVisibilityAndWhisperStatus_FollowBatteryAndMode()
+    {
+        RunInSta(() =>
+        {
+            int originalEco = SettingsManager.Get("IsEcoSupported", -1);
+            AcerWmiManager.SetPowerStateReaderForTesting(() => (true, 100));
+            var vm = new DashboardViewModel();
+            try
+            {
+                vm.IsEcoSupported = true;
+
+                // AC: ECO stays hidden even though the hardware supports it.
+                Assert.False(vm.IsEcoModeAvailable);
+
+                AcerWmiManager.SetPowerStateReaderForTesting(() => (false, 80));
+                vm.RefreshPowerModeAvailability();
+                Assert.True(vm.IsEcoModeAvailable);
+                Assert.False(vm.IsQuietVisible);
+
+                // Unsupported hardware keeps it hidden on battery too.
+                vm.IsEcoSupported = false;
+                Assert.False(vm.IsEcoModeAvailable);
+                Assert.True(vm.IsQuietVisible);
+
+                // Whisper chip follows the confirmed NVAPI state, not the requested mode.
+                SettingsManager.Save(NvidiaGpuManager.WhisperStateKey, NvidiaGpuManager.WhisperStateOn);
+                vm.RefreshWhisperState();
+                Assert.True(vm.IsWhisperActive);
+                Assert.Equal("WHISPER ON", vm.WhisperStatusText);
+
+                SettingsManager.Save(NvidiaGpuManager.WhisperStateKey, NvidiaGpuManager.WhisperStateUnavailable);
+                vm.RefreshWhisperState();
+                Assert.False(vm.IsWhisperActive);
+                Assert.Equal("WHISPER N/A", vm.WhisperStatusText);
+
+                SettingsManager.Save(NvidiaGpuManager.WhisperStateKey, NvidiaGpuManager.WhisperStateOff);
+                vm.RefreshWhisperState();
+                Assert.Equal("WHISPER OFF", vm.WhisperStatusText);
+            }
+            finally
+            {
+                AcerWmiManager.SetPowerStateReaderForTesting(null);
+                if (originalEco == -1) SettingsManager.Delete("IsEcoSupported");
+                else SettingsManager.Save("IsEcoSupported", originalEco);
+                vm.Dispose();
+            }
+        });
+    }
+
+    [Fact]
     public void DashboardViewModel_PowerModeGate_ReflectsAcAndCharge()
     {
         RunInSta(() =>

@@ -306,6 +306,7 @@ public partial class NitrousDashboard : Window
             vm.ActivePowerProfile = activeMode;
             vm.ActiveRefreshProfile = activeRefresh;
             vm.UpdateBatteryBadge();
+            vm.RefreshWhisperState();
         }
 
         // Refresh Hotkey labels in keyboard view

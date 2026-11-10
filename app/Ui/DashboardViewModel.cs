@@ -350,6 +350,7 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
         OnPropertyChanged(nameof(FanLockVisibility));
         OnPropertyChanged(nameof(FanLockText));
         RefreshPowerModeAvailability();
+        RefreshWhisperState();
 
         var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile f)
             ? f

@@ -152,12 +152,27 @@
 					<Grid>
 						<TextBlock Text="POWER" Foreground="{StaticResource Steel300Brush}" FontFamily="{StaticResource MonoFontFamily}"
 						           FontSize="10" FontWeight="Bold" VerticalAlignment="Center" />
-						<controls:ChamferButton x:Name="BtnScenarioManager" Variant="Secondary" ChamferSize="3"
-						                       Click="OpenScenarioManager_Click" Height="20" FontSize="8" Padding="8,0"
-						                       HorizontalAlignment="Right"
-						                       ToolTip="Open Scenario Manager: named mode, fan, and lighting bundles with app auto-switching.">
-							<TextBlock Text="SCENARIO MANAGER" FontFamily="{StaticResource MonoFontFamily}" FontSize="8" FontWeight="Bold" />
-						</controls:ChamferButton>
+						<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" VerticalAlignment="Center">
+							<TextBlock Text="{Binding WhisperStatusText}" Margin="0,0,8,0" VerticalAlignment="Center"
+							           FontFamily="{StaticResource MonoFontFamily}" FontSize="8" FontWeight="Bold"
+							           ToolTip="WhisperMode 2.0 via NVAPI; active in Quiet and Eco. Status reflects the last confirmed switch.">
+								<TextBlock.Style>
+									<Style TargetType="TextBlock">
+										<Setter Property="Foreground" Value="{StaticResource Steel500Brush}" />
+										<Style.Triggers>
+											<DataTrigger Binding="{Binding IsWhisperActive}" Value="True">
+												<Setter Property="Foreground" Value="{StaticResource Ember500Brush}" />
+											</DataTrigger>
+										</Style.Triggers>
+									</Style>
+								</TextBlock.Style>
+							</TextBlock>
+							<controls:ChamferButton x:Name="BtnScenarioManager" Variant="Secondary" ChamferSize="3"
+							                       Click="OpenScenarioManager_Click" Height="20" FontSize="8" Padding="8,0"
+							                       ToolTip="Open Scenario Manager: named mode, fan, and lighting bundles with app auto-switching.">
+								<TextBlock Text="SCENARIO MANAGER" FontFamily="{StaticResource MonoFontFamily}" FontSize="8" FontWeight="Bold" />
+							</controls:ChamferButton>
+						</StackPanel>
 					</Grid>
 				</Border>
 
@@ -169,13 +184,14 @@
 						<RadioButton x:Name="BtnPowerEco" TabIndex="0" GroupName="Power" Uid="Eco"
 						             Content="ECO" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}"
 						             CommandParameter="Eco"
-						             Visibility="{Binding IsEcoSupported, Converter={StaticResource BoolToVis}}"
+						             Visibility="{Binding IsEcoModeAvailable, Converter={StaticResource BoolToVis}}"
 						             IsEnabled="{Binding IsEcoModeAvailable}"
 						             ToolTipService.ShowOnDisabled="True"
-						             ToolTip="{Binding EcoTooltip, FallbackValue='Maximum battery saving. Available on battery only, processor capped at 70%, fans quiet.'}" />
+						             ToolTip="{Binding EcoTooltip, FallbackValue='Maximum battery saving. Processor capped at 70%, fans quiet. Battery only.'}" />
 						<RadioButton x:Name="BtnPowerQuiet" TabIndex="0" GroupName="Power" Uid="Quiet"
 						             Content="QUIET" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}"
 						             CommandParameter="Quiet"
+						             Visibility="{Binding IsQuietVisible, Converter={StaticResource BoolToVis}}"
 						             ToolTip="Lowest noise. Processor capped at 85% on AC (80% on battery), CPU boost off." />
 						<RadioButton x:Name="BtnPowerBal" TabIndex="1" GroupName="Power" Uid="Balanced"
 						             Content="BALANCED" Style="{StaticResource ActionButtonStyle}" Command="{Binding SetPowerCommand}"

@@ -50,7 +50,10 @@ public partial class DashboardViewModel
     public bool IsEcoSupported
     {
         get => _isEcoSupported;
-        set => SetProperty(ref _isEcoSupported, value);
+        set
+        {
+            if (SetProperty(ref _isEcoSupported, value)) RefreshPowerModeAvailability();
+        }
     }
 
     private PowerProfile _activePowerProfile;
@@ -68,6 +71,32 @@ public partial class DashboardViewModel
                 OnPropertyChanged(nameof(FanLockText));
             }
         }
+    }
+
+    /// <summary>
+    /// True when NVIDIA last accepted WhisperMode 2.0. Reflects the confirmed NVAPI
+    /// result written by the Tray, not the requested power mode.
+    /// </summary>
+    public bool IsWhisperActive => _whisperState == NvidiaGpuManager.WhisperStateOn;
+
+    public string WhisperStatusText => _whisperState switch
+    {
+        NvidiaGpuManager.WhisperStateOn => "WHISPER ON",
+        NvidiaGpuManager.WhisperStateOff => "WHISPER OFF",
+        _ => "WHISPER N/A"
+    };
+
+    private int _whisperState = SettingsManager.GetInt(NvidiaGpuManager.WhisperStateKey, -1);
+
+    /// <summary>Re-reads the confirmed Whisper state written by the Tray process.</summary>
+    public void RefreshWhisperState()
+    {
+        int state = SettingsManager.GetInt(NvidiaGpuManager.WhisperStateKey, -1);
+        if (state == _whisperState) return;
+
+        _whisperState = state;
+        OnPropertyChanged(nameof(IsWhisperActive));
+        OnPropertyChanged(nameof(WhisperStatusText));
     }
 
     /// <summary>
@@ -133,10 +162,14 @@ public partial class DashboardViewModel
 
     public bool IsEcoModeAvailable => _isEcoModeAvailable;
 
+    /// <summary>
+    /// Eco replaces Quiet on battery, so exactly one of the two buttons is offered.
+    /// Quiet stays visible on battery when the hardware has no Eco mode.
+    /// </summary>
+    public bool IsQuietVisible => !_isEcoModeAvailable;
+
     public string EcoTooltip =>
-        _isEcoModeAvailable
-            ? "Maximum battery saving. Available on battery only, processor capped at 70%, fans quiet."
-            : "Eco mode locked on AC: disconnect AC charger to enable.";
+        "Maximum battery saving. Processor capped at 70%, fans quiet. Battery only.";
 
     /// <summary>Recomputes the AC/charge gate. Cheap: one cached power-status read.</summary>
     public void RefreshPowerModeAvailability()
@@ -155,12 +188,13 @@ public partial class DashboardViewModel
         OnPropertyChanged(nameof(TurboTooltip));
 
         bool onAc = AcerWmiManager.GetPowerState().OnAc;
-        bool ecoAvailable = !onAc;
+        bool ecoAvailable = !onAc && _isEcoSupported;
         bool ecoChanged = _isEcoModeAvailable != ecoAvailable;
         _isEcoModeAvailable = ecoAvailable;
         if (ecoChanged)
         {
             OnPropertyChanged(nameof(IsEcoModeAvailable));
+            OnPropertyChanged(nameof(IsQuietVisible));
         }
         OnPropertyChanged(nameof(EcoTooltip));
     }

@@ -25,11 +25,7 @@ public partial class ScenariosWindow : Window
         DataContext = _viewModel;
 
         // Hardware-limited devices: hide unsupported RGB editors.
-        if (!_viewModel.ScenarioRgbSupported)
-        {
-            LightingEffectPanel.Visibility = Visibility.Collapsed;
-            ZoneColorsPanel.Visibility = Visibility.Collapsed;
-        }
+        ApplyRgbVisibility();
 
         UpdateScenarioStatusText();
 
@@ -159,9 +155,10 @@ public partial class ScenariosWindow : Window
 
     private void ApplyRgbVisibility()
     {
-        var visibility = _viewModel.ScenarioRgbSupported ? Visibility.Visible : Visibility.Collapsed;
-        LightingEffectPanel.Visibility = visibility;
-        ZoneColorsPanel.Visibility = visibility;
+        // Effects need the ENE HID controller; WMI-only keyboards expose static zone colors.
+        LightingEffectPanel.Visibility =
+            _viewModel.ScenarioRgbSupported && AcerKeyboard.SupportsEffects ? Visibility.Visible : Visibility.Collapsed;
+        ZoneColorsPanel.Visibility = _viewModel.ScenarioRgbSupported ? Visibility.Visible : Visibility.Collapsed;
     }
 
     protected override void OnClosed(EventArgs e)

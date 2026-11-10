@@ -90,9 +90,17 @@ internal static class AcerKeyboard
     {
         if (_wmiRgbForTesting.HasValue) return _wmiRgbForTesting.Value;
 
-        return AcerCapabilitiesProvider.Current.Smbios.KeyboardColor != 1 &&
-               AcerCapabilitiesProvider.Current.Wmi.GamingMethods.Contains("SetGamingRgbKb");
+        return SupportsWmiZoneColors(
+            AcerCapabilitiesProvider.Current.Smbios.KeyboardColor,
+            AcerCapabilitiesProvider.Current.Wmi.GamingMethods);
     }
+
+    /// <summary>
+    /// WMI zone colors need 4-zone RGB reporting (SMBIOS KeyboardColor other than 1) and the
+    /// <c>SetGamingRgbKb</c> method; other keyboards must never receive these payloads.
+    /// </summary>
+    internal static bool SupportsWmiZoneColors(ushort? keyboardColor, IReadOnlyList<string> gamingMethods) =>
+        keyboardColor != 1 && gamingMethods.Contains("SetGamingRgbKb");
 
     public static bool SetZoneColors(IReadOnlyList<KeyboardColor> colors, int brightness)
     {

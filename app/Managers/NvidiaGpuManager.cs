@@ -197,7 +197,7 @@ public partial class NvidiaGpuManager : IDisposable
         }
     }
 
-    private void InitializeNvAPI()
+    private void InitializeNvAPI(bool allowWake = false)
     {
         // Guard against binding unmanaged GPU driver handles in test host environments
         string procName = Process.GetCurrentProcess().ProcessName;
@@ -207,8 +207,8 @@ public partial class NvidiaGpuManager : IDisposable
             return;
         }
 
-        // Guard against waking sleeping dGPU in D3Cold sleep
-        if (!IsGpuAwake())
+        // Preserve D3Cold by default; only features that explicitly allow a wake pass true.
+        if (!allowWake && !IsGpuAwake())
         {
             return;
         }

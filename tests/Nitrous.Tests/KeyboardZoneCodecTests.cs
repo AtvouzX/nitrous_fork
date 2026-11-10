@@ -211,6 +211,19 @@ public class KeyboardZoneCodecTests
         }
     }
 
+    [Theory]
+    [InlineData(2, true, true)]
+    [InlineData(2, false, false)]
+    [InlineData(1, true, false)]
+    [InlineData(null, true, true)]
+    public void AcerKeyboard_SupportsWmiZoneColors_RequiresRgbModelAndMethod(
+        int? keyboardColor, bool hasRgbMethod, bool expected)
+    {
+        string[] methods = hasRgbMethod ? ["SetGamingRgbKb", "SetGamingMiscSetting"] : ["SetGamingMiscSetting"];
+
+        Assert.Equal(expected, AcerKeyboard.SupportsWmiZoneColors((ushort?)keyboardColor, methods));
+    }
+
     [Fact]
     public void AcerKeyboard_IsAvailable_TrueForWmiRgbOnlyModel()
     {

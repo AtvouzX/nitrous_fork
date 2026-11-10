@@ -11,7 +11,13 @@ public partial class NvidiaGpuManager
     private static readonly object _whisperLock = new();
 
     private bool? _lastAppliedWhisperMode;
-    private bool? _pendingWhisperMode;
+
+    /// <summary>Settings key holding the last confirmed NVAPI Whisper state (cross-process).</summary>
+    public const string WhisperStateKey = "WhisperModeState";
+
+    public const int WhisperStateOff = 0;
+    public const int WhisperStateOn = 1;
+    public const int WhisperStateUnavailable = 3;
 
     private static bool? _isGpuAwakeForTesting;
 
@@ -36,54 +42,50 @@ public partial class NvidiaGpuManager
         profile is PowerProfile.Quiet or PowerProfile.Eco;
 
     /// <summary>
-    /// Returns the currently pending Whisper mode if deferred due to dGPU sleep.
-    /// </summary>
-    internal bool? PendingWhisperMode => _pendingWhisperMode;
-
-    /// <summary>
     /// Applies WhisperMode 2.0 via NVIDIA NvAPI.
-    /// Preserves D3Cold: if dGPU is asleep or uninitialized, records pending state without waking.
-    /// Idempotent: skips calls if already in the target state.
+    /// Whisper is a driver preference, not a clock write, so it is allowed to wake a
+    /// D3Cold dGPU instead of deferring while the GPU sleeps.
+    /// Idempotent: skips calls if the same mode was already accepted.
     /// </summary>
     public bool SetWhisperMode(bool enable)
     {
-        if (!IsGpuAwake())
-        {
-            _pendingWhisperMode = enable;
-            LogManager.Debug($"SetWhisperMode: dGPU is asleep; deferring Whisper mode ({enable})", "NvidiaGpu");
-            return false;
-        }
-
-        if (!EnsureInitialized() && !IsTestHost())
-        {
-            _pendingWhisperMode = enable;
-            return false;
-        }
-
         if (_lastAppliedWhisperMode == enable)
         {
             return true;
+        }
+
+        if (!EnsureInitializedForWhisper())
+        {
+            SettingsManager.Save(WhisperStateKey, WhisperStateUnavailable);
+            LogManager.Debug($"SetWhisperMode: NvAPI unavailable; Whisper mode ({enable}) not applied", "NvidiaGpu");
+            return false;
         }
 
         bool success = SetWhisperModeInternal(enable);
         if (success)
         {
             _lastAppliedWhisperMode = enable;
-            _pendingWhisperMode = null;
+            SettingsManager.Save(WhisperStateKey, enable ? WhisperStateOn : WhisperStateOff);
             LogManager.Info($"Whisper mode set to {(enable ? "ON" : "OFF")}", "NvidiaGpu");
+        }
+        else
+        {
+            SettingsManager.Save(WhisperStateKey, WhisperStateUnavailable);
         }
         return success;
     }
 
     /// <summary>
-    /// Flushes any pending whisper mode if the dGPU has awakened.
+    /// Binds the NVIDIA driver for WhisperMode, waking the dGPU when needed.
+    /// Waking is an accepted cost for this feature, so it never leaves a deferred state.
     /// </summary>
-    public void FlushPendingWhisperMode()
+    private bool EnsureInitializedForWhisper()
     {
-        if (_pendingWhisperMode.HasValue && IsGpuAwake())
-        {
-            SetWhisperMode(_pendingWhisperMode.Value);
-        }
+        if (EnsureInitialized()) return true;
+        if (IsTestHost()) return true;
+
+        InitializeNvAPI(allowWake: true);
+        return _internalGpu != null;
     }
 
     private static bool SetWhisperModeInternal(bool enable)
@@ -157,7 +159,9 @@ public partial class NvidiaGpuManager
     {
         lock (_whisperLock)
         {
-            if (_nvToppsJpacResolved) return _nvToppsJpacSetControl;
+            // A failed lookup is not final: the first attempt can run before NVAPI is
+            // initialized, so null stays retryable instead of caching a dead end.
+            if (_nvToppsJpacResolved && _nvToppsJpacSetControl != null) return _nvToppsJpacSetControl;
 
             try
             {

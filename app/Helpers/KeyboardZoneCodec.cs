@@ -59,6 +59,7 @@ public static class KeyboardZoneCodec
     /// Encodes AcerGamingFunction.SetGamingRgbKb 64-bit gmInput for one keyboard zone,
     /// per NitroSense V3 Change_Zone_Color:
     /// Byte 0: zone mask (1, 2, 4, 8); Byte 1..3: R, G, B.
+    /// No brightness field: the vendor payload uses the keyboard's current backlight level.
     /// </summary>
     public static ulong BuildWmiZoneColorPayload(int zoneIndex, KeyboardColor color)
     {

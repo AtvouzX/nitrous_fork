@@ -37,16 +37,19 @@ public class WhisperModeTests : IDisposable
     }
 
     [Fact]
-    public void SetWhisperMode_WhenGpuAsleep_DefersWithoutCallingDriver()
+    public void SetWhisperMode_WhenGpuAsleep_StillApplies()
     {
+        // Whisper is a driver preference, so it may wake the dGPU instead of deferring.
         NvidiaGpuManager.SetGpuAwakeForTesting(false);
         using var manager = new NvidiaGpuManager();
 
         bool applied = manager.SetWhisperMode(true);
 
-        Assert.False(applied);
-        Assert.True(manager.PendingWhisperMode);
-        Assert.Empty(_calls);
+        Assert.True(applied);
+        Assert.Equal(3, _calls.Count);
+        Assert.Equal(
+            NvidiaGpuManager.WhisperStateOn,
+            SettingsManager.GetInt(NvidiaGpuManager.WhisperStateKey, -1));
     }
 
     [Fact]
@@ -58,11 +61,28 @@ public class WhisperModeTests : IDisposable
         bool applied = manager.SetWhisperMode(true);
 
         Assert.True(applied);
-        Assert.Null(manager.PendingWhisperMode);
         Assert.Equal(3, _calls.Count);
         Assert.Equal((0u, 1), _calls[0]);  // Enable WhisperMode
         Assert.Equal((1u, 1), _calls[1]);  // Mode = Quiet
         Assert.Equal((2u, 45), _calls[2]); // Target FPS = 45
+        Assert.Equal(
+            NvidiaGpuManager.WhisperStateOn,
+            SettingsManager.GetInt(NvidiaGpuManager.WhisperStateKey, -1));
+    }
+
+    [Fact]
+    public void SetWhisperMode_WhenDriverRejects_RecordsUnavailable()
+    {
+        NvidiaGpuManager.SetGpuAwakeForTesting(true);
+        NvidiaGpuManager.SetWhisperDelegateForTesting((ref NvidiaGpuManager.NvToppsJpacControl _) => -1);
+        using var manager = new NvidiaGpuManager();
+
+        bool applied = manager.SetWhisperMode(true);
+
+        Assert.False(applied);
+        Assert.Equal(
+            NvidiaGpuManager.WhisperStateUnavailable,
+            SettingsManager.GetInt(NvidiaGpuManager.WhisperStateKey, -1));
     }
 
     [Fact]
@@ -74,7 +94,6 @@ public class WhisperModeTests : IDisposable
         bool applied = manager.SetWhisperMode(false);
 
         Assert.True(applied);
-        Assert.Null(manager.PendingWhisperMode);
         Assert.Single(_calls);
         Assert.Equal((0u, 0), _calls[0]); // Disable WhisperMode
     }
@@ -91,24 +110,5 @@ public class WhisperModeTests : IDisposable
         // Second call with same state should skip
         Assert.True(manager.SetWhisperMode(true));
         Assert.Equal(3, _calls.Count);
-    }
-
-    [Fact]
-    public void FlushPendingWhisperMode_WhenAwakened_AppliesPendingState()
-    {
-        NvidiaGpuManager.SetGpuAwakeForTesting(false);
-        using var manager = new NvidiaGpuManager();
-
-        manager.SetWhisperMode(true);
-        Assert.True(manager.PendingWhisperMode);
-        Assert.Empty(_calls);
-
-        // GPU wakes up
-        NvidiaGpuManager.SetGpuAwakeForTesting(true);
-        manager.FlushPendingWhisperMode();
-
-        Assert.Null(manager.PendingWhisperMode);
-        Assert.Equal(3, _calls.Count);
-        Assert.Equal((0u, 1), _calls[0]);
     }
 }
