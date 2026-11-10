@@ -10,9 +10,9 @@
 		<AllowUnsafeBlocks>true</AllowUnsafeBlocks>
 		<ApplicationManifest>app.manifest</ApplicationManifest>
 		<ApplicationIcon>../assets/icon.ico</ApplicationIcon>
-		<Version>1.2.6</Version>
-		<AssemblyVersion>1.2.6.0</AssemblyVersion>
-		<FileVersion>1.2.6.0</FileVersion>
+		<Version>1.2.7</Version>
+		<AssemblyVersion>1.2.7.0</AssemblyVersion>
+		<FileVersion>1.2.7.0</FileVersion>
 	</PropertyGroup>
 
 	<ItemGroup>
