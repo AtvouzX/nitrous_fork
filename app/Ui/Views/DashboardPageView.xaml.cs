@@ -107,6 +107,14 @@ public partial class DashboardPageView : UserControl
         }
     }
 
+    private void UnifyFans_Click(object sender, RoutedEventArgs e)
+    {
+        if (DataContext is DashboardViewModel vm)
+        {
+            vm.IsUnifiedFans = !vm.IsUnifiedFans;
+        }
+    }
+
     private void OpenCurveEditor_Click(object sender, RoutedEventArgs e)
     {
         if (Window.GetWindow(this) is NitrousDashboard dash)

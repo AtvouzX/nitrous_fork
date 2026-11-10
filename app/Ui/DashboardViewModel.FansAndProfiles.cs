@@ -262,6 +262,7 @@ public partial class DashboardViewModel
         {
             if (SetProperty(ref _cpuFanSpeed, value))
             {
+                if (IsUnifiedFans) GpuFanSpeed = value;
                 TriggerFanSave();
             }
         }
@@ -276,8 +277,26 @@ public partial class DashboardViewModel
         {
             if (SetProperty(ref _gpuFanSpeed, value))
             {
+                if (IsUnifiedFans) CpuFanSpeed = value;
                 TriggerFanSave();
             }
+        }
+    }
+
+    private bool _isUnifiedFans;
+
+    /// <summary>
+    /// When on, one manual slider drives both fans. Off, CPU and GPU are set separately.
+    /// </summary>
+    public bool IsUnifiedFans
+    {
+        get => _isUnifiedFans;
+        set
+        {
+            if (!SetProperty(ref _isUnifiedFans, value)) return;
+
+            SettingsManager.Save("UnifiedFans", value ? 1 : 0);
+            if (value) GpuFanSpeed = CpuFanSpeed;
         }
     }
 
@@ -441,6 +460,7 @@ public partial class DashboardViewModel
         _gpuFanSpeed = SettingsManager.Get("CustomFanSpeedGpu", 50);
         _cpuFanPercentage = _cpuFanSpeed;
         _gpuFanPercentage = _gpuFanSpeed;
+        _isUnifiedFans = SettingsManager.Get("UnifiedFans", 0) == 1;
         _isCurveModeEnabled = SettingsManager.Get("IsCurveModeEnabled", 0) == 1;
         _manageCpuPower = SettingsManager.Get("ManageCpuPower", 0) == 1;
         _activeRefreshProfile = (RefreshProfile)SettingsManager.Get("RefreshMode", (int)RefreshProfile.Auto);
@@ -479,18 +499,16 @@ public partial class DashboardViewModel
                     }
 
                     SettingsManager.Save("LastPowerMode", (int)resolved);
-                    _ = AcerWmiManager.ApplyPowerProfileAsync(resolved);
+                    await AcerWmiManager.ApplyPowerProfileAsync(resolved);
                     bool isOnline = SystemInformation.PowerStatus.PowerLineStatus == PowerLineStatus.Online;
                     SettingsManager.Save(isOnline ? "LastAcPowerMode" : "LastDcPowerMode", (int)resolved);
 
-                    // Quiet, Turbo, and Eco hand the fans to the firmware table, so a
-                    // leftover manual rail would claim control the EC refuses.
-                    if (IsFanControlLocked)
-                    {
-                        ActiveFanMode = FanProfile.Auto;
-                        SettingsManager.Save("LastFanMode", FanProfile.Auto.ToString());
-                        SettingsManager.Save(isOnline ? "LastAcFanMode" : "LastDcFanMode", FanProfile.Auto.ToString());
-                    }
+                    // ApplyPowerProfileAsync owns the fan-mode bookkeeping: Quiet/Turbo/Eco
+                    // drop it to Auto, and leaving them restores the stored manual mode.
+                    var activeFan = Enum.TryParse(SettingsManager.Get("LastFanMode", "Auto"), out FanProfile synced)
+                        ? synced
+                        : FanProfile.Auto;
+                    SyncActiveFanMode(activeFan);
 
                     if (ManageCpuPower)
                     {

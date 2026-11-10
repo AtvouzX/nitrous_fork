@@ -371,6 +371,13 @@ public partial class DashboardViewModel : ObservableObject, IDisposable
             OnPropertyChanged(nameof(GpuFanSpeed));
         }
 
+        var newUnified = SettingsManager.Get("UnifiedFans", 0) == 1;
+        if (_isUnifiedFans != newUnified)
+        {
+            _isUnifiedFans = newUnified;
+            OnPropertyChanged(nameof(IsUnifiedFans));
+        }
+
         var newCurve = SettingsManager.Get("IsCurveModeEnabled", 0) == 1;
         if (_isCurveModeEnabled != newCurve)
         {

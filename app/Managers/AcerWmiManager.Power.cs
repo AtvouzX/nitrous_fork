@@ -332,12 +332,13 @@ public static partial class AcerWmiManager
 
             // The firmware owns the fans in this mode, so the tracked fan mode must
             // follow: a stale "Medium" would leave the UI showing manual control the
-            // EC refuses and keep the curve poller running for nothing.
+            // EC refuses and keep the curve poller running for nothing. The per-source
+            // keys stay untouched, they remember what to restore on the way out.
             if (SettingsManager.GetString("LastFanMode", "Auto") != FanProfile.Auto.ToString())
             {
                 LogManager.Info($"{profile} runs the firmware fan table; fan mode reset to Auto", "AcerWmi");
                 SettingsManager.Save("LastFanMode", FanProfile.Auto.ToString());
-                SettingsManager.Save(onAc ? "LastAcFanMode" : "LastDcFanMode", FanProfile.Auto.ToString());
+                SettingsManager.Save(FanModeSuspendedKey, 1);
             }
         }
         else if (cpuFanSpeed > 0 || gpuFanSpeed > 0)
@@ -350,6 +351,49 @@ public static partial class AcerWmiManager
                 SettingsManager.Save("CustomFanSpeedGpu", gpu);
             }
         }
+        else
+        {
+            await RestoreStoredFanModeAsync(onAc).ConfigureAwait(false);
+        }
+    }
+
+    /// <summary>Settings flag: a locked power mode suspended the user's manual fan mode.</summary>
+    internal const string FanModeSuspendedKey = "FanModeSuspended";
+
+    /// <summary>
+    /// Re-applies the manual fan mode remembered for the current power source. Entering
+    /// Quiet/Turbo/Eco drops the tracked mode to Auto and arms this, so the user's own
+    /// AUTO/MAX/MANUAL choice comes back instead of silently staying on the EC table.
+    /// </summary>
+    internal static async Task RestoreStoredFanModeAsync(bool onAc)
+    {
+        if (SettingsManager.GetInt(FanModeSuspendedKey, 0) != 1) return;
+        if (SettingsManager.GetString("LastFanMode", "Auto") != FanProfile.Auto.ToString()) return;
+        if (!IsFanControlAllowed()) return;
+
+        var stored = Enum.TryParse(
+            SettingsManager.GetString(onAc ? "LastAcFanMode" : "LastDcFanMode", "Auto"), out FanProfile mode)
+            ? mode
+            : FanProfile.Auto;
+
+        if (stored is not (FanProfile.Medium or FanProfile.Max))
+        {
+            SettingsManager.Save(FanModeSuspendedKey, 0);
+            return;
+        }
+
+        bool applied = stored == FanProfile.Max
+            ? await SetFansAsync(FanProfile.Max).ConfigureAwait(false)
+            : await SetFansAsync(
+                FanProfile.Medium,
+                SettingsManager.Get("CustomFanSpeedCpu", 50),
+                SettingsManager.Get("CustomFanSpeedGpu", 50)).ConfigureAwait(false);
+
+        if (!applied) return;
+
+        SettingsManager.Save(FanModeSuspendedKey, 0);
+        SettingsManager.Save("LastFanMode", stored.ToString());
+        LogManager.Info($"Restored stored fan mode {stored} after leaving a firmware-owned power mode", "AcerWmi");
     }
 
     /// <summary>Current power state (AC online status and battery percent).</summary>

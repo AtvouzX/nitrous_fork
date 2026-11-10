@@ -17,6 +17,7 @@ public class AcerPowerProfileTests : IDisposable
     private readonly string _origFanMode;
     private readonly string _origAcFanMode;
     private readonly string _origDcFanMode;
+    private readonly int _origFanSuspended;
 
     public AcerPowerProfileTests()
     {
@@ -27,6 +28,7 @@ public class AcerPowerProfileTests : IDisposable
         _origFanMode = SettingsManager.GetString("LastFanMode", "Auto");
         _origAcFanMode = SettingsManager.GetString("LastAcFanMode", "Auto");
         _origDcFanMode = SettingsManager.GetString("LastDcFanMode", "Auto");
+        _origFanSuspended = SettingsManager.Get("FanModeSuspended", 0);
     }
 
     public void Dispose()
@@ -42,6 +44,7 @@ public class AcerPowerProfileTests : IDisposable
         SettingsManager.Save("LastFanMode", _origFanMode);
         SettingsManager.Save("LastAcFanMode", _origAcFanMode);
         SettingsManager.Save("LastDcFanMode", _origDcFanMode);
+        SettingsManager.Save("FanModeSuspended", _origFanSuspended);
     }
 
     private static void SetAcPower(bool onAc = true, int percent = 100)
@@ -155,6 +158,9 @@ public class AcerPowerProfileTests : IDisposable
         SetAcPower();
         AcerWmiManager.SetTurboSupportedForTesting(true);
         RecordWmi();
+        // No suspended manual mode, so the fallback restore has nothing to do.
+        SettingsManager.Save("LastFanMode", FanProfile.Auto.ToString());
+        SettingsManager.Save("FanModeSuspended", 0);
 
         await AcerWmiManager.ApplyPowerProfileAsync(PowerProfile.Balanced);
 
@@ -202,11 +208,56 @@ public class AcerPowerProfileTests : IDisposable
         AcerWmiManager.SetTurboSupportedForTesting(true);
         RecordWmi();
         SettingsManager.Save("LastFanMode", FanProfile.Medium.ToString());
+        SettingsManager.Save("LastAcFanMode", FanProfile.Medium.ToString());
 
         await AcerWmiManager.ApplyPowerProfileAsync(PowerProfile.Quiet);
 
         Assert.Equal(FanProfile.Auto.ToString(), SettingsManager.GetString("LastFanMode", "Auto"));
-        Assert.Equal(FanProfile.Auto.ToString(), SettingsManager.GetString("LastAcFanMode", "Auto"));
+        // The per-source key keeps the user's own choice so leaving Quiet can restore it.
+        Assert.Equal(FanProfile.Medium.ToString(), SettingsManager.GetString("LastAcFanMode", "Auto"));
+        Assert.Equal(1, SettingsManager.Get("FanModeSuspended", 0));
+    }
+
+    [Fact]
+    public async Task ApplyPowerProfileAsync_LeavingQuietRestoresStoredManualFanMode()
+    {
+        SetAcPower();
+        SettingsManager.Save("ExpertMode", 0);
+        AcerWmiManager.SetTurboSupportedForTesting(true);
+        RecordWmi();
+        SettingsManager.Save("LastFanMode", FanProfile.Auto.ToString());
+        SettingsManager.Save("LastAcFanMode", FanProfile.Medium.ToString());
+        SettingsManager.Save("CustomFanSpeedCpu", 55);
+        SettingsManager.Save("CustomFanSpeedGpu", 45);
+        SettingsManager.Save("FanModeSuspended", 1);
+
+        await AcerWmiManager.ApplyPowerProfileAsync(PowerProfile.Balanced);
+
+        Assert.Equal(FanProfile.Medium.ToString(), SettingsManager.GetString("LastFanMode", "Auto"));
+        Assert.Equal(0, SettingsManager.Get("FanModeSuspended", 1));
+        Assert.Contains(_wmiCalls, c => c.Method == "SetGamingFanBehavior"
+            && c.Input == AcerWmiManager.FanBehaviorCustom);
+        Assert.Contains(_wmiCalls, c => c.Method == "SetGamingFanSpeed" && c.Input == (1ul | (55ul << 8)));
+        Assert.Contains(_wmiCalls, c => c.Method == "SetGamingFanSpeed" && c.Input == (2ul | (45ul << 8)));
+    }
+
+    [Fact]
+    public async Task ApplyPowerProfileAsync_LeavingQuietWithoutStoredManualMode_StaysAuto()
+    {
+        SetAcPower();
+        SettingsManager.Save("ExpertMode", 0);
+        AcerWmiManager.SetTurboSupportedForTesting(true);
+        RecordWmi();
+        SettingsManager.Save("LastFanMode", FanProfile.Auto.ToString());
+        SettingsManager.Save("LastAcFanMode", FanProfile.Auto.ToString());
+        SettingsManager.Save("FanModeSuspended", 1);
+
+        await AcerWmiManager.ApplyPowerProfileAsync(PowerProfile.Balanced);
+
+        Assert.Equal(FanProfile.Auto.ToString(), SettingsManager.GetString("LastFanMode", "Auto"));
+        Assert.Equal(0, SettingsManager.Get("FanModeSuspended", 1));
+        Assert.DoesNotContain(_wmiCalls, c => c.Method == "SetGamingFanBehavior"
+            && c.Input == AcerWmiManager.FanBehaviorCustom);
     }
 
     [Fact]

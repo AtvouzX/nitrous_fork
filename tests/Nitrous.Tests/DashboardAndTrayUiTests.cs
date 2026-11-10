@@ -285,6 +285,77 @@ public class DashboardAndTrayUiTests
     }
 
     [Fact]
+    public void DashboardViewModel_UnifiedFans_LinksSlidersAndPersists()
+    {
+        RunInSta(() =>
+        {
+            int originalUnified = SettingsManager.Get("UnifiedFans", 0);
+            int originalCpu = SettingsManager.Get("CustomFanSpeedCpu", 50);
+            int originalGpu = SettingsManager.Get("CustomFanSpeedGpu", 50);
+            var vm = new DashboardViewModel();
+            try
+            {
+                vm.IsUnifiedFans = false;
+                vm.CpuFanSpeed = 30;
+                vm.GpuFanSpeed = 80;
+                Assert.Equal(30, vm.CpuFanSpeed);
+                Assert.Equal(80, vm.GpuFanSpeed);
+                Assert.Equal(0, SettingsManager.Get("UnifiedFans", -1));
+
+                vm.IsUnifiedFans = true;
+                Assert.Equal(30, vm.GpuFanSpeed);
+
+                vm.CpuFanSpeed = 65;
+                Assert.Equal(65, vm.GpuFanSpeed);
+
+                vm.GpuFanSpeed = 40;
+                Assert.Equal(40, vm.CpuFanSpeed);
+                Assert.Equal(1, SettingsManager.Get("UnifiedFans", -1));
+            }
+            finally
+            {
+                SettingsManager.Save("UnifiedFans", originalUnified);
+                SettingsManager.Save("CustomFanSpeedCpu", originalCpu);
+                SettingsManager.Save("CustomFanSpeedGpu", originalGpu);
+                vm.Dispose();
+            }
+        });
+    }
+
+    [Fact]
+    public void DashboardPageView_UnifyFansButton_TogglesLinkState()
+    {
+        RunInSta(() =>
+        {
+            int originalUnified = SettingsManager.Get("UnifiedFans", 0);
+            var page = new DashboardPageView();
+            var vm = new DashboardViewModel();
+            page.DataContext = vm;
+            try
+            {
+                var button = page.FindName("BtnUnifyFans") as Nitrous.Ui.Controls.ChamferButton;
+                Assert.NotNull(button);
+
+                var binding = System.Windows.Data.BindingOperations.GetBinding(
+                    button, Nitrous.Ui.Controls.ChamferButton.IsActiveProperty);
+                Assert.Equal(nameof(DashboardViewModel.IsUnifiedFans), binding?.Path.Path);
+
+                vm.IsUnifiedFans = false;
+                button!.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Assert.True(vm.IsUnifiedFans);
+
+                button.RaiseEvent(new RoutedEventArgs(Button.ClickEvent));
+                Assert.False(vm.IsUnifiedFans);
+            }
+            finally
+            {
+                SettingsManager.Save("UnifiedFans", originalUnified);
+                vm.Dispose();
+            }
+        });
+    }
+
+    [Fact]
     public void DashboardViewModel_SetRefreshCommand_UpdatesActiveRefreshProfile()
     {
         RunInSta(() =>
@@ -851,6 +922,7 @@ public class DashboardAndTrayUiTests
         {
             int originalCpu = SettingsManager.Get("CustomFanSpeedCpu", 50);
             int originalGpu = SettingsManager.Get("CustomFanSpeedGpu", 50);
+            int originalUnified = SettingsManager.Get("UnifiedFans", 0);
             var vm = new DashboardViewModel();
             try
             {
@@ -866,7 +938,8 @@ public class DashboardAndTrayUiTests
                 Assert.False(vm.IsCustomFanEnabled);
                 Assert.False(vm.IsManualSliderEnabled);
 
-                // CPU and GPU sliders are independent manual channels.
+                // CPU and GPU sliders are independent manual channels unless linked.
+                vm.IsUnifiedFans = false;
                 vm.CpuFanSpeed = 40;
                 vm.GpuFanSpeed = 70;
                 Assert.Equal(40, vm.CpuFanSpeed);
@@ -876,6 +949,7 @@ public class DashboardAndTrayUiTests
             {
                 SettingsManager.Save("CustomFanSpeedCpu", originalCpu);
                 SettingsManager.Save("CustomFanSpeedGpu", originalGpu);
+                SettingsManager.Save("UnifiedFans", originalUnified);
                 vm.Dispose();
             }
         });
