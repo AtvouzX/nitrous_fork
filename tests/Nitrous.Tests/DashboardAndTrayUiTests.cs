@@ -292,6 +292,9 @@ public class DashboardAndTrayUiTests
             int originalUnified = SettingsManager.Get("UnifiedFans", 0);
             int originalCpu = SettingsManager.Get("CustomFanSpeedCpu", 50);
             int originalGpu = SettingsManager.Get("CustomFanSpeedGpu", 50);
+            // Start from a written-off state: on a clean machine the key is absent and
+            // the setter's no-change short-circuit never persists 0.
+            SettingsManager.Save("UnifiedFans", 0);
             var vm = new DashboardViewModel();
             try
             {
@@ -311,6 +314,9 @@ public class DashboardAndTrayUiTests
                 vm.GpuFanSpeed = 40;
                 Assert.Equal(40, vm.CpuFanSpeed);
                 Assert.Equal(1, SettingsManager.Get("UnifiedFans", -1));
+
+                vm.IsUnifiedFans = false;
+                Assert.Equal(0, SettingsManager.Get("UnifiedFans", -1));
             }
             finally
             {
